@@ -1,0 +1,77 @@
+import React, { createContext, useState, useEffect } from 'react';
+import { authAPI } from '../services/api';
+
+export const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  const [usuario, setUsuario] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const cargarUsuario = async () => {
+      if (token) {
+        try {
+          const response = await authAPI.getPerfil();
+          setUsuario(response.data);
+        } catch (err) {
+          localStorage.removeItem('token');
+          setToken(null);
+        }
+      }
+      setLoading(false);
+    };
+    cargarUsuario();
+  }, [token]);
+
+  const login = async (email, password) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await authAPI.login({ email, password });
+      const { token, usuario } = response.data;
+      localStorage.setItem('token', token);
+      setToken(token);
+      setUsuario(usuario);
+      return response.data;
+    } catch (err) {
+      const mensaje = err.response?.data?.mensaje || 'Error en el login';
+      setError(mensaje);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const register = async (datos) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await authAPI.register(datos);
+      const { token, usuario } = response.data;
+      localStorage.setItem('token', token);
+      setToken(token);
+      setUsuario(usuario);
+      return response.data;
+    } catch (err) {
+      const mensaje = err.response?.data?.mensaje || 'Error en el registro';
+      setError(mensaje);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setUsuario(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ usuario, token, loading, error, login, register, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};

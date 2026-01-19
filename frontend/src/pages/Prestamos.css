@@ -1,0 +1,403 @@
+.prestamos-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.prestamos-header {
+  text-align: center;
+  margin-bottom: 50px;
+  color: white;
+}
+
+.prestamos-header h1 {
+  font-size: 40px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.prestamos-header p {
+  font-size: 16px;
+  color: #e0e0e0;
+}
+
+.prestamos-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 50px;
+}
+
+.loan-form-card {
+  background: white;
+  border-radius: 15px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.loan-form-card h2 {
+  color: #001a4d;
+  margin-bottom: 30px;
+  font-size: 26px;
+  border-bottom: 3px solid #cc0000;
+  padding-bottom: 15px;
+}
+
+.error-message,
+.success-message {
+  padding: 12px 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border-left: 4px solid;
+  font-weight: 500;
+}
+
+.error-message {
+  background-color: #ffe5e5;
+  color: #cc0000;
+  border-color: #cc0000;
+}
+
+.success-message {
+  background-color: #e5ffe5;
+  color: #00aa00;
+  border-color: #00aa00;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #001a4d;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #cc0000;
+  box-shadow: 0 0 0 3px rgba(204, 0, 0, 0.1);
+}
+
+.form-group small {
+  font-size: 12px;
+  color: #666;
+  margin-top: -5px;
+}
+
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.currency {
+  position: absolute;
+  left: 15px;
+  font-weight: 600;
+  color: #cc0000;
+  font-size: 16px;
+}
+
+.input-group input {
+  padding-left: 35px;
+  width: 100%;
+}
+
+.loan-calculator {
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+}
+
+.loan-calculator h4 {
+  color: #001a4d;
+  margin-bottom: 15px;
+  font-size: 14px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.calc-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 13px;
+  color: #666;
+}
+
+.calc-row:last-child {
+  border-bottom: none;
+}
+
+.calc-row.highlight {
+  background: rgba(204, 0, 0, 0.1);
+  padding: 12px;
+  margin: 10px -20px -20px -20px;
+  border-radius: 0 0 8px 8px;
+  font-weight: 700;
+  color: #cc0000;
+  border-bottom: none;
+}
+
+.calc-row span:last-child {
+  font-weight: 600;
+  color: #001a4d;
+}
+
+.calc-row.highlight span:last-child {
+  color: #cc0000;
+}
+
+.btn-request {
+  padding: 14px;
+  background: linear-gradient(135deg, #cc0000 0%, #ff3333 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+}
+
+.btn-request:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(204, 0, 0, 0.4);
+}
+
+.btn-request:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.loan-info-card {
+  background: white;
+  border-radius: 15px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.info-section {
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 25px;
+}
+
+.info-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.info-section h3 {
+  color: #001a4d;
+  margin-bottom: 15px;
+  font-size: 18px;
+  border-bottom: 3px solid #cc0000;
+  padding-bottom: 10px;
+}
+
+.info-section ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.info-section li {
+  font-size: 14px;
+  color: #333;
+  padding: 10px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  border-left: 4px solid #cc0000;
+}
+
+.loan-list-small {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.loan-badge {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 15px;
+  border-radius: 6px;
+  border: 2px solid #ddd;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.loan-badge.pendiente {
+  border-color: #ffa500;
+  background: rgba(255, 165, 0, 0.1);
+}
+
+.loan-badge.aprobado {
+  border-color: #00aa00;
+  background: rgba(0, 170, 0, 0.1);
+}
+
+.loan-badge.rechazado {
+  border-color: #cc0000;
+  background: rgba(204, 0, 0, 0.1);
+}
+
+.badge-amount {
+  color: #001a4d;
+  font-weight: 700;
+}
+
+.badge-status {
+  text-transform: uppercase;
+}
+
+.all-loans-section {
+  background: white;
+  border-radius: 15px;
+  padding: 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.all-loans-section h2 {
+  color: #001a4d;
+  margin-bottom: 25px;
+  font-size: 24px;
+  border-bottom: 3px solid #cc0000;
+  padding-bottom: 15px;
+}
+
+.loan-table {
+  overflow-x: auto;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 15px;
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+  font-weight: 700;
+  color: #001a4d;
+  border-bottom: 3px solid #cc0000;
+  margin-bottom: 10px;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 15px;
+  padding: 15px;
+  border-bottom: 1px solid #e0e0e0;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.table-row:hover {
+  background: #f9f9f9;
+}
+
+.table-row.pendiente {
+  border-left: 4px solid #ffa500;
+}
+
+.table-row.aprobado {
+  border-left: 4px solid #00aa00;
+}
+
+.table-row.rechazado {
+  border-left: 4px solid #cc0000;
+}
+
+.col {
+  font-size: 14px;
+  color: #333;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-badge.pendiente {
+  background: #ffa500;
+  color: white;
+}
+
+.status-badge.aprobado {
+  background: #00aa00;
+  color: white;
+}
+
+.status-badge.rechazado {
+  background: #cc0000;
+  color: white;
+}
+
+@media (max-width: 1024px) {
+  .prestamos-content {
+    grid-template-columns: 1fr;
+  }
+
+  .table-header,
+  .table-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .loan-form-card,
+  .loan-info-card,
+  .all-loans-section {
+    padding: 20px;
+  }
+
+  .prestamos-header h1 {
+    font-size: 28px;
+  }
+
+  .table-header,
+  .table-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .table-header .col::before,
+  .table-row .col::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: #001a4d;
+    margin-right: 10px;
+  }
+}
