@@ -1,0 +1,392 @@
+.retiros-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.retiros-card,
+.historial-card {
+  max-width: 600px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 26, 77, 0.15);
+  overflow: hidden;
+}
+
+.retiros-card {
+  width: 100%;
+}
+
+.card-header {
+  background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
+  color: white;
+  padding: 30px;
+  text-align: center;
+}
+
+.card-header h2 {
+  margin: 0 0 10px 0;
+  font-size: 24px;
+}
+
+.card-header p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.saldo-actual {
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8f0ff 100%);
+  padding: 25px;
+  text-align: center;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.saldo-actual span {
+  color: #666;
+  font-size: 14px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.saldo-actual h3 {
+  margin: 0;
+  color: #001a4d;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.form-section {
+  padding: 30px;
+}
+
+.form-group {
+  margin-bottom: 25px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 14px;
+}
+
+.monto-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.currency-symbol {
+  position: absolute;
+  left: 15px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #001a4d;
+}
+
+.monto-input-group input {
+  width: 100%;
+  padding: 12px 15px 12px 45px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.monto-input-group input:focus {
+  outline: none;
+  border-color: #001a4d;
+  box-shadow: 0 0 0 3px rgba(0, 26, 77, 0.1);
+}
+
+.monto-presets {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.monto-btn {
+  padding: 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
+  color: #333;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 13px;
+}
+
+.monto-btn:hover {
+  border-color: #001a4d;
+  color: #001a4d;
+}
+
+.monto-btn.selected {
+  background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
+  color: white;
+  border-color: #001a4d;
+}
+
+/* Selector de Moneda */
+.moneda-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.moneda-option {
+  position: relative;
+}
+
+.moneda-option input[type="radio"] {
+  display: none;
+}
+
+.moneda-label {
+  display: block;
+  padding: 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.moneda-label strong {
+  display: block;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.moneda-label small {
+  display: block;
+  font-size: 12px;
+  color: #999;
+}
+
+.moneda-option input[type="radio"]:checked + .moneda-label {
+  background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
+  color: white;
+  border-color: #001a4d;
+}
+
+.moneda-option input[type="radio"]:checked + .moneda-label strong {
+  color: white;
+}
+
+.moneda-option input[type="radio"]:checked + .moneda-label small {
+  color: #e8f0ff;
+}
+
+.moneda-label:hover {
+  border-color: #001a4d;
+}
+
+/* Select de Cuenta */
+.form-group select {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.form-group select:focus {
+  outline: none;
+  border-color: #001a4d;
+  box-shadow: 0 0 0 3px rgba(0, 26, 77, 0.1);
+}
+
+.help-text {
+  display: block;
+  color: #999;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.info-box {
+  background-color: #f5f5f5;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 4px solid #001a4d;
+}
+
+.info-box h4 {
+  margin: 0 0 12px 0;
+  color: #333;
+  font-size: 14px;
+}
+
+.info-box ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style-type: none;
+}
+
+.info-box li {
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 6px;
+  position: relative;
+  padding-left: 20px;
+}
+
+.info-box li:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #001a4d;
+  font-weight: bold;
+}
+
+.error-message {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 12px 15px;
+  border-radius: 8px;
+  margin: 20px;
+  border-left: 4px solid #c62828;
+  font-size: 14px;
+}
+
+.success-message {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  padding: 12px 15px;
+  border-radius: 8px;
+  margin: 20px;
+  border-left: 4px solid #2e7d32;
+  font-size: 14px;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 26, 77, 0.3);
+}
+
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Historial */
+.historial-card {
+  width: 100%;
+  padding: 30px;
+}
+
+.historial-card h3 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.historial-tabla {
+  overflow-x: auto;
+}
+
+.historial-card table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.historial-card thead {
+  background-color: #f5f5f5;
+}
+
+.historial-card th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  font-size: 13px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.historial-card td {
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 14px;
+}
+
+.historial-card tr:hover {
+  background-color: #f9f9f9;
+}
+
+.empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: #666;
+}
+
+.empty-state p {
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.empty-state ol {
+  text-align: left;
+  max-width: 400px;
+  margin: 20px auto;
+}
+
+.empty-state li {
+  margin: 8px 0;
+}
+
+.loading-spinner {
+  padding: 40px 20px;
+  text-align: center;
+  color: #666;
+  font-size: 16px;
+}
+
+@media (max-width: 600px) {
+  .monto-presets {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .moneda-selector {
+    grid-template-columns: 1fr;
+  }
+
+  .retiros-card,
+  .historial-card {
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .form-section {
+    padding: 20px;
+  }
+
+  .card-header {
+    padding: 20px;
+  }
+}

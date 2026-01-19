@@ -1,0 +1,207 @@
+.transferencias-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.transferencias-header {
+  text-align: center;
+  margin-bottom: 50px;
+  color: white;
+}
+
+.transferencias-header h1 {
+  font-size: 40px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.transferencias-header p {
+  font-size: 16px;
+  color: #e0e0e0;
+}
+
+.transferencias-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+
+.transfer-form-card {
+  background: white;
+  border-radius: 15px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.transfer-form-card h2 {
+  color: #001a4d;
+  margin-bottom: 30px;
+  font-size: 26px;
+  border-bottom: 3px solid #cc0000;
+  padding-bottom: 15px;
+}
+
+.error-message {
+  background-color: #ffe5e5;
+  color: #cc0000;
+  padding: 12px 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border-left: 4px solid #cc0000;
+  font-weight: 500;
+}
+
+.success-message {
+  background-color: #e5ffe5;
+  color: #00aa00;
+  padding: 12px 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border-left: 4px solid #00aa00;
+  font-weight: 500;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #001a4d;
+  font-size: 14px;
+}
+
+.form-group input {
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #cc0000;
+  box-shadow: 0 0 0 3px rgba(204, 0, 0, 0.1);
+}
+
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.currency {
+  position: absolute;
+  left: 15px;
+  font-weight: 600;
+  color: #cc0000;
+  font-size: 16px;
+}
+
+.input-group input {
+  padding-left: 35px;
+  width: 100%;
+}
+
+.form-info {
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid #cc0000;
+  font-size: 14px;
+  color: #333;
+}
+
+.form-info p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.form-info strong {
+  color: #001a4d;
+}
+
+.btn-transfer {
+  padding: 14px;
+  background: linear-gradient(135deg, #cc0000 0%, #ff3333 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+}
+
+.btn-transfer:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(204, 0, 0, 0.4);
+}
+
+.btn-transfer:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.transfer-info-card {
+  background: white;
+  border-radius: 15px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.transfer-info-card h3 {
+  color: #001a4d;
+  margin-bottom: 25px;
+  font-size: 22px;
+  border-bottom: 3px solid #cc0000;
+  padding-bottom: 15px;
+}
+
+.transfer-info-card ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.transfer-info-card li {
+  font-size: 15px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border-left: 4px solid #cc0000;
+}
+
+@media (max-width: 1024px) {
+  .transferencias-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .transfer-form-card,
+  .transfer-info-card {
+    padding: 20px;
+  }
+
+  .transferencias-header h1 {
+    font-size: 28px;
+  }
+}

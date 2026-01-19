@@ -1,0 +1,287 @@
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 40px;
+  color: white;
+}
+
+.dashboard-header h1 {
+  font-size: 40px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.dashboard-header p {
+  font-size: 16px;
+  color: #e0e0e0;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 25px;
+  margin-bottom: 50px;
+}
+
+.balance-card {
+  background: white;
+  border-radius: 15px;
+  padding: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  border: 3px solid #cc0000;
+}
+
+.balance-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.balance-label {
+  color: #666;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.balance-amount {
+  font-size: 42px;
+  font-weight: 800;
+  color: #001a4d;
+}
+
+.balance-icon {
+  font-size: 60px;
+}
+
+.stats-card {
+  background: white;
+  border-radius: 15px;
+  padding: 30px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.stat-icon {
+  font-size: 32px;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: #cc0000;
+}
+
+.dashboard-section {
+  background: white;
+  border-radius: 15px;
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-section h2 {
+  color: #001a4d;
+  margin-bottom: 20px;
+  font-size: 24px;
+  border-bottom: 3px solid #cc0000;
+  padding-bottom: 15px;
+}
+
+.transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.transaction-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 10px;
+  border-left: 4px solid #cc0000;
+  transition: all 0.3s ease;
+}
+
+.transaction-item:hover {
+  background: #f0f0f0;
+  transform: translateX(5px);
+}
+
+.transaction-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.transaction-type {
+  font-weight: 600;
+  color: #001a4d;
+  font-size: 14px;
+}
+
+.transaction-person {
+  color: #666;
+  font-size: 13px;
+}
+
+.transaction-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.amount {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.amount.positive {
+  color: #00aa00;
+}
+
+.amount.negative {
+  color: #cc0000;
+}
+
+.transaction-date {
+  color: #999;
+  font-size: 12px;
+}
+
+.loan-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.loan-item {
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 10px;
+  border: 2px solid #ddd;
+  transition: all 0.3s ease;
+}
+
+.loan-item.pendiente {
+  border-color: #ffa500;
+  background: rgba(255, 165, 0, 0.05);
+}
+
+.loan-item.aprobado {
+  border-color: #00aa00;
+  background: rgba(0, 170, 0, 0.05);
+}
+
+.loan-item.rechazado {
+  border-color: #cc0000;
+  background: rgba(204, 0, 0, 0.05);
+}
+
+.loan-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.loan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.loan-amount {
+  font-size: 24px;
+  font-weight: 800;
+  color: #001a4d;
+}
+
+.loan-status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.loan-status.pendiente {
+  background: #ffa500;
+  color: white;
+}
+
+.loan-status.aprobado {
+  background: #00aa00;
+  color: white;
+}
+
+.loan-status.rechazado {
+  background: #cc0000;
+  color: white;
+}
+
+.loan-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+.empty-state {
+  text-align: center;
+  color: #999;
+  padding: 40px;
+  font-style: italic;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: white;
+  font-size: 18px;
+}
+
+@media (max-width: 768px) {
+  .balance-card {
+    padding: 20px;
+  }
+
+  .balance-amount {
+    font-size: 32px;
+  }
+
+  .dashboard-section {
+    padding: 20px;
+  }
+
+  .loan-list {
+    grid-template-columns: 1fr;
+  }
+}
