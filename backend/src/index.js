@@ -22,12 +22,12 @@ connectDB();
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
-  process.env.FRONTEND_URL,
+  process.env.FRONTEND_URL
 ];
 app.use(cors({
   origin: function (origin, callback) {
     // Permitir peticiones sin origin (como Postman) o si está en la lista
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.some(o => o && origin.startsWith(o))) {
       callback(null, true);
     } else {
       callback(new Error('No permitido por CORS'));
