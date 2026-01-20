@@ -78,7 +78,7 @@ export default function Recargas() {
     isValid: false,
     cardType: 'credito',
   });
-  const [loading, setLoading] = useState(false);
+  const [loadingRecarga, setLoadingRecarga] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -117,7 +117,6 @@ export default function Recargas() {
       return;
     }
 
-
     // Formatear mes y año (aceptar año de 2 o 4 dígitos)
     let mes = formData.mesVencimiento.toString().padStart(2, '0');
     let ano = formData.anoVencimiento.toString();
@@ -148,8 +147,7 @@ export default function Recargas() {
       return;
     }
 
-    setLoading(true);
-
+    setLoadingRecarga(true);
 
     try {
       // Forzar año a 4 dígitos y mes a 2 dígitos
@@ -185,7 +183,7 @@ export default function Recargas() {
     } catch (err) {
       setError(err.response?.data?.mensaje || 'Error procesando recarga');
     } finally {
-      setLoading(false);
+      setLoadingRecarga(false);
     }
   };
 
@@ -419,10 +417,10 @@ export default function Recargas() {
 
             <button
               type="submit"
-              disabled={loading || !formData.monto || !cardData.isValid || !formData.nombreTitular || !formData.mesVencimiento || !formData.anoVencimiento || !formData.cvv}
+              disabled={loadingRecarga || !formData.monto || !cardData.isValid || !formData.nombreTitular || !formData.mesVencimiento || !formData.anoVencimiento || !formData.cvv}
               className="btn-submit"
             >
-              {loading ? 'Procesando...' : `Recargar $${parseFloat(formData.monto || 0).toFixed(2)}`}
+              {loadingRecarga ? 'Procesando...' : `Recargar $${parseFloat(formData.monto || 0).toFixed(2)}`}
             </button>
           </form>
         )}
