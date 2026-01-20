@@ -9,7 +9,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [transferencias, setTransferencias] = useState([]);
   const [prestamos, setPrestamos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingDatos, setLoadingDatos] = useState(true);
 
   // Si no hay usuario y no está cargando, redirigir a login
   if (!usuario && !loading) {
@@ -29,7 +29,7 @@ export default function Dashboard() {
       } catch (error) {
         console.error('Error cargando datos:', error);
       } finally {
-        setLoading(false);
+        setLoadingDatos(false);
       }
     };
 
@@ -66,7 +66,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {loading ? (
+      {loadingDatos ? (
         <div className="loading">Cargando datos...</div>
       ) : (
         <>
