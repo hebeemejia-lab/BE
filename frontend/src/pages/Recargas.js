@@ -193,7 +193,7 @@ export default function Recargas() {
     e.preventDefault();
     setError('');
     setSuccess('');
-    setLoading(true);
+    setLoadingRecarga(true);
 
     try {
       const response = await recargaAPI.canjearcoCodigo({
@@ -206,7 +206,7 @@ export default function Recargas() {
     } catch (err) {
       setError(err.response?.data?.mensaje || 'Error canjeando código');
     } finally {
-      setLoading(false);
+      setLoadingRecarga(false);
     }
   };
 
