@@ -1,13 +1,21 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { transferAPI, loanAPI } from '../services/api';
 import './Dashboard.css';
 
 export default function Dashboard() {
-  const { usuario } = useContext(AuthContext);
+  const { usuario, loading } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [transferencias, setTransferencias] = useState([]);
   const [prestamos, setPrestamos] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Si no hay usuario y no está cargando, redirigir a login
+  if (!usuario && !loading) {
+    navigate('/login');
+    return null;
+  }
 
   useEffect(() => {
     const cargarDatos = async () => {

@@ -1,4 +1,5 @@
 import React, { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { recargaAPI } from '../services/api';
 import './Recargas.css';
@@ -52,8 +53,15 @@ const validateCVV = (cvv) => {
 };
 
 export default function Recargas() {
-  const { usuario } = useContext(AuthContext);
+  const { usuario, loading } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('tarjeta'); // tarjeta | codigo
+
+  // Si no hay usuario y no está cargando, redirigir a login
+  if (!usuario && !loading) {
+    navigate('/login');
+    return null;
+  }
   const [formData, setFormData] = useState({
     monto: '',
     codigo: '',
@@ -110,9 +118,12 @@ export default function Recargas() {
     }
 
 
-    // Formatear mes y año
+    // Formatear mes y año (aceptar año de 2 o 4 dígitos)
     let mes = formData.mesVencimiento.toString().padStart(2, '0');
-    let ano = formData.anoVencimiento.toString().padStart(4, '20');
+    let ano = formData.anoVencimiento.toString();
+    if (ano.length === 2) {
+      ano = '20' + ano;
+    }
 
     if (!validateExpiry(mes, ano)) {
       setError('Fecha de vencimiento inválida o expirada');
