@@ -1,3 +1,26 @@
+/* Autocompletado y sugerencias para monto */
+.sugerencias-lista {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 0 0 6px 6px;
+  z-index: 10;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.sugerencia-item {
+  padding: 0.7em 1em;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sugerencia-item:hover {
+  background: #f0f6ff;
+}
 .recargas-container {
   min-height: 100vh;
   background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-blue-light) 100%);

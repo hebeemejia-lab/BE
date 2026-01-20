@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { recargaAPI } from '../services/api';
@@ -8,6 +8,9 @@ export default function Recargas() {
   const { usuario, loading } = useContext(AuthContext);
   const navigate = useNavigate();
   const [monto, setMonto] = useState('');
+  const [sugerencias, setSugerencias] = useState([10, 20, 50, 100, 200, 500]);
+  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
+  const inputRef = useRef(null);
   // Opciones de pago disponibles (puedes activar/desactivar aquí)
   // Solo mostrar pago con tarjeta (Stripe)
   const opcionesPago = [
@@ -26,6 +29,13 @@ export default function Recargas() {
 
   const handleMontoChange = (e) => {
     setMonto(e.target.value);
+    setMostrarSugerencias(true);
+  };
+
+  const handleSugerenciaClick = (valor) => {
+    setMonto(valor.toString());
+    setMostrarSugerencias(false);
+    inputRef.current?.focus();
   };
 
   // Botón general para iniciar recarga según método
@@ -72,8 +82,7 @@ export default function Recargas() {
         </div>
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
-        <form className="form-section" onSubmit={e => e.preventDefault()}>
-          {/* Solo mostrar botón de tarjeta */}
+        <form className="form-section" onSubmit={e => e.preventDefault()} autoComplete="on">
           <div className="form-group">
             <label>Método de pago</label>
             <div className="metodo-pago-selector">
@@ -88,35 +97,40 @@ export default function Recargas() {
               </button>
             </div>
           </div>
-          <div className="form-group">
+          <div className="form-group" style={{ position: 'relative' }}>
             <label>Monto a recargar ($)</label>
-            <div className="monto-selector">
-              {[10, 20, 50, 100, 200, 500].map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  className={`monto-btn ${monto === m.toString() ? 'selected' : ''}`}
-                  onClick={() => setMonto(m.toString())}
-                >
-                  ${m}
-                </button>
-              ))}
-            </div>
             <input
+              ref={inputRef}
               type="number"
               name="monto"
               value={monto}
               onChange={handleMontoChange}
-              placeholder="Otro monto"
+              placeholder="Ingresa el monto"
               step="0.01"
               min="1"
               className="custom-monto"
+              autoComplete="on"
+              onFocus={() => setMostrarSugerencias(true)}
+              onBlur={() => setTimeout(() => setMostrarSugerencias(false), 150)}
             />
+            {mostrarSugerencias && (
+              <ul className="sugerencias-lista">
+                {sugerencias.filter(s => s.toString().startsWith(monto) || monto === '').map(s => (
+                  <li
+                    key={s}
+                    className="sugerencia-item"
+                    onMouseDown={() => handleSugerenciaClick(s)}
+                  >
+                    ${s}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <div className="info-box">
             <h4>🔒 Información Segura</h4>
             <ul>
-              <li>✓ Procesamiento seguro con Stripe, PayPal y Google Pay</li>
+              <li>✓ Procesamiento seguro con Stripe</li>
               <li>✓ Datos encriptados con SSL/TLS</li>
               <li>✓ Cumplimiento PCI DSS</li>
             </ul>
