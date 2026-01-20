@@ -233,12 +233,6 @@ export default function Recargas() {
           >
             💳 Tarjeta de Crédito
           </button>
-          <button
-            className={`tab-btn ${activeTab === 'codigo' ? 'active' : ''}`}
-            onClick={() => setActiveTab('codigo')}
-          >
-            🎟️ Código de Recarga
-          </button>
         </div>
 
         {/* Recarga con Tarjeta */}
@@ -427,38 +421,7 @@ export default function Recargas() {
         )}
 
         {/* Canjear Código */}
-        {activeTab === 'codigo' && (
-          <form onSubmit={handleCanjearCodigo} className="form-section">
-            <div className="form-group">
-              <label>Código de Recarga</label>
-              <input
-                type="text"
-                name="codigo"
-                value={formData.codigo}
-                onChange={handleChange}
-                placeholder="Ej: ABC123XYZ456"
-                maxLength="20"
-              />
-            </div>
-
-            <div className="info-box">
-              <h4>¿Cómo obtener un código?</h4>
-              <ul>
-                <li>📧 Recibe códigos por promociones</li>
-                <li>🎁 Compra códigos en tiendas asociadas</li>
-                <li>🏆 Gana códigos en promociones especiales</li>
-              </ul>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || !formData.codigo}
-              className="btn-submit"
-            >
-              {loading ? 'Validando...' : 'Canjear Código'}
-            </button>
-          </form>
-        )}
+          {/* Código de Recarga eliminado */}
       </div>
 
       {/* Historial */}
