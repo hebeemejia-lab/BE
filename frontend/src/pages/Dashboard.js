@@ -11,11 +11,12 @@ export default function Dashboard() {
   const [prestamos, setPrestamos] = useState([]);
   const [loadingDatos, setLoadingDatos] = useState(true);
 
-  // Si no hay usuario y no está cargando, redirigir a login
-  if (!usuario && !loading) {
-    navigate('/login');
-    return null;
-  }
+  // Redirigir a login si no hay usuario y no está cargando
+  React.useEffect(() => {
+    if (!usuario && !loading) {
+      navigate('/login');
+    }
+  }, [usuario, loading, navigate]);
 
   useEffect(() => {
     const cargarDatos = async () => {

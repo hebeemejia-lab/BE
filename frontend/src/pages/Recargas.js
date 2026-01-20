@@ -57,11 +57,12 @@ export default function Recargas() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('tarjeta'); // tarjeta | codigo
 
-  // Si no hay usuario y no está cargando, redirigir a login
-  if (!usuario && !loading) {
-    navigate('/login');
-    return null;
-  }
+  // Redirigir a login si no hay usuario y no está cargando
+  React.useEffect(() => {
+    if (!usuario && !loading) {
+      navigate('/login');
+    }
+  }, [usuario, loading, navigate]);
   const [formData, setFormData] = useState({
     monto: '',
     codigo: '',
