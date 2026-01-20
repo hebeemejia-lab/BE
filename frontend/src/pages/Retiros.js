@@ -17,12 +17,15 @@ export default function Retiros() {
   const [cuentasLoading, setCuentasLoading] = useState(true);
   const [retiros, setRetiros] = useState([]);
   const [retirosLoading, setRetirosLoading] = useState(true);
+  const [verificado, setVerificado] = useState(false);
+  const [cedulaInput, setCedulaInput] = useState('');
 
   // Cargar cuentas vinculadas al montar
   React.useEffect(() => {
     cargarCuentas();
     cargarRetiros();
   }, []);
+
   const cargarRetiros = async () => {
     try {
       setRetirosLoading(true);
@@ -40,7 +43,6 @@ export default function Retiros() {
       setCuentasLoading(true);
       const response = await bankAccountAPI.listarCuentas();
       setCuentas(response.data);
-      
       // Seleccionar la cuenta por defecto
       const cuentaDefault = response.data.find(c => c.esDefault);
       if (cuentaDefault) {
@@ -186,105 +188,132 @@ export default function Retiros() {
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
 
-        <form onSubmit={handleSubmit} className="form-section">
-          {/* Monto */}
-          <div className="form-group">
-            <label>Monto a retirar</label>
-            <div className="monto-input-group">
-              <span className="currency-symbol">{monedaSeleccionada?.simbolo}</span>
+        {/* Verificación de identidad antes de mostrar el formulario */}
+        {!verificado ? (
+          <form className="form-section" onSubmit={e => {
+            e.preventDefault();
+            if (cedulaInput === usuario?.cedula) {
+              setVerificado(true);
+              setError('');
+            } else {
+              setError('Cédula incorrecta. Intenta de nuevo.');
+            }
+          }}>
+            <div className="form-group">
+              <label>Verifica tu identidad para retirar</label>
               <input
-                type="number"
-                name="monto"
-                value={formData.monto}
-                onChange={handleChange}
-                placeholder="0.00"
-                step="0.01"
-                min="0"
-                max={parseFloat(usuario?.saldo || 0)}
+                type="text"
+                className="verificacion-cedula-input"
+                placeholder="Ingresa tu cédula"
+                value={cedulaInput}
+                onChange={e => setCedulaInput(e.target.value)}
+                autoFocus
               />
             </div>
-            <div className="monto-presets">
-              {[50, 100, 200, 500, 1000].map((monto) => (
-                <button
-                  key={monto}
-                  type="button"
-                  className={`monto-btn ${formData.monto === monto.toString() ? 'selected' : ''}`}
-                  onClick={() => {
-                    if (monto <= parseFloat(usuario?.saldo || 0)) {
-                      setFormData({ ...formData, monto: monto.toString() });
-                    }
-                  }}
-                >
-                  {monedaSeleccionada?.simbolo}{monto}
-                </button>
-              ))}
+            <button type="submit" className="btn-submit">Verificar</button>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="form-section">
+            {/* Monto */}
+            <div className="form-group">
+              <label>Monto a retirar</label>
+              <div className="monto-input-group">
+                <span className="currency-symbol">{monedaSeleccionada?.simbolo}</span>
+                <input
+                  type="number"
+                  name="monto"
+                  value={formData.monto}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0"
+                  max={parseFloat(usuario?.saldo || 0)}
+                />
+              </div>
+              <div className="monto-presets">
+                {[50, 100, 200, 500, 1000].map((monto) => (
+                  <button
+                    key={monto}
+                    type="button"
+                    className={`monto-btn ${formData.monto === monto.toString() ? 'selected' : ''}`}
+                    onClick={() => {
+                      if (monto <= parseFloat(usuario?.saldo || 0)) {
+                        setFormData({ ...formData, monto: monto.toString() });
+                      }
+                    }}
+                  >
+                    {monedaSeleccionada?.simbolo}{monto}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Moneda */}
-          <div className="form-group">
-            <label>Moneda</label>
-            <div className="moneda-selector">
-              {monedas.map((m) => (
-                <label key={m.codigo} className="moneda-option">
-                  <input
-                    type="radio"
-                    name="moneda"
-                    value={m.codigo}
-                    checked={formData.moneda === m.codigo}
-                    onChange={handleChange}
-                  />
-                  <span className="moneda-label">
-                    <strong>{m.simbolo} {m.codigo}</strong>
-                    <small>{m.nombre}</small>
-                  </span>
-                </label>
-              ))}
+            {/* Moneda */}
+            <div className="form-group">
+              <label>Moneda</label>
+              <div className="moneda-selector">
+                {monedas.map((m) => (
+                  <label key={m.codigo} className="moneda-option">
+                    <input
+                      type="radio"
+                      name="moneda"
+                      value={m.codigo}
+                      checked={formData.moneda === m.codigo}
+                      onChange={handleChange}
+                    />
+                    <span className="moneda-label">
+                      <strong>{m.simbolo} {m.codigo}</strong>
+                      <small>{m.nombre}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Cuenta Bancaria */}
-          <div className="form-group">
-            <label>Cuenta de Destino</label>
-            <select
-              name="cuentaId"
-              value={formData.cuentaId}
-              onChange={handleChange}
-              required
+            {/* Cuenta Bancaria */}
+            <div className="form-group">
+              <label>Cuenta de Destino</label>
+              <select
+                name="cuentaId"
+                value={formData.cuentaId}
+                onChange={handleChange}
+                required
+              >
+                <option value="">-- Selecciona una cuenta --</option>
+                {cuentas.map((cuenta) => (
+                  <option key={cuenta.id} value={cuenta.id}>
+                    {cuenta.nombreCuenta} ({cuenta.banco}) - ****{cuenta.numerosCuenta}
+                    {cuenta.esDefault && ' (Por defecto)'}
+                    {cuenta.estado !== 'verificada' && ' - No verificada'}
+                  </option>
+                ))}
+              </select>
+              <small className="help-text">
+                Solo puedes retirar a cuentas verificadas
+              </small>
+            </div>
+
+            {/* Información */}
+            <div className="info-box">
+              <h4>ℹ️ Información de Retiro</h4>
+              <ul>
+                <li>✓ Transferencia a 1-2 días hábiles</li>
+                <li>✓ Sin comisión de retiro</li>
+                <li>✓ Monto máximo: ${parseFloat(usuario?.saldo || 0).toFixed(2)}</li>
+                <li>✓ Número de referencia para seguimiento</li>
+              </ul>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !formData.monto || !formData.cuentaId}
+              className="btn-submit"
             >
-              <option value="">-- Selecciona una cuenta --</option>
-              {cuentas.map((cuenta) => (
-                <option key={cuenta.id} value={cuenta.id}>
-                  {cuenta.nombreCuenta} ({cuenta.banco}) - ****{cuenta.numerosCuenta}
-                  {cuenta.esDefault && ' (Por defecto)'}
-                  {cuenta.estado !== 'verificada' && ' - No verificada'}
-                </option>
-              ))}
-            </select>
-            <small className="help-text">
-              Solo puedes retirar a cuentas verificadas
-            </small>
-          </div>
+              {loading ? 'Procesando...' : `Retirar ${monedaSeleccionada?.simbolo}${parseFloat(formData.monto || 0).toFixed(2)}`}
+            </button>
+          </form>
+        )}
 
-          {/* Información */}
-          <div className="info-box">
-            <h4>ℹ️ Información de Retiro</h4>
-            <ul>
-              <li>✓ Transferencia a 1-2 días hábiles</li>
-              <li>✓ Sin comisión de retiro</li>
-              <li>✓ Monto máximo: ${parseFloat(usuario?.saldo || 0).toFixed(2)}</li>
-              <li>✓ Número de referencia para seguimiento</li>
-            </ul>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || !formData.monto || !formData.cuentaId}
-            className="btn-submit"
-          >
-            {loading ? 'Procesando...' : `Retirar ${monedaSeleccionada?.simbolo}${parseFloat(formData.monto || 0).toFixed(2)}`}
-          </button>
-        </form>
       </div>
 
       {/* Historial */}
