@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { recargaAPI } from '../services/api';
+import axios from 'axios';
 import './Recargas.css';
 
 // Validaciones de tarjeta
@@ -55,7 +56,7 @@ const validateCVV = (cvv) => {
 export default function Recargas() {
   const { usuario, loading } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('tarjeta'); // tarjeta | codigo
+  // No tabs needed, only Stripe Checkout
 
   // Redirigir a login si no hay usuario y no está cargando
   React.useEffect(() => {
@@ -63,126 +64,33 @@ export default function Recargas() {
       navigate('/login');
     }
   }, [usuario, loading, navigate]);
-  const [formData, setFormData] = useState({
-    monto: '',
-    codigo: '',
-    // Datos de tarjeta
-    numeroTarjeta: '',
-    nombreTitular: '',
-    mesVencimiento: '',
-    anoVencimiento: '',
-    cvv: '',
-    tipoTarjeta: 'credito', // credito | debito | ahorros
-  });
-  const [cardData, setCardData] = useState({
-    brand: null,
-    isValid: false,
-    cardType: 'credito',
-  });
+  const [monto, setMonto] = useState('');
   const [loadingRecarga, setLoadingRecarga] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-
-    // Validaciones de tarjeta en tiempo real
-    if (name === 'numeroTarjeta') {
-      const brand = getCardBrand(value);
-      const isValid = validateCardNumber(value);
-      setCardData({
-        brand,
-        isValid,
-        cardType: formData.tipoTarjeta,
-      });
-    }
+  const handleMontoChange = (e) => {
+    setMonto(e.target.value);
   };
 
-  const handleRecargaTarjeta = async (e) => {
+  const handleRecargaStripeCheckout = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-
-    // Validaciones
-    if (!formData.monto || parseFloat(formData.monto) <= 0) {
+    if (!monto || parseFloat(monto) <= 0) {
       setError('Ingresa un monto válido');
       return;
     }
-
-    if (!validateCardNumber(formData.numeroTarjeta)) {
-      setError('Número de tarjeta inválido');
-      return;
-    }
-
-    // Formatear mes y año (aceptar año de 2 o 4 dígitos)
-    let mes = formData.mesVencimiento.toString().padStart(2, '0');
-    let ano = formData.anoVencimiento.toString();
-    if (ano.length === 2) {
-      ano = '20' + ano;
-    }
-
-    if (!validateExpiry(mes, ano)) {
-      setError('Fecha de vencimiento inválida o expirada');
-      return;
-    }
-
-    // Mostrar el payload en consola para depuración
-    const payload = {
-      ...formData,
-      mesVencimiento: mes,
-      anoVencimiento: ano,
-    };
-    console.log('Payload enviado a la API:', payload);
-
-    if (!validateCVV(formData.cvv)) {
-      setError('CVV debe tener 3 o 4 dígitos');
-      return;
-    }
-
-    if (!formData.nombreTitular.trim()) {
-      setError('Nombre del titular requerido');
-      return;
-    }
-
     setLoadingRecarga(true);
-
     try {
-      // Forzar año a 4 dígitos y mes a 2 dígitos
-      const mesFinal = formData.mesVencimiento.toString().padStart(2, '0');
-      let anoFinal = formData.anoVencimiento.toString();
-      if (anoFinal.length === 2) {
-        anoFinal = '20' + anoFinal;
+      const response = await recargaAPI.crearRecargaStripe({ monto: parseFloat(monto) });
+      if (response.data && response.data.url) {
+        window.location.href = response.data.url; // Redirect to Stripe Checkout
+      } else {
+        setError('No se pudo obtener la URL de pago.');
       }
-      const response = await recargaAPI.procesarRecargaTarjeta({
-        monto: parseFloat(formData.monto),
-        numeroTarjeta: formData.numeroTarjeta.replace(/\D/g, ''),
-        nombreTitular: formData.nombreTitular,
-        mesVencimiento: mesFinal,
-        anoVencimiento: anoFinal,
-        cvv: formData.cvv,
-        tipoTarjeta: formData.tipoTarjeta,
-        brand: cardData.brand,
-      });
-
-      setSuccess(`✓ Recarga exitosa. +$${response.data.montoAgregado}. Ref: ${response.data.numeroReferencia}`);
-      
-      setFormData({
-        monto: '',
-        codigo: '',
-        numeroTarjeta: '',
-        nombreTitular: '',
-        mesVencimiento: '',
-        anoVencimiento: '',
-        cvv: '',
-        tipoTarjeta: 'credito',
-      });
-      setCardData({ brand: null, isValid: false, cardType: 'credito' });
     } catch (err) {
-      setError(err.response?.data?.mensaje || 'Error procesando recarga');
+      setError(err.response?.data?.mensaje || 'Error creando sesión de pago');
     } finally {
       setLoadingRecarga(false);
     }
@@ -226,199 +134,48 @@ export default function Recargas() {
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
 
-        <div className="tabs">
+        <form onSubmit={handleRecargaStripeCheckout} className="form-section">
+          <div className="form-group">
+            <label>Monto a recargar ($)</label>
+            <div className="monto-selector">
+              {[10, 20, 50, 100, 200, 500].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  className={`monto-btn ${monto === m.toString() ? 'selected' : ''}`}
+                  onClick={() => setMonto(m.toString())}
+                >
+                  ${m}
+                </button>
+              ))}
+            </div>
+            <input
+              type="number"
+              name="monto"
+              value={monto}
+              onChange={handleMontoChange}
+              placeholder="Otro monto"
+              step="0.01"
+              min="1"
+              className="custom-monto"
+            />
+          </div>
+          <div className="info-box">
+            <h4>🔒 Información Segura</h4>
+            <ul>
+              <li>✓ Procesamiento seguro con Stripe, PayPal y Google Pay</li>
+              <li>✓ Datos encriptados con SSL/TLS</li>
+              <li>✓ Cumplimiento PCI DSS</li>
+            </ul>
+          </div>
           <button
-            className={`tab-btn ${activeTab === 'tarjeta' ? 'active' : ''}`}
-            onClick={() => setActiveTab('tarjeta')}
+            type="submit"
+            disabled={loadingRecarga || !monto}
+            className="btn-submit"
           >
-            💳 Tarjeta de Crédito
+            {loadingRecarga ? 'Redirigiendo...' : `Recargar $${parseFloat(monto || 0).toFixed(2)} con Stripe, PayPal o Google Pay`}
           </button>
-        </div>
-
-        {/* Recarga con Tarjeta */}
-        {activeTab === 'tarjeta' && (
-          <form onSubmit={handleRecargaTarjeta} className="form-section">
-            {/* Monto */}
-            <div className="form-group">
-              <label>Monto a recargar ($)</label>
-              <div className="monto-selector">
-                {[10, 20, 50, 100, 200, 500].map((monto) => (
-                  <button
-                    key={monto}
-                    type="button"
-                    className={`monto-btn ${formData.monto === monto.toString() ? 'selected' : ''}`}
-                    onClick={() => setFormData({ ...formData, monto: monto.toString() })}
-                  >
-                    ${monto}
-                  </button>
-                ))}
-              </div>
-              <input
-                type="number"
-                name="monto"
-                value={formData.monto}
-                onChange={handleChange}
-                placeholder="Otro monto"
-                step="0.01"
-                min="1"
-                className="custom-monto"
-              />
-            </div>
-
-            {/* Tipo de tarjeta */}
-            <div className="form-group">
-              <label>Tipo de Tarjeta</label>
-              <div className="card-type-selector">
-                <label className="radio-card">
-                  <input
-                    type="radio"
-                    name="tipoTarjeta"
-                    value="credito"
-                    checked={formData.tipoTarjeta === 'credito'}
-                    onChange={handleChange}
-                  />
-                  <span className="radio-label">💳 Crédito</span>
-                </label>
-                <label className="radio-card">
-                  <input
-                    type="radio"
-                    name="tipoTarjeta"
-                    value="debito"
-                    checked={formData.tipoTarjeta === 'debito'}
-                    onChange={handleChange}
-                  />
-                  <span className="radio-label">🏦 Débito</span>
-                </label>
-                <label className="radio-card">
-                  <input
-                    type="radio"
-                    name="tipoTarjeta"
-                    value="ahorros"
-                    checked={formData.tipoTarjeta === 'ahorros'}
-                    onChange={handleChange}
-                  />
-                  <span className="radio-label">💰 Ahorros</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Número de tarjeta */}
-            <div className="form-group">
-              <label>
-                Número de Tarjeta
-                {cardData.brand && <span className="card-brand"> ({cardData.brand})</span>}
-              </label>
-              <div className="card-input-group">
-                <input
-                  type="text"
-                  name="numeroTarjeta"
-                  value={formData.numeroTarjeta}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '').slice(0, 19);
-                    const formatted = value.replace(/(\d{4})/g, '$1 ').trim();
-                    handleChange({ ...e, target: { ...e.target, value: formatted, name: 'numeroTarjeta' } });
-                  }}
-                  placeholder="1234 5678 9012 3456"
-                  maxLength="23"
-                  required
-                  autoComplete="cc-number"
-                />
-                {cardData.isValid && <span className="check-icon">✓</span>}
-                {formData.numeroTarjeta && !cardData.isValid && <span className="error-icon">✗</span>}
-              </div>
-              {formData.numeroTarjeta && !cardData.isValid && (
-                <small className="error-text">Número de tarjeta inválido</small>
-              )}
-            </div>
-
-            {/* Nombre titular */}
-            <div className="form-group">
-              <label>Nombre del Titular</label>
-              <input
-                type="text"
-                name="nombreTitular"
-                value={formData.nombreTitular}
-                onChange={handleChange}
-                placeholder="Juan Pérez"
-                required
-                autoComplete="cc-name"
-              />
-            </div>
-
-            {/* Fecha y CVV */}
-            <div className="form-row">
-              <div className="form-group">
-                <label>Vencimiento (MM/AA)</label>
-                <div className="date-inputs">
-                  <input
-                    type="text"
-                    name="mesVencimiento"
-                    value={formData.mesVencimiento}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '').slice(0, 2);
-                      if (val === '' || (parseInt(val) >= 1 && parseInt(val) <= 12)) {
-                        handleChange({ ...e, target: { ...e.target, value: val, name: 'mesVencimiento' } });
-                      }
-                    }}
-                    placeholder="MM"
-                    maxLength="2"
-                    required
-                    autoComplete="cc-exp-month"
-                  />
-                  <span>/</span>
-                  <input
-                    type="text"
-                    name="anoVencimiento"
-                    value={formData.anoVencimiento}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '').slice(0, 2);
-                      handleChange({ ...e, target: { ...e.target, value: val, name: 'anoVencimiento' } });
-                    }}
-                    placeholder="AA"
-                    maxLength="2"
-                    required
-                    autoComplete="cc-exp-year"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>CVV/CVC</label>
-                <input
-                  type="password"
-                  name="cvv"
-                  value={formData.cvv}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-                    handleChange({ ...e, target: { ...e.target, value: val, name: 'cvv' } });
-                  }}
-                  placeholder="123"
-                  maxLength="4"
-                  required
-                  autoComplete="cc-csc"
-                />
-              </div>
-            </div>
-
-            <div className="info-box">
-              <h4>🔒 Información Segura</h4>
-              <ul>
-                <li>✓ Datos encriptados con SSL/TLS</li>
-                <li>✓ Cumplimiento PCI DSS</li>
-                <li>✓ Nunca guardamos tu CVV</li>
-                <li>✓ Procesamiento seguro con Stripe</li>
-              </ul>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loadingRecarga || !formData.monto || !cardData.isValid || !formData.nombreTitular || !formData.mesVencimiento || !formData.anoVencimiento || !formData.cvv}
-              className="btn-submit"
-            >
-              {loadingRecarga ? 'Procesando...' : `Recargar $${parseFloat(formData.monto || 0).toFixed(2)}`}
-            </button>
-          </form>
-        )}
+        </form>
 
         {/* Canjear Código */}
           {/* Código de Recarga eliminado */}

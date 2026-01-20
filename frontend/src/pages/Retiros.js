@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { bankAccountAPI } from '../services/api';
+import { bankAccountAPI, retiroAPI } from '../services/api';
 import './Retiros.css';
 
 export default function Retiros() {
@@ -15,11 +15,25 @@ export default function Retiros() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [cuentasLoading, setCuentasLoading] = useState(true);
+  const [retiros, setRetiros] = useState([]);
+  const [retirosLoading, setRetirosLoading] = useState(true);
 
   // Cargar cuentas vinculadas al montar
   React.useEffect(() => {
     cargarCuentas();
+    cargarRetiros();
   }, []);
+  const cargarRetiros = async () => {
+    try {
+      setRetirosLoading(true);
+      const response = await retiroAPI.obtenerHistorial();
+      setRetiros(response.data);
+    } catch (err) {
+      setError('No se pudo cargar el historial de retiros');
+    } finally {
+      setRetirosLoading(false);
+    }
+  };
 
   const cargarCuentas = async () => {
     try {
@@ -277,26 +291,38 @@ export default function Retiros() {
       <div className="historial-card">
         <h3>Últimos Retiros</h3>
         <div className="historial-tabla">
-          <table>
-            <thead>
-              <tr>
-                <th>Monto</th>
-                <th>Moneda</th>
-                <th>Cuenta</th>
-                <th>Estado</th>
-                <th>Referencia</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
-              </tr>
-            </tbody>
-          </table>
+          {retirosLoading ? (
+            <div className="loading-spinner">Cargando historial...</div>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Monto</th>
+                  <th>Moneda</th>
+                  <th>Cuenta</th>
+                  <th>Estado</th>
+                  <th>Referencia</th>
+                </tr>
+              </thead>
+              <tbody>
+                {retiros.length === 0 ? (
+                  <tr>
+                    <td colSpan="5">No hay retiros registrados</td>
+                  </tr>
+                ) : (
+                  retiros.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.monto}</td>
+                      <td>{r.descripcion?.split(' - ')[1] || '-'}</td>
+                      <td>{r.numeroTarjeta ? `****${r.numeroTarjeta}` : '-'}</td>
+                      <td>{r.estado}</td>
+                      <td>{r.numeroReferencia}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
