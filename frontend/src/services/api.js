@@ -1,14 +1,14 @@
-// Retiros
-export const retiroAPI = {
-  procesar: (datos) => API.post('/retiros/procesar', datos),
-  obtenerHistorial: () => API.get('/retiros/historial'),
-};
-
 import axios from 'axios';
 
 const API = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
 });
+
+// Retiros
+export const retiroAPI = {
+  procesar: (datos) => API.post('/retiros/procesar', datos),
+  obtenerHistorial: () => API.get('/retiros/historial'),
+};
 
 // Interceptor para agregar token a las requests
 API.interceptors.request.use((config) => {
