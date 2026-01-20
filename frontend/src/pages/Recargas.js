@@ -96,27 +96,6 @@ export default function Recargas() {
     }
   };
 
-  // Canjear código
-  const handleCanjearCodigo = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    setLoadingRecarga(true);
-
-    try {
-      const response = await recargaAPI.canjearcoCodigo({
-        codigo: formData.codigo.toUpperCase(),
-      });
-
-      setSuccess(`✓ Código canjeado. +$${response.data.montoAgregado}`);
-      
-      setFormData({ monto: '', codigo: '' });
-    } catch (err) {
-      setError(err.response?.data?.mensaje || 'Error canjeando código');
-    } finally {
-      setLoadingRecarga(false);
-    }
-  };
 
   return (
     <div className="recargas-container">
@@ -177,27 +156,6 @@ export default function Recargas() {
           </button>
         </form>
 
-        {/* Canjear Código */}
-          {/* Código de Recarga eliminado */}
-      </div>
-
-      {/* Historial */}
-      <div className="historial-card">
-        <h3>Historial de Recargas</h3>
-        <div className="historial-tabla">
-          <table>
-            <thead>
-              <tr>
-                <th>Monto</th>
-                <th>Método</th>
-                <th>Estado</th>
-                <th>Referencia</th>
-                <th>Fecha</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>-</td>
                 <td>-</td>
                 <td>-</td>
                 <td>-</td>
