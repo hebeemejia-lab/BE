@@ -51,6 +51,11 @@ export default function Navbar() {
             </Link>
           </div>
         )}
+        <div className="navbar-footer">
+          <a href="/politica_privacidad.md" target="_blank" rel="noopener noreferrer" className="nav-link priv-link">
+            Política de Privacidad
+          </a>
+        </div>
       </div>
     </nav>
   );
