@@ -1,12 +1,38 @@
+// Actualizar perfil del usuario autenticado
+const updatePerfil = async (req, res) => {
+  try {
+    const usuario = await User.findByPk(req.usuario.id);
+    if (!usuario) {
+      return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+    }
+    const { nombre, apellido, email } = req.body;
+    if (nombre) usuario.nombre = nombre;
+    if (apellido) usuario.apellido = apellido;
+    if (email) usuario.email = email;
+    await usuario.save();
+    res.json({
+      mensaje: 'Perfil actualizado',
+      usuario: {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        apellido: usuario.apellido,
+        email: usuario.email,
+        saldo: parseFloat(usuario.saldo),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 // Registrar usuario
 const register = async (req, res) => {
   try {
-    const { nombre, email, password, cedula, telefono, direccion, saldo } = req.body;
+    const { nombre, apellido, email, password, cedula, telefono, direccion, saldo } = req.body;
 
-    if (!nombre || !email || !password || !cedula || !telefono || !direccion) {
+    if (!nombre || !apellido || !email || !password || !cedula || !telefono || !direccion) {
       return res.status(400).json({ mensaje: 'Todos los campos son requeridos' });
     }
 
@@ -17,6 +43,7 @@ const register = async (req, res) => {
 
     const nuevoUsuario = await User.create({
       nombre,
+      apellido,
       email,
       password,
       cedula,
@@ -36,6 +63,7 @@ const register = async (req, res) => {
       usuario: {
         id: nuevoUsuario.id,
         nombre: nuevoUsuario.nombre,
+        apellido: nuevoUsuario.apellido,
         email: nuevoUsuario.email,
         saldo: parseFloat(nuevoUsuario.saldo),
       },
@@ -102,4 +130,4 @@ const getPerfil = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getPerfil };
+module.exports = { register, login, getPerfil, updatePerfil };
