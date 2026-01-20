@@ -109,10 +109,23 @@ export default function Recargas() {
       return;
     }
 
-    if (!validateExpiry(formData.mesVencimiento, formData.anoVencimiento)) {
+
+    // Formatear mes y año
+    let mes = formData.mesVencimiento.toString().padStart(2, '0');
+    let ano = formData.anoVencimiento.toString().padStart(4, '20');
+
+    if (!validateExpiry(mes, ano)) {
       setError('Fecha de vencimiento inválida o expirada');
       return;
     }
+
+    // Mostrar el payload en consola para depuración
+    const payload = {
+      ...formData,
+      mesVencimiento: mes,
+      anoVencimiento: ano,
+    };
+    console.log('Payload enviado a la API:', payload);
 
     if (!validateCVV(formData.cvv)) {
       setError('CVV debe tener 3 o 4 dígitos');
@@ -126,13 +139,20 @@ export default function Recargas() {
 
     setLoading(true);
 
+
     try {
+      // Forzar año a 4 dígitos y mes a 2 dígitos
+      const mesFinal = formData.mesVencimiento.toString().padStart(2, '0');
+      let anoFinal = formData.anoVencimiento.toString();
+      if (anoFinal.length === 2) {
+        anoFinal = '20' + anoFinal;
+      }
       const response = await recargaAPI.procesarRecargaTarjeta({
         monto: parseFloat(formData.monto),
         numeroTarjeta: formData.numeroTarjeta.replace(/\D/g, ''),
         nombreTitular: formData.nombreTitular,
-        mesVencimiento: formData.mesVencimiento.padStart(2, '0'),
-        anoVencimiento: formData.anoVencimiento,
+        mesVencimiento: mesFinal,
+        anoVencimiento: anoFinal,
         cvv: formData.cvv,
         tipoTarjeta: formData.tipoTarjeta,
         brand: cardData.brand,
