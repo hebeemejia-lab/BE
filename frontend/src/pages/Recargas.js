@@ -156,14 +156,8 @@ export default function Recargas() {
           </button>
         </form>
 
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+// ...existing code...
+        </form>
       </div>
     </div>
   );
