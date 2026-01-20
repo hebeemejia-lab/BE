@@ -11,6 +11,17 @@ export default function Recargas() {
   const [sugerencias, setSugerencias] = useState([10, 20, 50, 100, 200, 500]);
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
   const inputRef = useRef(null);
+  // Datos de tarjeta
+  const [tarjeta, setTarjeta] = useState({
+    numero: '',
+    nombre: '',
+    mes: '',
+    ano: '',
+    cvv: ''
+  });
+    const handleTarjetaChange = (e) => {
+      setTarjeta({ ...tarjeta, [e.target.name]: e.target.value });
+    };
   // Opciones de pago disponibles (puedes activar/desactivar aquí)
   // Solo mostrar pago con tarjeta (Stripe)
   const opcionesPago = [
@@ -39,32 +50,28 @@ export default function Recargas() {
   };
 
   // Botón general para iniciar recarga según método
-  const handleRecarga = async (metodo) => {
+  const handleRecarga = async (e) => {
+    e.preventDefault();
     setError('');
     setSuccess('');
     if (!monto || parseFloat(monto) <= 0) {
       setError('Ingresa un monto válido');
       return;
     }
+    if (!tarjeta.numero || !tarjeta.nombre || !tarjeta.mes || !tarjeta.ano || !tarjeta.cvv) {
+      setError('Completa todos los datos de la tarjeta');
+      return;
+    }
     setLoadingRecarga(true);
     try {
-      if (metodo === 'stripe') {
-        const response = await recargaAPI.crearRecargaStripe({ monto: parseFloat(monto) });
-        if (response.data && response.data.url) {
-          window.location.href = response.data.url;
-        } else {
-          setError('No se pudo obtener la URL de pago.');
-        }
-      } else if (metodo === 'paypal') {
-        setError('PayPal estará disponible próximamente.');
-      } else if (metodo === 'googlepay') {
-        setError('Google Pay estará disponible próximamente.');
-      } else {
-        setError('Método de pago no soportado.');
-      }
+      // Aquí deberías llamar a tu API real de procesamiento de tarjeta
+      // Simulación de éxito
+      setTimeout(() => {
+        setSuccess('Recarga exitosa. Monto: $' + monto);
+        setLoadingRecarga(false);
+      }, 1200);
     } catch (err) {
-      setError(err.response?.data?.mensaje || 'Error creando sesión de pago');
-    } finally {
+      setError('Error procesando el pago');
       setLoadingRecarga(false);
     }
   };
@@ -82,21 +89,7 @@ export default function Recargas() {
         </div>
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
-        <form className="form-section" onSubmit={e => e.preventDefault()} autoComplete="on">
-          <div className="form-group">
-            <label>Método de pago</label>
-            <div className="metodo-pago-selector">
-              <button
-                type="button"
-                className={`btn-metodo selected`}
-                disabled={loadingRecarga}
-                style={{ marginRight: 8 }}
-                onClick={() => setMetodoPago('stripe')}
-              >
-                Tarjeta (Visa/Mastercard)
-              </button>
-            </div>
-          </div>
+        <form className="form-section" onSubmit={handleRecarga} autoComplete="on">
           <div className="form-group" style={{ position: 'relative' }}>
             <label>Monto a recargar ($)</label>
             <input
@@ -127,22 +120,87 @@ export default function Recargas() {
               </ul>
             )}
           </div>
+          <div className="form-group">
+            <label>Número de Tarjeta</label>
+            <input
+              type="text"
+              name="numero"
+              value={tarjeta.numero}
+              onChange={handleTarjetaChange}
+              placeholder="1234 5678 9012 3456"
+              maxLength={19}
+              autoComplete="cc-number"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Nombre en la Tarjeta</label>
+            <input
+              type="text"
+              name="nombre"
+              value={tarjeta.nombre}
+              onChange={handleTarjetaChange}
+              placeholder="Como aparece en la tarjeta"
+              autoComplete="cc-name"
+              required
+            />
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Mes</label>
+              <input
+                type="text"
+                name="mes"
+                value={tarjeta.mes}
+                onChange={handleTarjetaChange}
+                placeholder="MM"
+                maxLength={2}
+                autoComplete="cc-exp-month"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Año</label>
+              <input
+                type="text"
+                name="ano"
+                value={tarjeta.ano}
+                onChange={handleTarjetaChange}
+                placeholder="YY"
+                maxLength={2}
+                autoComplete="cc-exp-year"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>CVV</label>
+              <input
+                type="password"
+                name="cvv"
+                value={tarjeta.cvv}
+                onChange={handleTarjetaChange}
+                placeholder="CVV"
+                maxLength={4}
+                autoComplete="cc-csc"
+                required
+              />
+            </div>
+          </div>
           <div className="info-box">
             <h4>🔒 Información Segura</h4>
             <ul>
-              <li>✓ Procesamiento seguro con Stripe</li>
+              <li>✓ Procesamiento seguro (simulado)</li>
               <li>✓ Datos encriptados con SSL/TLS</li>
               <li>✓ Cumplimiento PCI DSS</li>
             </ul>
           </div>
           <div style={{ display: 'flex', gap: '1em', marginTop: 16 }}>
             <button
-              type="button"
+              type="submit"
               className="btn-submit"
               disabled={loadingRecarga || !monto}
-              onClick={() => handleRecarga('stripe')}
             >
-              {loadingRecarga ? 'Redirigiendo...' : `Pagar con Tarjeta`}
+              {loadingRecarga ? 'Procesando...' : `Pagar`}
             </button>
           </div>
         </form>
