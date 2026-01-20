@@ -1,3 +1,8 @@
+// Retiros
+export const retiroAPI = {
+  procesar: (datos) => API.post('/retiros/procesar', datos),
+  obtenerHistorial: () => API.get('/retiros/historial'),
+};
 import axios from 'axios';
 
 const API = axios.create({
