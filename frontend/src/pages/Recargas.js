@@ -8,6 +8,13 @@ export default function Recargas() {
   const { usuario, loading } = useContext(AuthContext);
   const navigate = useNavigate();
   const [monto, setMonto] = useState('');
+  // Opciones de pago disponibles (puedes activar/desactivar aquí)
+  const opcionesPago = [
+    { key: 'stripe', label: 'Tarjeta (Stripe)', activo: true },
+    { key: 'paypal', label: 'PayPal', activo: false },
+    { key: 'googlepay', label: 'Google Pay', activo: false },
+  ];
+  const [metodoPago, setMetodoPago] = useState(opcionesPago.find(o => o.activo)?.key || 'stripe');
   const [loadingRecarga, setLoadingRecarga] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -32,11 +39,16 @@ export default function Recargas() {
     }
     setLoadingRecarga(true);
     try {
-      const response = await recargaAPI.crearRecargaStripe({ monto: parseFloat(monto) });
-      if (response.data && response.data.url) {
-        window.location.href = response.data.url; // Redirect to Stripe Checkout
+      // Por ahora solo Stripe está activo
+      if (metodoPago === 'stripe') {
+        const response = await recargaAPI.crearRecargaStripe({ monto: parseFloat(monto) });
+        if (response.data && response.data.url) {
+          window.location.href = response.data.url; // Redirect to Stripe Checkout
+        } else {
+          setError('No se pudo obtener la URL de pago.');
+        }
       } else {
-        setError('No se pudo obtener la URL de pago.');
+        setError('Método de pago aún no disponible.');
       }
     } catch (err) {
       setError(err.response?.data?.mensaje || 'Error creando sesión de pago');
@@ -59,6 +71,24 @@ export default function Recargas() {
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
         <form onSubmit={handleRecargaStripeCheckout} className="form-section">
+          <div className="form-group">
+            <label>Método de pago</label>
+            <div className="metodo-pago-selector">
+              {opcionesPago.map(opcion => (
+                <label key={opcion.key} style={{ opacity: opcion.activo ? 1 : 0.5 }}>
+                  <input
+                    type="radio"
+                    name="metodoPago"
+                    value={opcion.key}
+                    checked={metodoPago === opcion.key}
+                    onChange={() => setMetodoPago(opcion.key)}
+                    disabled={!opcion.activo}
+                  />
+                  <span>{opcion.label}{!opcion.activo && ' (próximamente)'}</span>
+                </label>
+              ))}
+            </div>
+          </div>
           <div className="form-group">
             <label>Monto a recargar ($)</label>
             <div className="monto-selector">
