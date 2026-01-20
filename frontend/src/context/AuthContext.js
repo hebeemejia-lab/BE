@@ -48,7 +48,12 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await authAPI.register(datos);
+      // Enviar nombre y apellido por separado
+      const response = await authAPI.register({
+        ...datos,
+        nombre: datos.nombre,
+        apellido: datos.apellido
+      });
       const { token, usuario } = response.data;
       localStorage.setItem('token', token);
       setToken(token);
