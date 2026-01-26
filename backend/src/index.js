@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const { connectDB } = require('./config/database');
 
-// Rutas
+// Rutas (forzar redeploy Render)
 const authRoutes = require('./routes/authRoutes');
 const transferRoutes = require('./routes/transferRoutes');
 const loanRoutes = require('./routes/loanRoutes');
@@ -39,16 +39,16 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Rutas
-app.use('/api/auth', authRoutes);
-app.use('/api/transferencias', transferRoutes);
-app.use('/api/prestamos', loanRoutes);
-app.use('/api/carter-card', carterCardRoutes);
-app.use('/api/recargas', recargaRoutes);
-app.use('/api/retiros', retiroRoutes);
-app.use('/api/cuentas-bancarias', bankAccountRoutes);
+app.use('/auth', authRoutes);
+app.use('/transferencias', transferRoutes);
+app.use('/prestamos', loanRoutes);
+app.use('/carter-card', carterCardRoutes);
+app.use('/recargas', recargaRoutes);
+app.use('/retiros', retiroRoutes);
+app.use('/cuentas-bancarias', bankAccountRoutes);
 
 // Ruta de prueba
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ mensaje: '✓ Banco Exclusivo Backend - Servidor en línea' });
 });
 
