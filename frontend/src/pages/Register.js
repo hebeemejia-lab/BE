@@ -6,6 +6,7 @@ import './Auth.css';
 export default function Register() {
   const [formData, setFormData] = useState({
     nombre: '',
+    apellido: '',
     email: '',
     password: '',
     cedula: '',
@@ -51,14 +52,25 @@ export default function Register() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Nombre Completo</label>
+            <label>Nombre</label>
             <input
               type="text"
               name="nombre"
               value={formData.nombre}
               onChange={handleChange}
               required
-              placeholder="Juan Pérez"
+              placeholder="Juan"
+            />
+          </div>
+          <div className="form-group">
+            <label>Apellido</label>
+            <input
+              type="text"
+              name="apellido"
+              value={formData.apellido}
+              onChange={handleChange}
+              required
+              placeholder="Pérez"
             />
           </div>
 

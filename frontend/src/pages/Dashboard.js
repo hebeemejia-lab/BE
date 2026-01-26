@@ -40,7 +40,7 @@ export default function Dashboard() {
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
-        <h1>Bienvenido, {usuario?.nombre}!</h1>
+        <h1>Bienvenido, <span className="user-nombre">{usuario?.nombre}</span> <span className="user-apellido">{usuario?.apellido}</span>!</h1>
         <p>Aquí está el resumen de tu cuenta</p>
       </div>
 
@@ -83,8 +83,8 @@ export default function Dashboard() {
                       </span>
                       <span className="transaction-person">
                         {trans.remitente._id === usuario?._id
-                          ? `A: ${trans.destinatario.nombre}`
-                          : `De: ${trans.remitente.nombre}`}
+                          ? `A: ${trans.destinatario.nombre} ${trans.destinatario.apellido}`
+                          : `De: ${trans.remitente.nombre} ${trans.remitente.apellido}`}
                       </span>
                     </div>
                     <div className="transaction-amount">
