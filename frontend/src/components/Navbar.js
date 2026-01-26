@@ -21,7 +21,11 @@ export default function Navbar() {
         {usuario ? (
           <div className="navbar-right">
             <div className="user-info">
-              <span className="user-name">{usuario.nombre}</span>
+              <span className="user-name">
+                {usuario.nombre && usuario.apellido
+                  ? `${usuario.nombre} ${usuario.apellido}`
+                  : usuario.nombre || usuario.apellido || 'Usuario'}
+              </span>
               <span className="user-balance">Balance: ${usuario.saldo?.toFixed(2) || '0.00'}</span>
             </div>
             <div className="navbar-links">
@@ -38,6 +42,7 @@ export default function Navbar() {
                 <Link to="/prestamos" className="nav-link">Préstamos</Link>
               </div>
               
+              <Link to="/perfil" className="nav-link">👤 Perfil</Link>
               <button onClick={handleLogout} className="nav-button logout-btn">
                 Cerrar Sesión
               </button>

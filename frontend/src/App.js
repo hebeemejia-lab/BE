@@ -1,3 +1,4 @@
+import Perfil from './pages/Perfil';
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -50,6 +51,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <TransferenciaBancaria />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/perfil"
+            element={
+              <ProtectedRoute>
+                <Perfil />
               </ProtectedRoute>
             }
           />
