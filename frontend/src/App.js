@@ -12,6 +12,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Transferencias from './pages/Transferencias';
 import TransferenciaBancaria from './pages/TransferenciaBancaria';
+import TransferenciasInternacionales from './pages/TransferenciasInternacionales';
 import Recargas from './pages/Recargas';
 import Retiros from './pages/Retiros';
 import VincularCuenta from './pages/VincularCuenta';
@@ -51,6 +52,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <TransferenciaBancaria />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/transferencias-internacionales"
+            element={
+              <ProtectedRoute>
+                <TransferenciasInternacionales />
               </ProtectedRoute>
             }
           />
