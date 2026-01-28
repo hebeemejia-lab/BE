@@ -20,25 +20,25 @@ if (!RAPYD_ACCESS_KEY || !RAPYD_SECRET_KEY) {
 // Generar firma HMAC para autenticación Rapyd
 function generateRapydSignature(httpMethod, urlPath, salt, timestamp, body = '') {
   // Trim credentials to remove any spaces
-  const accessKey = RAPYD_ACCESS_KEY.trim();
   const secretKey = RAPYD_SECRET_KEY.trim();
   
   const bodyString = body ? JSON.stringify(body) : '';
   
   // Según documentación oficial de Rapyd:
-  // signature = Base64(HMAC-SHA256(secret_key, http_method + url_path + salt + timestamp + access_key + secret_key + body))
-  const toSign = httpMethod + urlPath + salt + timestamp + accessKey + secretKey + bodyString;
+  // La firma es: HMAC-SHA256(secret_key, http_method + url_path + salt + timestamp + body)
+  // NO se incluyen las credenciales en el string a firmar
+  const toSign = httpMethod + urlPath + salt + timestamp + bodyString;
   
   console.log('🔐 Generando firma Rapyd:', {
     method: httpMethod,
     path: urlPath,
-    saltLength: salt.length,
+    salt: salt.substring(0, 8) + '...',
     timestamp,
     bodyLength: bodyString.length,
-    stringToSignLength: toSign.length
+    stringLength: toSign.length
   });
   
-  // Crear HMAC con secret_key, luego firmar el string y convertir a base64
+  // Crear HMAC con secret_key
   const signature = crypto
     .createHmac('sha256', secretKey)
     .update(toSign)
