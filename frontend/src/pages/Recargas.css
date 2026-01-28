@@ -7,6 +7,71 @@
   flex: 1;
   min-width: 0;
 }
+
+/* Badge de moneda */
+.moneda-info {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.moneda-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+/* Input con símbolo de moneda */
+.input-with-currency {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 0;
+  transition: all 0.3s;
+}
+
+.input-with-currency:focus-within {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.currency-symbol {
+  padding: 12px 15px;
+  font-size: 1.3rem;
+  color: #667eea;
+  font-weight: 600;
+  background: #f8f9ff;
+  border-right: 1px solid #e0e0e0;
+}
+
+.input-with-currency input {
+  flex: 1;
+  border: none;
+  padding: 12px 12px;
+  font-size: 1.1rem;
+  outline: none;
+  font-weight: 600;
+}
+
+.input-with-currency input::placeholder {
+  color: #bdbdbd;
+}
+
+.currency-code {
+  padding: 12px 15px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #667eea;
+  background: #f8f9ff;
+  border-left: 1px solid #e0e0e0;
+}
+
 /* Autocompletado y sugerencias para monto */
 .sugerencias-lista {
   position: absolute;
