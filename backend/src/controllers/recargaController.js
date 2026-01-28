@@ -95,15 +95,25 @@ const crearRecargaRapyd = async (req, res) => {
         usuarioId,
       });
 
-      console.log('✅ Pago Rapyd creado:', pago);
+      console.log('✅ Checkout Rapyd creado:', pago);
+
+      // Rapyd devuelve checkout_url donde el cliente puede pagar
+      if (!pago.checkout_url) {
+        throw new Error('Rapyd no proporcionó URL de checkout');
+      }
+
+      // Guardar referencia de Rapyd en la recarga
+      recarga.rapydCheckoutId = pago.id;
+      recarga.rapydCheckoutUrl = pago.checkout_url;
+      await recarga.save();
 
       res.json({
-        mensaje: 'Pago Rapyd iniciado',
-        paymentId: pago.id,
+        mensaje: 'Redirigiendo a pago Rapyd',
+        checkoutUrl: pago.checkout_url,
+        checkoutId: pago.id,
         recargaId: recarga.id,
         monto: recarga.monto,
         numeroReferencia: recarga.numeroReferencia,
-        status: pago.status,
       });
     } catch (rapydError) {
       recarga.estado = 'fallida';
