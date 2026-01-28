@@ -7,26 +7,13 @@ const databaseUrl = process.env.DATABASE_URL;
 
 let sequelize;
 
-if (isProduction && databaseUrl) {
-  // PostgreSQL en producción (Render)
-  sequelize = new Sequelize(databaseUrl, {
-    dialect: 'postgres',
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      }
-    },
-    logging: false,
-  });
-} else {
-  // SQLite en desarrollo local
-  sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: path.join(__dirname, '../../banco.db'),
-    logging: false,
-  });
-}
+// Usar SQLite siempre (tanto en desarrollo como producción)
+// Cuando agregues una BD remota real, cambiar esta lógica
+sequelize = new Sequelize({
+  dialect: 'sqlite',
+  storage: path.join(__dirname, '../../banco.db'),
+  logging: false,
+});
 
 const connectDB = async () => {
   try {
