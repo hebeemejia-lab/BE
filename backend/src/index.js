@@ -65,6 +65,14 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Endpoint de prueba para recargas
+app.get('/recargas/test', (req, res) => {
+  res.json({ 
+    message: '✅ Recargas endpoint is working',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Manejo de errores 404
 app.use((req, res) => {
   res.status(404).json({ mensaje: 'Ruta no encontrada' });

@@ -4,6 +4,8 @@ const User = require('../models/User');
 const stripeService = require('../services/stripeService');
 const rapydService = require('../services/rapydService');
 
+console.log('✅ RecargaController loaded - v2.1 with Rapyd support');
+
 // Crear sesión de recarga con Stripe
 const crearRecargaStripe = async (req, res) => {
   try {
