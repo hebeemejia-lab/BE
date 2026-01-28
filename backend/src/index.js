@@ -20,19 +20,30 @@ const app = express();
 connectDB();
 
 // Middlewares
+const frontendUrl = (process.env.FRONTEND_URL || '').trim();
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'https://www.bancoexclusivo.lat',
   'https://bancoexclusivo.lat',
-  process.env.FRONTEND_URL
+  'http://www.bancoexclusivo.lat',
+  'http://bancoexclusivo.lat',
 ];
+
+// Agregar FRONTEND_URL si está configurado y no está vacío
+if (frontendUrl && !allowedOrigins.includes(frontendUrl)) {
+  allowedOrigins.push(frontendUrl);
+}
+
+console.log('🔐 CORS Origins permitidos:', allowedOrigins);
+
 app.use(cors({
   origin: function (origin, callback) {
     // Permitir peticiones sin origin (como Postman) o si está en la lista
-    if (!origin || allowedOrigins.some(o => o && origin === o)) {
+    if (!origin || allowedOrigins.some(o => o && origin.includes(o.replace('https://', '').replace('http://', '')))) {
       callback(null, true);
     } else {
+      console.warn(`⚠️  CORS bloqueado para origen: ${origin}`);
       callback(new Error('No permitido por CORS'));
     }
   },
