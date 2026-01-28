@@ -2,9 +2,20 @@
 const crypto = require('crypto');
 const axios = require('axios');
 
-const RAPYD_BASE_URL = process.env.RAPYD_BASE_URL || 'https://sandboxapi.rapyd.net';
-const RAPYD_ACCESS_KEY = process.env.RAPYD_ACCESS_KEY;
-const RAPYD_SECRET_KEY = process.env.RAPYD_SECRET_KEY;
+const RAPYD_BASE_URL = (process.env.RAPYD_BASE_URL || 'https://sandboxapi.rapyd.net').trim();
+const RAPYD_ACCESS_KEY = (process.env.RAPYD_ACCESS_KEY || '').trim();
+const RAPYD_SECRET_KEY = (process.env.RAPYD_SECRET_KEY || '').trim();
+
+// Validar que las credenciales estén configuradas al cargar el módulo
+if (!RAPYD_ACCESS_KEY || !RAPYD_SECRET_KEY) {
+  console.warn('⚠️  ADVERTENCIA: Credenciales de Rapyd no configuradas completamente');
+  console.warn(`   - RAPYD_ACCESS_KEY: ${RAPYD_ACCESS_KEY ? '✓ Configurada' : '✗ Falta'}`);
+  console.warn(`   - RAPYD_SECRET_KEY: ${RAPYD_SECRET_KEY ? '✓ Configurada' : '✗ Falta'}`);
+} else {
+  console.log('✅ Rapyd Service: Credenciales cargadas correctamente');
+  console.log(`   - Access Key: ${RAPYD_ACCESS_KEY.substring(0, 10)}...`);
+  console.log(`   - Base URL: ${RAPYD_BASE_URL}`);
+}
 
 // Generar firma HMAC para autenticación Rapyd
 function generateRapydSignature(httpMethod, urlPath, salt, timestamp, body = '') {
