@@ -1,9 +1,18 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// Inicializar Stripe con clave opcional (puede estar vacía en desarrollo/test)
+let stripe = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+} else {
+  console.warn('⚠️ STRIPE_SECRET_KEY no configurada - Stripe deshabilitado');
+}
 
 const stripeService = {
   // Crear cliente en Stripe
   crearCliente: async (usuario) => {
     try {
+      if (!stripe) {
+        throw new Error('Stripe no está configurado');
+      }
       const cliente = await stripe.customers.create({
         email: usuario.email,
         name: usuario.nombre,
