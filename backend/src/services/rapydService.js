@@ -150,29 +150,44 @@ async function verificarCuentaBancaria(pais, numeroCuenta, codigoBanco) {
   }
 }
 
-// Crear pago de recarga con Rapyd
+// Crear pago de recarga con Rapyd (usando Checkout para URL de pago)
 async function crearPagoRecarga(datos) {
   try {
     const body = {
-      amount: datos.monto * 100, // Rapyd usa centavos
+      amount: Math.round(datos.monto * 100), // Rapyd usa centavos
       currency: 'USD',
+      customer_email: datos.email,
+      description: `Recarga de saldo - Usuario: ${datos.usuarioId}`,
+      metadata: {
+        usuarioId: datos.usuarioId,
+        tipo: 'recarga',
+        nombre: datos.nombre,
+        apellido: datos.apellido,
+        timestamp: new Date().toISOString(),
+      },
+      // URL a donde redirigir después del pago
+      redirect_url: `${process.env.FRONTEND_URL || 'https://bancoexclusivo.lat'}/recargas?success=true`,
+      // Información del cliente
       customer: {
         email: datos.email,
         first_name: datos.nombre,
         last_name: datos.apellido,
-      },
-      description: `Recarga de saldo - Usuario: ${datos.usuarioId}`,
-      statement_descriptor: 'BANCO EXCLUSIVO',
-      metadata: {
-        usuarioId: datos.usuarioId,
-        tipo: 'recarga',
-        timestamp: new Date().toISOString(),
-      },
+      }
     };
     
-    const response = await rapydRequest('POST', '/v1/payments', body);
+    console.log('📤 Enviando checkout a Rapyd:', { amount: body.amount, currency: body.currency });
+    
+    const response = await rapydRequest('POST', '/v1/checkouts', body);
+    
+    console.log('✅ Checkout Rapyd creado:', {
+      id: response.data?.id,
+      checkout_url: response.data?.checkout_url,
+      status: response.data?.status
+    });
+    
     return response.data;
   } catch (error) {
+    console.error('❌ Error creando checkout Rapyd:', error.message);
     throw error;
   }
 }

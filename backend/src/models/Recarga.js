@@ -43,6 +43,14 @@ const Recarga = sequelize.define('Recarga', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  rapydCheckoutId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  rapydCheckoutUrl: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   numeroReferencia: {
     type: DataTypes.STRING,
     allowNull: true,

@@ -33,10 +33,15 @@ export default function Recargas() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log('✅ Recarga Rapyd iniciada:', response.data);
-      setPaymentId(response.data.paymentId);
-      setSuccess(`Pago iniciado con Rapyd. ID: ${response.data.paymentId}`);
-      setMonto('');
+      console.log('✅ Checkout Rapyd creado:', response.data);
+      
+      // Redirigir al usuario a la URL de pago de Rapyd
+      if (response.data.checkoutUrl) {
+        setSuccess(`Redirigiendo a pago seguro...`);
+        window.location.href = response.data.checkoutUrl;
+      } else {
+        setError('No se recibió URL de pago');
+      }
     } catch (err) {
       setError(err.response?.data?.mensaje || 'Error creando recarga Rapyd');
       console.error('❌ Error Rapyd:', err);
