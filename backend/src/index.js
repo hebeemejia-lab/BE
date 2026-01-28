@@ -12,6 +12,7 @@ const carterCardRoutes = require('./routes/carterCardRoutes');
 const recargaRoutes = require('./routes/recargaRoutes');
 const retiroRoutes = require('./routes/retiroRoutes');
 const bankAccountRoutes = require('./routes/bankAccountRoutes');
+const transferenciaInternacionalRoutes = require('./routes/transferenciaInternacionalRoutes');
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Rutas
 app.use('/auth', authRoutes);
 app.use('/transferencias', transferRoutes);
+app.use('/transferencias-internacionales', transferenciaInternacionalRoutes);
 app.use('/prestamos', loanRoutes);
 app.use('/carter-card', carterCardRoutes);
 app.use('/recargas', recargaRoutes);
