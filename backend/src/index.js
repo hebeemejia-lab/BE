@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const { connectDB } = require('./config/database');
 
-// Rutas (forzar redeploy Render)
+// Rutas - v2.1 with Rapyd checkout integration
 const authRoutes = require('./routes/authRoutes');
 const transferRoutes = require('./routes/transferRoutes');
 const loanRoutes = require('./routes/loanRoutes');
@@ -58,7 +58,11 @@ app.use('/cuentas-bancarias', bankAccountRoutes);
 
 // Ruta de prueba
 app.get('/health', (req, res) => {
-  res.json({ mensaje: '✓ Banco Exclusivo Backend - Servidor en línea' });
+  res.json({ 
+    mensaje: '✓ Banco Exclusivo Backend - Servidor en línea',
+    version: '2.1',
+    features: ['auth', 'transferencias', 'transferencias-internacionales', 'recargas-rapyd', 'prestamos', 'retiros']
+  });
 });
 
 // Manejo de errores 404
