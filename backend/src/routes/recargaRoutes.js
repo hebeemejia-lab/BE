@@ -11,6 +11,7 @@ const {
 } = require('../controllers/recargaController');
 const verificarToken = require('../middleware/authMiddleware');
 
+console.log('🔄 Recarga routes loaded with crearRecargaRapyd:', typeof crearRecargaRapyd);
 
 // Todas requieren autenticación
 router.post('/crear', verificarToken, crearRecargaStripe);
