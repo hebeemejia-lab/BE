@@ -22,19 +22,26 @@ connectDB();
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
+  'https://www.bancoexclusivo.lat',
+  'https://bancoexclusivo.lat',
   process.env.FRONTEND_URL
 ];
 app.use(cors({
   origin: function (origin, callback) {
     // Permitir peticiones sin origin (como Postman) o si está en la lista
-    if (!origin || allowedOrigins.some(o => o && origin.startsWith(o))) {
+    if (!origin || allowedOrigins.some(o => o && origin === o)) {
       callback(null, true);
     } else {
       callback(new Error('No permitido por CORS'));
     }
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// Permitir preflight para todas las rutas
+app.options('*', cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
