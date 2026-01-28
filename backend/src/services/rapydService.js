@@ -8,16 +8,30 @@ const RAPYD_SECRET_KEY = process.env.RAPYD_SECRET_KEY;
 
 // Generar firma HMAC para autenticación Rapyd
 function generateRapydSignature(httpMethod, urlPath, salt, timestamp, body = '') {
+  // Trim credentials to remove any spaces
+  const accessKey = (RAPYD_ACCESS_KEY || '').trim();
+  const secretKey = (RAPYD_SECRET_KEY || '').trim();
+  
   const bodyString = body ? JSON.stringify(body) : '';
   // La firma debe ser: http_method + url_path + salt + timestamp + access_key + secret_key + body_string
-  const toSign = httpMethod + urlPath + salt + timestamp + RAPYD_ACCESS_KEY + RAPYD_SECRET_KEY + bodyString;
+  const toSign = httpMethod + urlPath + salt + timestamp + accessKey + secretKey + bodyString;
   
-  const hash = crypto.createHmac('sha256', RAPYD_SECRET_KEY);
-  hash.update(toSign);
-  // La firma debe ser base64 del hex digest
-  const signature = Buffer.from(hash.digest('hex')).toString('base64');
+  console.log('🔐 Debug Firma:', {
+    method: httpMethod,
+    path: urlPath,
+    salt: salt.substring(0, 5) + '...',
+    timestamp,
+    accessKeyLength: accessKey.length,
+    secretKeyLength: secretKey.length,
+    toSign: toSign.substring(0, 50) + '...'
+  });
   
-  console.log('🔐 Generando firma Rapyd:', { method: httpMethod, path: urlPath, timestamp });
+  const hmac = crypto.createHmac('sha256', secretKey);
+  hmac.update(toSign);
+  // Rapyd espera el hash en base64 del buffer digestido
+  const signature = hmac.digest('base64');
+  
+  console.log('🔐 Firma generada:', signature.substring(0, 20) + '...');
   
   return signature;
 }
@@ -26,7 +40,17 @@ function generateRapydSignature(httpMethod, urlPath, salt, timestamp, body = '')
 async function rapydRequest(method, path, body = null) {
   // Validar credenciales
   if (!RAPYD_ACCESS_KEY || !RAPYD_SECRET_KEY) {
-    throw new Error('Credenciales de Rapyd no configuradas. Configure RAPYD_ACCESS_KEY y RAPYD_SECRET_KEY en .env');
+    const error = 'Credenciales de Rapyd no configuradas. Configure RAPYD_ACCESS_KEY y RAPYD_SECRET_KEY en .env';
+    console.error('❌ ' + error);
+    throw new Error(error);
+  }
+
+  // Validar que las credenciales no tengan espacios en blanco
+  const cleanAccessKey = (RAPYD_ACCESS_KEY || '').trim();
+  const cleanSecretKey = (RAPYD_SECRET_KEY || '').trim();
+  
+  if (!cleanAccessKey || !cleanSecretKey) {
+    throw new Error('Credenciales de Rapyd están vacías o contienen solo espacios');
   }
 
   const salt = crypto.randomBytes(12).toString('hex');
@@ -35,14 +59,20 @@ async function rapydRequest(method, path, body = null) {
 
   const headers = {
     'Content-Type': 'application/json',
-    'access_key': RAPYD_ACCESS_KEY,
+    'access_key': cleanAccessKey,
     'salt': salt,
     'timestamp': timestamp,
     'signature': signature,
   };
 
   try {
-    console.log('📡 Rapyd Request:', { method, path, baseUrl: RAPYD_BASE_URL });
+    console.log('📡 Rapyd Request:', { 
+      method, 
+      path, 
+      baseUrl: RAPYD_BASE_URL,
+      hasAccessKey: !!cleanAccessKey,
+      hasSecretKey: !!cleanSecretKey
+    });
     const response = await axios({
       method,
       url: `${RAPYD_BASE_URL}${path}`,
