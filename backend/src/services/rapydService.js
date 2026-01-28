@@ -150,6 +150,43 @@ async function verificarCuentaBancaria(pais, numeroCuenta, codigoBanco) {
   }
 }
 
+// Crear pago de recarga con Rapyd
+async function crearPagoRecarga(datos) {
+  try {
+    const body = {
+      amount: datos.monto * 100, // Rapyd usa centavos
+      currency: 'USD',
+      customer: {
+        email: datos.email,
+        first_name: datos.nombre,
+        last_name: datos.apellido,
+      },
+      description: `Recarga de saldo - Usuario: ${datos.usuarioId}`,
+      statement_descriptor: 'BANCO EXCLUSIVO',
+      metadata: {
+        usuarioId: datos.usuarioId,
+        tipo: 'recarga',
+        timestamp: new Date().toISOString(),
+      },
+    };
+    
+    const response = await rapydRequest('POST', '/v1/payments', body);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Consultar estado de pago
+async function consultarPago(paymentId) {
+  try {
+    const response = await rapydRequest('GET', `/v1/payments/${paymentId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   getPaises,
   getTasaCambio,
@@ -158,4 +195,6 @@ module.exports = {
   crearPayout,
   consultarPayout,
   verificarCuentaBancaria,
+  crearPagoRecarga,
+  consultarPago,
 };

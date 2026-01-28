@@ -2,6 +2,7 @@ const Recarga = require('../models/Recarga');
 const CodigoRecarga = require('../models/CodigoRecarga');
 const User = require('../models/User');
 const stripeService = require('../services/stripeService');
+const rapydService = require('../services/rapydService');
 
 // Crear sesión de recarga con Stripe
 const crearRecargaStripe = async (req, res) => {
@@ -54,6 +55,69 @@ const crearRecargaStripe = async (req, res) => {
       });
     }
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Crear recarga con Rapyd (permite dinero real)
+const crearRecargaRapyd = async (req, res) => {
+  try {
+    const { monto } = req.body;
+    const usuarioId = req.usuario.id;
+    const usuario = await User.findByPk(usuarioId);
+
+    if (!monto || monto <= 0) {
+      return res.status(400).json({ mensaje: 'Monto debe ser mayor a 0' });
+    }
+
+    if (!usuario) {
+      return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+    }
+
+    // Crear recarga pendiente en BD
+    const recarga = await Recarga.create({
+      usuarioId,
+      monto,
+      montoNeto: monto,
+      comision: 0,
+      metodo: 'rapyd',
+      estado: 'pendiente',
+      numeroReferencia: `REC-${Date.now()}`,
+    });
+
+    try {
+      // Crear pago con Rapyd
+      const pago = await rapydService.crearPagoRecarga({
+        monto,
+        email: usuario.email,
+        nombre: usuario.nombre || 'Usuario',
+        apellido: usuario.apellido || 'Banco Exclusivo',
+        usuarioId,
+      });
+
+      console.log('✅ Pago Rapyd creado:', pago);
+
+      res.json({
+        mensaje: 'Pago Rapyd iniciado',
+        paymentId: pago.id,
+        recargaId: recarga.id,
+        monto: recarga.monto,
+        numeroReferencia: recarga.numeroReferencia,
+        status: pago.status,
+      });
+    } catch (rapydError) {
+      recarga.estado = 'fallida';
+      recarga.mensajeError = rapydError.message;
+      await recarga.save();
+
+      console.error('❌ Error Rapyd:', rapydError);
+      res.status(400).json({
+        mensaje: 'Error creando pago Rapyd',
+        error: rapydError.message,
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error en crearRecargaRapyd:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -382,6 +446,7 @@ const crearRecargaTwoCheckout = async (req, res) => {
 
 module.exports = {
   crearRecargaStripe,
+  crearRecargaRapyd,
   procesarRecargaTarjeta,
   procesarRecargaExitosa,
   obtenerRecargas,
