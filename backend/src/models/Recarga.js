@@ -28,7 +28,7 @@ const Recarga = sequelize.define('Recarga', {
     defaultValue: 0,
   },
   metodo: {
-    type: DataTypes.ENUM('tarjeta', 'transferencia', 'codigo', 'paypal'),
+    type: DataTypes.ENUM('tarjeta', 'transferencia', 'codigo', 'paypal', 'rapyd', '2checkout'),
     defaultValue: 'tarjeta',
   },
   estado: {
@@ -65,6 +65,10 @@ const Recarga = sequelize.define('Recarga', {
   },
   mensajeError: {
     type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  fechaProcesamiento: {
+    type: DataTypes.DATE,
     allowNull: true,
   },
   createdAt: {

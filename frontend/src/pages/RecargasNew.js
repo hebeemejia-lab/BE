@@ -16,6 +16,20 @@ export default function Recargas() {
   // Verificar estado del backend al cargar
   useEffect(() => {
     verificarBackend();
+    
+    // Verificar parámetros de URL (redirección desde Rapyd)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      setSuccess('✅ ¡Pago completado exitosamente! Tu saldo se actualizará en unos momentos.');
+      // Limpiar URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (params.get('cancelled') === 'true') {
+      setError('⚠️ Pago cancelado. Puedes intentar nuevamente cuando desees.');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (params.get('error') === 'true') {
+      setError('❌ Hubo un error procesando tu pago. Por favor intenta de nuevo.');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   const verificarBackend = async () => {

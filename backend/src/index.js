@@ -56,84 +56,44 @@ app.use('/recargas', recargaRoutes);
 app.use('/retiros', retiroRoutes);
 app.use('/cuentas-bancarias', bankAccountRoutes);
 
-// ============ ENDPOINT DIRECTO RAPYD RECARGA ============
-// Este endpoint procesa pagos con Rapyd directamente
-app.post('/recargas/crear-rapyd', require('./middleware/authMiddleware'), async (req, res) => {
-  try {
-    const { monto } = req.body;
-    const usuarioId = req.usuario?.id;
-    
-    if (!monto || monto <= 0) {
-      return res.status(400).json({ mensaje: 'Monto inválido' });
-    }
-    
-    if (!usuarioId) {
-      return res.status(401).json({ mensaje: 'No autenticado' });
-    }
-    
-    // Importar Rapyd service
-    const rapydService = require('./services/rapydService');
-    const User = require('./models/User');
-    const Recarga = require('./models/Recarga');
-    
-    const usuario = await User.findByPk(usuarioId);
-    if (!usuario) {
-      return res.status(404).json({ mensaje: 'Usuario no encontrado' });
-    }
-    
-    // Crear registro de recarga
-    const recarga = await Recarga.create({
-      usuarioId,
-      monto,
-      montoNeto: monto,
-      comision: 0,
-      metodo: 'rapyd',
-      estado: 'pendiente',
-      numeroReferencia: `REC-${Date.now()}`,
-    });
-    
-    // Crear checkout con Rapyd
-    const pago = await rapydService.crearPagoRecarga({
-      monto,
-      email: usuario.email,
-      nombre: usuario.nombre || 'Usuario',
-      apellido: usuario.apellido || 'Banco Exclusivo',
-      usuarioId,
-    });
-    
-    // Guardar referencia de Rapyd
-    recarga.rapydCheckoutId = pago.id;
-    recarga.rapydCheckoutUrl = pago.checkout_url;
-    await recarga.save();
-    
-    console.log('✅ Checkout Rapyd creado:', {
-      checkoutId: pago.id,
-      checkoutUrl: pago.checkout_url,
-    });
-    
-    return res.json({
-      mensaje: 'Checkout creado',
-      checkoutUrl: pago.checkout_url,
-      checkoutId: pago.id,
-      recargaId: recarga.id,
-      monto: recarga.monto,
-    });
-    
-  } catch (error) {
-    console.error('❌ Error creando checkout:', error);
-    return res.status(500).json({
-      mensaje: 'Error al procesar el pago',
-      error: error.message,
-    });
-  }
-});
-
 // Ruta de prueba
 app.get('/health', (req, res) => {
   res.json({ 
     mensaje: '✓ Banco Exclusivo Backend - Servidor en línea',
-    version: '2.1',
+    version: '2.2',
     features: ['auth', 'transferencias', 'transferencias-internacionales', 'recargas-rapyd', 'prestamos', 'retiros']
+  });
+});
+
+// Endpoint de debug - listar todas las rutas
+app.get('/debug/routes', (req, res) => {
+  res.json({
+    message: 'Rutas disponibles',
+    routes: {
+      auth: [
+        'POST /auth/registro',
+        'POST /auth/login',
+        'GET /auth/perfil',
+      ],
+      recargas: [
+        'GET /recargas/debug',
+        'POST /recargas/crear (Stripe)',
+        'POST /recargas/crear-rapyd ← RAPYD',
+        'POST /recargas/webhook-rapyd ← WEBHOOK',
+        'POST /recargas/procesar-tarjeta',
+        'POST /recargas/procesar',
+        'GET /recargas/historial',
+        'POST /recargas/canjear-codigo',
+      ],
+      transferencias: [
+        'GET /transferencias',
+        'POST /transferencias',
+      ],
+      prestamos: [
+        'GET /prestamos',
+        'POST /prestamos',
+      ],
+    }
   });
 });
 

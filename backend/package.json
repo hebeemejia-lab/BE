@@ -5,7 +5,9 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "test:rapyd": "node test-rapyd.js",
+    "verify": "node verificar-endpoints.js"
   },
   "keywords": [
     "banking",

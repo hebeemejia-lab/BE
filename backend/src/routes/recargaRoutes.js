@@ -8,6 +8,7 @@ const {
   obtenerRecargas,
   canjearcoCodigo,
   generarCodigos,
+  webhookRapyd,
 } = require('../controllers/recargaController');
 const verificarToken = require('../middleware/authMiddleware');
 
@@ -16,10 +17,11 @@ console.log('🔄 Recarga routes loaded with crearRecargaRapyd:', typeof crearRe
 // Endpoint de debug - muestra rutas disponibles
 router.get('/debug', (req, res) => {
   res.json({
-    message: 'Recargas Routes v2.1',
+    message: 'Recargas Routes v2.2',
     endpoints: [
       'POST /crear',
-      'POST /crear-rapyd ← NUEVO ENDPOINT RAPYD',
+      'POST /crear-rapyd ← ENDPOINT RAPYD',
+      'POST /webhook-rapyd ← WEBHOOK RAPYD',
       'POST /procesar-tarjeta',
       'POST /procesar',
       'GET /historial',
@@ -28,6 +30,9 @@ router.get('/debug', (req, res) => {
     ]
   });
 });
+
+// Webhook de Rapyd (SIN autenticación - viene desde Rapyd)
+router.post('/webhook-rapyd', webhookRapyd);
 
 // Todas requieren autenticación
 router.post('/crear', verificarToken, crearRecargaStripe);

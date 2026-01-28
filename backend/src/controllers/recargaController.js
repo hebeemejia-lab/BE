@@ -95,13 +95,14 @@ const crearRecargaRapyd = async (req, res) => {
         nombre: usuario.nombre || 'Usuario',
         apellido: usuario.apellido || 'Banco Exclusivo',
         usuarioId,
+        pais: usuario.pais || 'US',
       });
 
       console.log('✅ Checkout Rapyd creado:', pago);
 
       // Rapyd devuelve checkout_url donde el cliente puede pagar
       if (!pago.checkout_url) {
-        throw new Error('Rapyd no proporcionó URL de checkout');
+        throw new Error('Rapyd no proporcionó URL de checkout. Verifica tus credenciales y configuración.');
       }
 
       // Guardar referencia de Rapyd en la recarga
@@ -110,7 +111,7 @@ const crearRecargaRapyd = async (req, res) => {
       await recarga.save();
 
       res.json({
-        mensaje: 'Redirigiendo a pago Rapyd',
+        mensaje: 'Pago Rapyd creado exitosamente',
         checkoutUrl: pago.checkout_url,
         checkoutId: pago.id,
         recargaId: recarga.id,
@@ -126,6 +127,7 @@ const crearRecargaRapyd = async (req, res) => {
       res.status(400).json({
         mensaje: 'Error creando pago Rapyd',
         error: rapydError.message,
+        detalles: 'Verifica que tus credenciales de Rapyd estén configuradas correctamente en el archivo .env'
       });
     }
   } catch (error) {
@@ -456,6 +458,65 @@ const crearRecargaTwoCheckout = async (req, res) => {
   }
 };
 
+// Webhook de Rapyd para confirmación de pagos
+const webhookRapyd = async (req, res) => {
+  try {
+    console.log('📨 Webhook Rapyd recibido:', req.body);
+
+    // Verificar firma del webhook (importante para seguridad)
+    const signature = req.headers['signature'];
+    const salt = req.headers['salt'];
+    const timestamp = req.headers['timestamp'];
+
+    // Obtener datos del webhook
+    const { type, data } = req.body;
+
+    // Responder inmediatamente a Rapyd
+    res.status(200).send('Webhook recibido');
+
+    // Procesar webhook según el tipo
+    if (type === 'PAYMENT_COMPLETED' || type === 'CHECKOUT_COMPLETED') {
+      const checkoutId = data.id;
+      const status = data.status;
+      const amount = data.amount;
+
+      console.log(`✅ Pago completado - Checkout ID: ${checkoutId}, Estado: ${status}, Monto: ${amount}`);
+
+      // Buscar la recarga asociada
+      const recarga = await Recarga.findOne({ where: { rapydCheckoutId: checkoutId } });
+
+      if (recarga && recarga.estado === 'pendiente') {
+        // Actualizar estado de la recarga
+        recarga.estado = 'exitosa';
+        recarga.fechaProcesamiento = new Date();
+        await recarga.save();
+
+        // Actualizar saldo del usuario
+        const usuario = await User.findByPk(recarga.usuarioId);
+        if (usuario) {
+          usuario.saldo = parseFloat(usuario.saldo) + parseFloat(recarga.montoNeto);
+          await usuario.save();
+          console.log(`💰 Saldo actualizado para usuario ${usuario.id}: ${usuario.saldo}`);
+        }
+      }
+    } else if (type === 'PAYMENT_FAILED' || type === 'CHECKOUT_PAYMENT_FAILURE') {
+      const checkoutId = data.id;
+      console.log(`❌ Pago fallido - Checkout ID: ${checkoutId}`);
+
+      // Marcar recarga como fallida
+      const recarga = await Recarga.findOne({ where: { rapydCheckoutId: checkoutId } });
+      if (recarga && recarga.estado === 'pendiente') {
+        recarga.estado = 'fallida';
+        recarga.mensajeError = data.failure_reason || 'Pago rechazado';
+        await recarga.save();
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error procesando webhook Rapyd:', error);
+    // No enviar error al webhook, ya respondimos 200
+  }
+};
+
 module.exports = {
   crearRecargaStripe,
   crearRecargaRapyd,
@@ -465,4 +526,5 @@ module.exports = {
   canjearcoCodigo,
   generarCodigos,
   crearRecargaTwoCheckout,
+  webhookRapyd,
 };

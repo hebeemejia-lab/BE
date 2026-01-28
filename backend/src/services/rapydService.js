@@ -9,17 +9,26 @@ const RAPYD_SECRET_KEY = process.env.RAPYD_SECRET_KEY;
 // Generar firma HMAC para autenticación Rapyd
 function generateRapydSignature(httpMethod, urlPath, salt, timestamp, body = '') {
   const bodyString = body ? JSON.stringify(body) : '';
+  // La firma debe ser: http_method + url_path + salt + timestamp + access_key + secret_key + body_string
   const toSign = httpMethod + urlPath + salt + timestamp + RAPYD_ACCESS_KEY + RAPYD_SECRET_KEY + bodyString;
   
   const hash = crypto.createHmac('sha256', RAPYD_SECRET_KEY);
   hash.update(toSign);
+  // La firma debe ser base64 del hex digest
   const signature = Buffer.from(hash.digest('hex')).toString('base64');
+  
+  console.log('🔐 Generando firma Rapyd:', { method: httpMethod, path: urlPath, timestamp });
   
   return signature;
 }
 
 // Hacer request autenticado a Rapyd
 async function rapydRequest(method, path, body = null) {
+  // Validar credenciales
+  if (!RAPYD_ACCESS_KEY || !RAPYD_SECRET_KEY) {
+    throw new Error('Credenciales de Rapyd no configuradas. Configure RAPYD_ACCESS_KEY y RAPYD_SECRET_KEY en .env');
+  }
+
   const salt = crypto.randomBytes(12).toString('hex');
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const signature = generateRapydSignature(method, path, salt, timestamp, body);
@@ -33,16 +42,26 @@ async function rapydRequest(method, path, body = null) {
   };
 
   try {
+    console.log('📡 Rapyd Request:', { method, path, baseUrl: RAPYD_BASE_URL });
     const response = await axios({
       method,
       url: `${RAPYD_BASE_URL}${path}`,
       headers,
       data: body,
+      timeout: 30000, // 30 segundos timeout
     });
+    console.log('✅ Rapyd Response:', { status: response.status, statusMessage: response.data?.status?.status });
     return response.data;
   } catch (error) {
-    console.error('❌ Error en Rapyd API:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.status?.message || 'Error en Rapyd API');
+    console.error('❌ Error en Rapyd API:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      message: error.response?.data?.status?.message,
+      errorCode: error.response?.data?.status?.error_code,
+      data: error.response?.data
+    });
+    const errorMessage = error.response?.data?.status?.message || error.message || 'Error en Rapyd API';
+    throw new Error(errorMessage);
   }
 }
 
@@ -153,8 +172,10 @@ async function verificarCuentaBancaria(pais, numeroCuenta, codigoBanco) {
 // Crear pago de recarga con Rapyd (usando Checkout para URL de pago)
 async function crearPagoRecarga(datos) {
   try {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    
     const body = {
-      amount: Math.round(datos.monto * 100), // Rapyd usa centavos
+      amount: Math.round(datos.monto), // Rapyd ya espera el monto en la unidad menor (centavos)
       currency: 'USD',
       customer_email: datos.email,
       description: `Recarga de saldo - Usuario: ${datos.usuarioId}`,
@@ -165,27 +186,40 @@ async function crearPagoRecarga(datos) {
         apellido: datos.apellido,
         timestamp: new Date().toISOString(),
       },
-      // URL a donde redirigir después del pago
-      redirect_url: `${process.env.FRONTEND_URL || 'https://bancoexclusivo.lat'}/recargas?success=true`,
+      // URLs de redirección
+      complete_payment_url: `${frontendUrl}/recargas?success=true`,
+      cancel_checkout_url: `${frontendUrl}/recargas?cancelled=true`,
+      error_payment_url: `${frontendUrl}/recargas?error=true`,
       // Información del cliente
       customer: {
         email: datos.email,
-        first_name: datos.nombre,
-        last_name: datos.apellido,
-      }
+        name: `${datos.nombre} ${datos.apellido}`,
+      },
+      // País del cliente (requerido en algunos casos)
+      country: datos.pais || 'US',
     };
     
-    console.log('📤 Enviando checkout a Rapyd:', { amount: body.amount, currency: body.currency });
+    console.log('📤 Enviando checkout a Rapyd:', { 
+      amount: body.amount, 
+      currency: body.currency,
+      email: body.customer_email,
+      country: body.country
+    });
     
     const response = await rapydRequest('POST', '/v1/checkouts', body);
     
     console.log('✅ Checkout Rapyd creado:', {
       id: response.data?.id,
-      checkout_url: response.data?.checkout_url,
+      redirect_url: response.data?.redirect_url,
       status: response.data?.status
     });
     
-    return response.data;
+    // Rapyd devuelve redirect_url, no checkout_url
+    return {
+      id: response.data?.id,
+      checkout_url: response.data?.redirect_url,
+      status: response.data?.status,
+    };
   } catch (error) {
     console.error('❌ Error creando checkout Rapyd:', error.message);
     throw error;

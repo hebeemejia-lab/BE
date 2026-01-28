@@ -58,11 +58,18 @@ export default function Recargas() {
       }
 
       console.log('📤 Enviando solicitud de pago a:', `${API_URL}/recargas/crear-rapyd`);
+      console.log('📋 Configuración API_URL:', API_URL);
+      console.log('📋 Token presente:', !!token);
       
       const response = await axios.post(
         `${API_URL}/recargas/crear-rapyd`,
         { monto: montoNum },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
       );
 
       console.log('✅ Respuesta del servidor:', response.data);
@@ -78,11 +85,23 @@ export default function Recargas() {
       }
     } catch (err) {
       console.error('❌ Error completo:', err);
-      const mensajeError = 
-        err.response?.data?.mensaje || 
-        err.response?.data?.error ||
-        err.message ||
-        'Error al procesar el pago';
+      console.error('❌ Error response:', err.response);
+      console.error('❌ Error status:', err.response?.status);
+      console.error('❌ Error data:', err.response?.data);
+      
+      let mensajeError = 'Error al crear la recarga';
+      
+      if (err.response?.status === 404) {
+        mensajeError = '❌ Error 404: El endpoint no existe. Verifica que el backend esté corriendo y la URL sea correcta.';
+        console.error('🔍 URL intentada:', `${API_URL}/recargas/crear-rapyd`);
+      } else if (err.response?.data?.mensaje) {
+        mensajeError = err.response.data.mensaje;
+      } else if (err.response?.data?.error) {
+        mensajeError = err.response.data.error;
+      } else if (err.message) {
+        mensajeError = err.message;
+      }
+      
       setError(`Error: ${mensajeError}`);
     } finally {
       setLoading(false);
