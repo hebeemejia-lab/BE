@@ -5,7 +5,7 @@ import './Recargas.css';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 export default function Recargas() {
-  const [activeTab, setActiveTab] = useState('rapyd');
+  const [activeTab, setActiveTab] = useState('tarjeta');
   const [monto, setMonto] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -29,7 +29,7 @@ export default function Recargas() {
     }
   };
 
-  const handleRecargaRapyd = async (e) => {
+  const handlePagoTarjeta = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -57,7 +57,7 @@ export default function Recargas() {
         return;
       }
 
-      console.log('📤 Enviando solicitud de recarga a:', `${API_URL}/recargas/crear-rapyd`);
+      console.log('📤 Enviando solicitud de pago a:', `${API_URL}/recargas/crear-rapyd`);
       
       const response = await axios.post(
         `${API_URL}/recargas/crear-rapyd`,
@@ -69,7 +69,7 @@ export default function Recargas() {
 
       // Verificar si hay URL de checkout
       if (response.data.checkoutUrl) {
-        setSuccess('✅ Redirigiendo a página de pago segura...');
+        setSuccess('✅ Redirigiendo a formulario de pago seguro...');
         setTimeout(() => {
           window.location.href = response.data.checkoutUrl;
         }, 1500);
@@ -82,7 +82,7 @@ export default function Recargas() {
         err.response?.data?.mensaje || 
         err.response?.data?.error ||
         err.message ||
-        'Error al crear la recarga';
+        'Error al procesar el pago';
       setError(`Error: ${mensajeError}`);
     } finally {
       setLoading(false);
@@ -120,36 +120,27 @@ export default function Recargas() {
     }
   };
 
-  const montos = [
-    { valor: 10, label: '$10 USD' },
-    { valor: 25, label: '$25 USD' },
-    { valor: 50, label: '$50 USD' },
-    { valor: 100, label: '$100 USD' },
-    { valor: 250, label: '$250 USD' },
-    { valor: 500, label: '$500 USD' },
-  ];
-
   return (
     <div className="recargas-container">
       {/* Header */}
       <div className="recargas-header">
-        <h1>💰 Recargar Saldo</h1>
-        <p>Agrega fondos a tu cuenta de forma segura</p>
+        <h1>💰 Recargar tu Saldo</h1>
+        <p>Agrega fondos rápido y seguro con tu tarjeta</p>
       </div>
 
       {/* Tabs */}
       <div className="recargas-tabs">
         <button
-          className={`tab-button ${activeTab === 'rapyd' ? 'active' : ''}`}
-          onClick={() => setActiveTab('rapyd')}
+          className={`tab-button ${activeTab === 'tarjeta' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tarjeta')}
         >
-          💳 Tarjeta de Crédito/Débito
+          💳 Pagar con Tarjeta
         </button>
         <button
           className={`tab-button ${activeTab === 'codigo' ? 'active' : ''}`}
           onClick={() => setActiveTab('codigo')}
         >
-          🎟️ Código de Recarga
+          🎟️ Usar Código
         </button>
       </div>
 
@@ -174,25 +165,21 @@ export default function Recargas() {
         </div>
       )}
 
-      {/* TAB: Rapyd */}
-      {activeTab === 'rapyd' && (
-        <div className="recarga-form-container">
-          <div className="recarga-form-card">
-            <div className="card-header">
-              <h2>💳 Recarga Rápida y Segura</h2>
-              <span className="badge-secure">🔒 Pago Seguro</span>
+      {/* TAB: Tarjeta de Crédito */}
+      {activeTab === 'tarjeta' && (
+        <div className="payment-container">
+          <div className="payment-card">
+            <div className="card-title">
+              <h2>Pago con Tarjeta de Crédito o Débito</h2>
+              <p className="card-subtitle">Visa, Mastercard y más tarjetas internacionales</p>
             </div>
 
-            <div className="currency-badge">
-              💵 USD (Dólares Estadounidenses)
-            </div>
-
-            <form onSubmit={handleRecargaRapyd}>
+            <form onSubmit={handlePagoTarjeta} className="payment-form">
               {/* Input de monto */}
-              <div className="form-group">
-                <label htmlFor="monto">Monto a Recargar *</label>
-                <div className="input-wrapper">
-                  <span className="currency-symbol">$</span>
+              <div className="form-section">
+                <label htmlFor="monto" className="monto-label">¿Cuánto deseas recargar?</label>
+                <div className="monto-input-group">
+                  <span className="currency-prefix">USD $</span>
                   <input
                     id="monto"
                     type="number"
@@ -203,98 +190,93 @@ export default function Recargas() {
                     min="1"
                     max="10000"
                     required
+                    className="monto-input"
                   />
-                  <span className="currency-code">USD</span>
                 </div>
                 {monto && (
-                  <small className="monto-info">
-                    Monto: ${parseFloat(monto || 0).toFixed(2)} USD
-                  </small>
+                  <div className="monto-summary">
+                    <p className="summary-text">
+                      Pagarás: <span className="summary-amount">USD ${parseFloat(monto || 0).toFixed(2)}</span>
+                    </p>
+                    <p className="summary-info">Sin comisiones adicionales</p>
+                  </div>
                 )}
               </div>
 
-              {/* Botones de montos rápidos */}
-              <div className="quick-amounts">
-                <p className="quick-label">O elige un monto rápido:</p>
-                <div className="amount-grid">
-                  {montos.map((m) => (
-                    <button
-                      key={m.valor}
-                      type="button"
-                      className={`amount-btn ${monto === m.valor.toString() ? 'active' : ''}`}
-                      onClick={() => setMonto(m.valor.toString())}
-                    >
-                      {m.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Botón de submit */}
+              {/* Botón de pago */}
               <button
                 type="submit"
-                className="btn-recarga-submit"
+                className="btn-payment"
                 disabled={loading || !monto || parseFloat(monto) <= 0}
               >
                 {loading ? (
                   <>
-                    <span className="spinner">⏳</span> Procesando...
+                    <span className="spinner">⏳</span>
+                    <span>Procesando...</span>
                   </>
                 ) : (
                   <>
-                    <span>🔐</span> Proceder al Pago
+                    <span>🔐</span>
+                    <span>Proceder a Pago Seguro</span>
                   </>
                 )}
               </button>
+
+              {/* Info de seguridad y métodos */}
+              <div className="payment-info">
+                <div className="info-section">
+                  <h3>✅ Métodos de Pago Aceptados</h3>
+                  <div className="payment-methods">
+                    <span className="method">💳 Visa</span>
+                    <span className="method">💳 Mastercard</span>
+                    <span className="method">💳 American Express</span>
+                    <span className="method">💳 Diners Club</span>
+                    <span className="method">🌐 Wallets Internacionales</span>
+                  </div>
+                </div>
+
+                <div className="info-section">
+                  <h3>🔒 Seguridad Garantizada</h3>
+                  <ul className="security-list">
+                    <li>Encriptación SSL de nivel banco</li>
+                    <li>Procesado por Rapyd (Plataforma Internacional Certificada)</li>
+                    <li>Tu información nunca se almacena en nuestros servidores</li>
+                    <li>Garantía de reembolso si hay problemas</li>
+                  </ul>
+                </div>
+
+                <div className="info-section">
+                  <h3>⚡ Proceso Rápido</h3>
+                  <ul className="process-list">
+                    <li>1️⃣ Ingresa tu monto</li>
+                    <li>2️⃣ Haz clic en "Proceder a Pago"</li>
+                    <li>3️⃣ Completa los datos de tu tarjeta</li>
+                    <li>4️⃣ ¡Listo! Fondos disponibles instantáneamente</li>
+                  </ul>
+                </div>
+
+                <div className="info-limits">
+                  <p><strong>Límites de Recarga:</strong></p>
+                  <p>Mínimo: USD $1.00 | Máximo: USD $10,000.00</p>
+                </div>
+              </div>
             </form>
-
-            {/* Información de seguridad */}
-            <div className="security-info">
-              <h3>✅ Información de Seguridad</h3>
-              <ul>
-                <li>🔒 Pagos 100% seguros con Rapyd</li>
-                <li>💳 Aceptamos todas las tarjetas principales</li>
-                <li>⚡ Fondos disponibles instantáneamente</li>
-                <li>🌍 Soporte en múltiples países</li>
-                <li>💰 Monto mínimo: $1 USD | Máximo: $10,000 USD</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Card info adicional */}
-          <div className="recarga-info-panel">
-            <h3>¿Preguntas sobre la recarga?</h3>
-            <div className="faq-item">
-              <p><strong>¿Cuánto tiempo tarda?</strong></p>
-              <p>Los fondos se agregan instantáneamente después de completar el pago.</p>
-            </div>
-            <div className="faq-item">
-              <p><strong>¿Cuál es la comisión?</strong></p>
-              <p>No hay comisiones adicionales. Pagas solo el monto que ingresas.</p>
-            </div>
-            <div className="faq-item">
-              <p><strong>¿Es seguro?</strong></p>
-              <p>Usamos Rapyd, un procesador de pagos internacional certificado.</p>
-            </div>
           </div>
         </div>
       )}
 
       {/* TAB: Código */}
       {activeTab === 'codigo' && (
-        <div className="recarga-form-container">
-          <div className="recarga-form-card">
-            <div className="card-header">
-              <h2>🎟️ Canjear Código de Recarga</h2>
+        <div className="payment-container">
+          <div className="payment-card">
+            <div className="card-title">
+              <h2>Canjear Código de Recarga</h2>
+              <p className="card-subtitle">¿Tienes un código? Úsalo aquí</p>
             </div>
 
-            <p className="form-description">
-              Si ya tienes un código de recarga, úsalo aquí para agregar saldo instantáneamente.
-            </p>
-
-            <form onSubmit={handleCanjearCodigo}>
-              <div className="form-group">
-                <label htmlFor="codigo">Código de Recarga *</label>
+            <form onSubmit={handleCanjearCodigo} className="payment-form">
+              <div className="form-section">
+                <label htmlFor="codigo" className="codigo-label">Código de Recarga</label>
                 <input
                   id="codigo"
                   type="text"
@@ -303,36 +285,40 @@ export default function Recargas() {
                   placeholder="Ej: ABC12-XYZ34-DEF56-GHI78"
                   maxLength="30"
                   required
+                  className="codigo-input"
                 />
-                <small>Formato típico: XXXX-XXXX-XXXX-XXXX</small>
+                <p className="codigo-hint">Formato típico: XXXX-XXXX-XXXX-XXXX</p>
               </div>
 
               <button
                 type="submit"
-                className="btn-recarga-submit"
+                className="btn-payment"
                 disabled={loading || !codigoRecarga.trim()}
               >
                 {loading ? (
                   <>
-                    <span className="spinner">⏳</span> Canjeando...
+                    <span className="spinner">⏳</span>
+                    <span>Canjeando...</span>
                   </>
                 ) : (
                   <>
-                    <span>🎁</span> Canjear Código
+                    <span>🎁</span>
+                    <span>Canjear Código</span>
                   </>
                 )}
               </button>
-            </form>
 
-            <div className="codigo-info">
-              <h3>ℹ️ Sobre los Códigos de Recarga</h3>
-              <ul>
-                <li>📦 Los códigos son de un solo uso</li>
-                <li>♾️ Sin fecha de expiración</li>
-                <li>🎁 Perfectos para regalar</li>
-                <li>⚡ Canjeables al instante</li>
-              </ul>
-            </div>
+              <div className="codigo-info">
+                <h3>ℹ️ Sobre los Códigos de Recarga</h3>
+                <ul>
+                  <li>📦 Los códigos son de un solo uso</li>
+                  <li>♾️ Sin fecha de expiración</li>
+                  <li>🎁 Perfectos para regalar</li>
+                  <li>⚡ Se canjean al instante</li>
+                  <li>💰 Valores variados disponibles</li>
+                </ul>
+              </div>
+            </form>
           </div>
         </div>
       )}
