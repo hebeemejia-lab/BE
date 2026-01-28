@@ -104,18 +104,26 @@ export default function Recargas() {
           <h2>💳 Recarga con Tarjeta de Crédito/Débito</h2>
           <p className="form-description">Usa Stripe para recargar tu saldo de forma segura</p>
 
+          <div className="moneda-info">
+            <span className="moneda-badge">💵 USD (Dólares Estadounidenses)</span>
+          </div>
+
           <form onSubmit={handleRecargaStripe}>
             <div className="form-group">
-              <label>Monto a Recargar (USD)</label>
-              <input
-                type="number"
-                value={monto}
-                onChange={(e) => setMonto(e.target.value)}
-                placeholder="100.00"
-                step="0.01"
-                min="1"
-                required
-              />
+              <label>Monto a Recargar</label>
+              <div className="input-with-currency">
+                <span className="currency-symbol">$</span>
+                <input
+                  type="number"
+                  value={monto}
+                  onChange={(e) => setMonto(e.target.value)}
+                  placeholder="100.00"
+                  step="0.01"
+                  min="1"
+                  required
+                />
+                <span className="currency-code">USD</span>
+              </div>
             </div>
 
             <div className="monto-presets">
@@ -124,35 +132,35 @@ export default function Recargas() {
                 className="preset-btn"
                 onClick={() => setMonto('10')}
               >
-                $10
+                $10 USD
               </button>
               <button
                 type="button"
                 className="preset-btn"
                 onClick={() => setMonto('25')}
               >
-                $25
+                $25 USD
               </button>
               <button
                 type="button"
                 className="preset-btn"
                 onClick={() => setMonto('50')}
               >
-                $50
+                $50 USD
               </button>
               <button
                 type="button"
                 className="preset-btn"
                 onClick={() => setMonto('100')}
               >
-                $100
+                $100 USD
               </button>
               <button
                 type="button"
                 className="preset-btn"
                 onClick={() => setMonto('250')}
               >
-                $250
+                $250 USD
               </button>
             </div>
 
@@ -162,7 +170,7 @@ export default function Recargas() {
 
             <div className="info-box">
               <p>✅ Pagos seguros procesados por Stripe</p>
-              <p>✅ Se agrega instantáneamente a tu saldo</p>
+              <p>✅ Se agrega instantáneamente a tu saldo en USD</p>
               <p>✅ Sin comisiones adicionales</p>
             </div>
           </form>
