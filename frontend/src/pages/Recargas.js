@@ -5,14 +5,15 @@ import './Recargas.css';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 export default function Recargas() {
-  const [activeTab, setActiveTab] = useState('stripe');
+  const [activeTab, setActiveTab] = useState('rapyd');
   const [monto, setMonto] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [codigoRecarga, setCodigoRecarga] = useState('');
+  const [paymentId, setPaymentId] = useState('');
 
-  const handleRecargaStripe = async (e) => {
+  const handleRecargaRapyd = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -27,18 +28,18 @@ export default function Recargas() {
 
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${API_URL}/recargas/crear`,
+        `${API_URL}/recargas/crear-rapyd`,
         { monto: parseFloat(monto) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Redirigir a Stripe Checkout
-      if (response.data.sessionId) {
-        // En producción, usar: https://checkout.stripe.com/pay/
-        window.location.href = `https://checkout.stripe.com/pay/${response.data.sessionId}`;
-      }
+      console.log('✅ Recarga Rapyd iniciada:', response.data);
+      setPaymentId(response.data.paymentId);
+      setSuccess(`Pago iniciado con Rapyd. ID: ${response.data.paymentId}`);
+      setMonto('');
     } catch (err) {
-      setError(err.response?.data?.mensaje || 'Error creando recarga');
+      setError(err.response?.data?.mensaje || 'Error creando recarga Rapyd');
+      console.error('❌ Error Rapyd:', err);
     } finally {
       setLoading(false);
     }
@@ -82,10 +83,10 @@ export default function Recargas() {
 
       <div className="recargas-tabs">
         <button
-          className={`tab-button ${activeTab === 'stripe' ? 'active' : ''}`}
-          onClick={() => setActiveTab('stripe')}
+          className={`tab-button ${activeTab === 'rapyd' ? 'active' : ''}`}
+          onClick={() => setActiveTab('rapyd')}
         >
-          💳 Tarjeta (Stripe)
+          💳 Tarjeta (Rapyd)
         </button>
         <button
           className={`tab-button ${activeTab === 'codigo' ? 'active' : ''}`}
@@ -98,17 +99,17 @@ export default function Recargas() {
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
 
-      {/* Tab Stripe */}
-      {activeTab === 'stripe' && (
+      {/* Tab Rapyd */}
+      {activeTab === 'rapyd' && (
         <div className="recarga-form-card">
           <h2>💳 Recarga con Tarjeta de Crédito/Débito</h2>
-          <p className="form-description">Usa Stripe para recargar tu saldo de forma segura</p>
+          <p className="form-description">Usa Rapyd para recargar tu saldo de forma segura (Dinero real)</p>
 
           <div className="moneda-info">
             <span className="moneda-badge">💵 USD (Dólares Estadounidenses)</span>
           </div>
 
-          <form onSubmit={handleRecargaStripe}>
+          <form onSubmit={handleRecargaRapyd}>
             <div className="form-group">
               <label>Monto a Recargar</label>
               <div className="input-with-currency">
