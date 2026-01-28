@@ -313,6 +313,73 @@ const generarCodigos = async (req, res) => {
   }
 };
 
+
+// Recarga con 2Checkout Inline
+const twoCheckoutService = require('../services/twoCheckoutService');
+
+const crearRecargaTwoCheckout = async (req, res) => {
+  try {
+    const { monto, token } = req.body;
+    const usuarioId = req.usuario.id;
+    if (!monto || monto <= 0 || !token) {
+      return res.status(400).json({ mensaje: 'Monto y token requeridos' });
+    }
+
+    // Crear recarga pendiente en BD
+    const recarga = await Recarga.create({
+      usuarioId,
+      monto,
+      montoNeto: monto,
+      comision: 0,
+      metodo: '2checkout',
+      estado: 'pendiente',
+      numeroReferencia: `2CO-${Date.now()}`,
+    });
+
+    try {
+      // Crear orden en 2Checkout
+      const user = await User.findByPk(usuarioId);
+      const order = await twoCheckoutService.createOrder({
+        token,
+        amount: monto,
+        email: user.email,
+        reference: recarga.numeroReferencia,
+      });
+
+      if (order && order.RefNo) {
+        recarga.estado = 'exitosa';
+        recarga.descripcion = `2CO Order: ${order.RefNo}`;
+        await recarga.save();
+        // Sumar saldo
+        user.saldo = parseFloat(user.saldo) + parseFloat(monto);
+        await user.save();
+        return res.json({
+          mensaje: 'Recarga exitosa',
+          recarga: {
+            id: recarga.id,
+            numeroReferencia: recarga.numeroReferencia,
+            estado: recarga.estado,
+            orderRef: order.RefNo,
+          },
+          nuevoSaldo: user.saldo,
+        });
+      } else {
+        recarga.estado = 'fallida';
+        recarga.mensajeError = 'No se pudo crear la orden en 2Checkout';
+        await recarga.save();
+        return res.status(400).json({ mensaje: 'Error creando orden en 2Checkout', detalle: order });
+      }
+    } catch (err) {
+      recarga.estado = 'fallida';
+      recarga.mensajeError = err.message;
+      await recarga.save();
+      return res.status(400).json({ mensaje: 'Error procesando pago 2Checkout', error: err.message });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   crearRecargaStripe,
   procesarRecargaTarjeta,
@@ -320,4 +387,5 @@ module.exports = {
   obtenerRecargas,
   canjearcoCodigo,
   generarCodigos,
+  crearRecargaTwoCheckout,
 };

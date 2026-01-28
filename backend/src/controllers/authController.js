@@ -32,13 +32,24 @@ const register = async (req, res) => {
   try {
     const { nombre, apellido, email, password, cedula, telefono, direccion, saldo } = req.body;
 
+    console.log('📝 Registro - Datos recibidos:', { nombre, apellido, email, cedula, telefono, direccion });
+
     if (!nombre || !apellido || !email || !password || !cedula || !telefono || !direccion) {
+      console.warn('⚠️ Registro - Faltan campos requeridos');
       return res.status(400).json({ mensaje: 'Todos los campos son requeridos' });
     }
 
     const usuarioExistente = await User.findOne({ where: { email } });
     if (usuarioExistente) {
+      console.warn('⚠️ Registro - Email ya registrado:', email);
       return res.status(400).json({ mensaje: 'El email ya está registrado' });
+    }
+
+    // Verificar si la cédula ya existe
+    const cedulaExistente = await User.findOne({ where: { cedula } });
+    if (cedulaExistente) {
+      console.warn('⚠️ Registro - Cédula ya registrada:', cedula);
+      return res.status(400).json({ mensaje: 'La cédula ya está registrada' });
     }
 
     const nuevoUsuario = await User.create({
@@ -51,6 +62,8 @@ const register = async (req, res) => {
       direccion,
       saldo: saldo || 0,
     });
+
+    console.log('✅ Usuario creado:', nuevoUsuario.id);
 
     const token = jwt.sign(
       { id: nuevoUsuario.id, email: nuevoUsuario.email },
@@ -70,8 +83,9 @@ const register = async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error('Error en registro:', error);
-    res.status(500).json({ error: error.message });
+    console.error('❌ Error en registro:', error.message);
+    console.error('📋 Stack:', error.stack);
+    res.status(500).json({ error: error.message, detalle: 'Ver logs del servidor' });
   }
 };
 
@@ -80,19 +94,26 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    console.log('🔐 Login - Email:', email);
+
     if (!email || !password) {
+      console.warn('⚠️ Login - Faltan email o contraseña');
       return res.status(400).json({ mensaje: 'Email y contraseña requeridos' });
     }
 
     const usuario = await User.findOne({ where: { email } });
     if (!usuario) {
+      console.warn('⚠️ Login - Usuario no encontrado:', email);
       return res.status(401).json({ mensaje: 'Credenciales inválidas' });
     }
 
     const esValida = await usuario.comparePassword(password);
     if (!esValida) {
+      console.warn('⚠️ Login - Contraseña incorrecta para:', email);
       return res.status(401).json({ mensaje: 'Credenciales inválidas' });
     }
+
+    console.log('✅ Login exitoso:', email);
 
     const token = jwt.sign(
       { id: usuario.id, email: usuario.email },
@@ -111,6 +132,7 @@ const login = async (req, res) => {
       token,
     });
   } catch (error) {
+    console.error('❌ Error en login:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
