@@ -13,6 +13,22 @@ const verificarToken = require('../middleware/authMiddleware');
 
 console.log('🔄 Recarga routes loaded with crearRecargaRapyd:', typeof crearRecargaRapyd);
 
+// Endpoint de debug - muestra rutas disponibles
+router.get('/debug', (req, res) => {
+  res.json({
+    message: 'Recargas Routes v2.1',
+    endpoints: [
+      'POST /crear',
+      'POST /crear-rapyd ← NUEVO ENDPOINT RAPYD',
+      'POST /procesar-tarjeta',
+      'POST /procesar',
+      'GET /historial',
+      'POST /canjear-codigo',
+      'POST /generar-codigos'
+    ]
+  });
+});
+
 // Todas requieren autenticación
 router.post('/crear', verificarToken, crearRecargaStripe);
 router.post('/crear-rapyd', verificarToken, crearRecargaRapyd);
