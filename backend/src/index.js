@@ -14,6 +14,7 @@ const retiroRoutes = require('./routes/retiroRoutes');
 const bankAccountRoutes = require('./routes/bankAccountRoutes');
 const transferenciaInternacionalRoutes = require('./routes/transferenciaInternacionalRoutes');
 const faqRoutes = require('./routes/faqRoutes');
+const faqFeedbackRoutes = require('./routes/faqFeedbackRoutes');
 
 const app = express();
 
@@ -68,6 +69,7 @@ app.use('/recargas', recargaRoutes);
 app.use('/retiros', retiroRoutes);
 app.use('/cuentas-bancarias', bankAccountRoutes);
 app.use('/faq', faqRoutes);
+app.use('/faq-feedback', faqFeedbackRoutes);
 
 // Ruta de prueba
 app.get('/health', (req, res) => {
