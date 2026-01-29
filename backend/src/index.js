@@ -41,7 +41,7 @@ console.log('🔐 CORS Origins permitidos:', allowedOrigins);
 app.use(cors({
   origin: function (origin, callback) {
     // Permitir peticiones sin origin (como Postman) o si está en la lista
-    if (!origin || allowedOrigins.some(o => o && origin.includes(o.replace('https://', '').replace('http://', '')))) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.warn(`⚠️  CORS bloqueado para origen: ${origin}`);
