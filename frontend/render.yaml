@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: be-frontend-banco
+    env: node
+    buildCommand: "npm install && npm run build"
+    startCommand: "npm run serve"
+    envVars:
+      - key: REACT_APP_API_URL
+        value: "https://be-backend-hfib.onrender.com"
+      - key: PORT
+        value: "3000"
