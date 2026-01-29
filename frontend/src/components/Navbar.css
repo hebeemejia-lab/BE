@@ -94,6 +94,20 @@
   color: #ff3333;
 }
 
+.admin-link {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-weight: bold;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 12px;
+}
+
+.admin-link:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #653a8a 100%);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+  color: #ffffff;
+}
+
 .nav-button {
   padding: 10px 20px;
   border: none;

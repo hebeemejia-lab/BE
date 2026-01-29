@@ -18,6 +18,7 @@ import Recargas from './pages/Recargas';
 import Retiros from './pages/Retiros';
 import VincularCuenta from './pages/VincularCuenta';
 import Prestamos from './pages/Prestamos';
+import AdminPanel from './pages/AdminPanel';
 
 // Estilos
 import './styles/global.css';
@@ -103,6 +104,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Prestamos />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminPanel />
               </ProtectedRoute>
             }
           />
