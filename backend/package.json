@@ -4,8 +4,9 @@
   "description": "Backend para Banco Exclusivo - Transferencias y Préstamos",
   "main": "src/index.js",
   "scripts": {
-    "start": "node migrate.js && node src/index.js",
+    "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+    "migrate": "node migrate.js",
     "test:rapyd": "node test-rapyd.js",
     "verify": "node verificar-endpoints.js",
     "migrate": "node migrate.js"

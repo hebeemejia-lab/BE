@@ -3,6 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { connectDB } = require('./config/database');
+const { spawn } = require('child_process');
 
 // Rutas - v2.1 with Rapyd checkout integration
 const authRoutes = require('./routes/authRoutes');
@@ -131,11 +132,40 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0'; // Escuchar en todas las interfaces, no solo localhost
 
-app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, () => {
   console.log(`\n╔════════════════════════════════════╗`);
   console.log(`║   BANCO EXCLUSIVO - BACKEND        ║`);
   console.log(`║   Servidor corriendo en:           ║`);
   console.log(`║   Puerto: ${PORT}                    ║`);
   console.log(`║   Host: ${HOST}                      ║`);
   console.log(`╚════════════════════════════════════╝\n`);
+
+  // Ejecutar migraciones en background después de que el servidor esté listo
+  console.log('⏳ Ejecutando migraciones en background...');
+  const migrate = spawn('node', ['migrate.js'], {
+    cwd: __dirname,
+    stdio: ['ignore', 'pipe', 'pipe']
+  });
+
+  migrate.stdout.on('data', (data) => {
+    console.log(`[MIGRATE] ${data.toString().trim()}`);
+  });
+
+  migrate.stderr.on('data', (data) => {
+    console.log(`[MIGRATE] ⚠️  ${data.toString().trim()}`);
+  });
+
+  migrate.on('close', (code) => {
+    if (code === 0) {
+      console.log('✅ Migraciones completadas exitosamente');
+    } else {
+      console.log(`⚠️  Migraciones completadas con código ${code} (no crítico)`);
+    }
+  });
+});
+
+// Manejo de errores del servidor
+server.on('error', (err) => {
+  console.error('❌ Error del servidor:', err);
+  process.exit(1);
 });
