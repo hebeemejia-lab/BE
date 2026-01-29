@@ -1,9 +1,10 @@
 import Perfil from './pages/Perfil';
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import ChatBotFAQ from './components/ChatBotFAQ';
 
 // Páginas
 import Home from './pages/Home';
@@ -22,10 +23,12 @@ import Prestamos from './pages/Prestamos';
 import './styles/global.css';
 
 function App() {
+  const [chatbotAbierto, setChatbotAbierto] = useState(false);
+
   return (
     <Router>
       <AuthProvider>
-        <Navbar />
+        <Navbar onAbrirChatbot={() => setChatbotAbierto(true)} />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -106,6 +109,23 @@ function App() {
           
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+
+        {/* Chatbot FAQ */}
+        <ChatBotFAQ 
+          isOpen={chatbotAbierto} 
+          onClose={() => setChatbotAbierto(false)} 
+        />
+
+        {/* Botón flotante para abrir el chatbot */}
+        {!chatbotAbierto && (
+          <button
+            className="chatbot-fab"
+            onClick={() => setChatbotAbierto(true)}
+            title="¿Necesitas ayuda?"
+          >
+            💬
+          </button>
+        )}
       </AuthProvider>
     </Router>
   );
