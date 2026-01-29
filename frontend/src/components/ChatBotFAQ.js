@@ -14,6 +14,8 @@ const ChatBotFAQ = ({ isOpen, onClose }) => {
   const [cargando, setCargando] = useState(false);
   const [preguntasPopulares, setPreguntasPopulares] = useState([]);
   const [mostrarSugerencias, setMostrarSugerencias] = useState(true);
+  const [feedbackActivo, setFeedbackActivo] = useState(null); // ID del FAQ para feedback
+  const [comentarioFeedback, setComentarioFeedback] = useState('');
   const chatEndRef = useRef(null);
 
   // Cargar preguntas populares al abrir el chat
@@ -59,15 +61,18 @@ const ChatBotFAQ = ({ isOpen, onClose }) => {
     try {
       const response = await api.post('/faq/consultar', { pregunta });
       
-      // Agregar respuesta del bot
+      // Agregar respuesta del bot CON ID para feedback
       const mensajeBot = {
         tipo: 'bot',
         texto: response.data.respuesta,
         categoria: response.data.categoria,
+        faqId: response.data.faqId || null,
+        preguntaFAQ: response.data.preguntaRelacionada,
         timestamp: new Date()
       };
 
       setMensajes(prev => [...prev, mensajeBot]);
+      setFeedbackActivo(mensajeBot.faqId);
 
     } catch (error) {
       console.error('Error consultando FAQ:', error);
@@ -79,6 +84,32 @@ const ChatBotFAQ = ({ isOpen, onClose }) => {
       setMensajes(prev => [...prev, mensajeError]);
     } finally {
       setCargando(false);
+    }
+  };
+
+  const enviarFeedback = async (util) => {
+    if (!feedbackActivo) return;
+
+    try {
+      await api.post('/faq-feedback/guardar', {
+        faqId: feedbackActivo,
+        pregunta: mensajes.find(m => m.faqId === feedbackActivo)?.preguntaFAQ,
+        util,
+        comentario: comentarioFeedback || null
+      });
+
+      // Mostrar confirmación
+      const confirmar = {
+        tipo: 'bot',
+        texto: `✅ Gracias por tu feedback${comentarioFeedback ? ' y tu comentario' : ''}. Nos ayuda a mejorar.`,
+        timestamp: new Date()
+      };
+      setMensajes(prev => [...prev, confirmar]);
+      setFeedbackActivo(null);
+      setComentarioFeedback('');
+
+    } catch (error) {
+      console.error('Error enviando feedback:', error);
     }
   };
 
@@ -157,6 +188,36 @@ const ChatBotFAQ = ({ isOpen, onClose }) => {
                   <span className="mensaje-categoria">
                     {mensaje.categoria}
                   </span>
+                )}
+                
+                {/* Botones de feedback */}
+                {mensaje.tipo === 'bot' && mensaje.faqId === feedbackActivo && (
+                  <div className="feedback-container">
+                    <p className="feedback-titulo">¿Te fue útil?</p>
+                    <div className="feedback-botones">
+                      <button 
+                        className="feedback-btn util"
+                        onClick={() => enviarFeedback(true)}
+                        title="Sí, fue útil"
+                      >
+                        👍 Sí
+                      </button>
+                      <button 
+                        className="feedback-btn no-util"
+                        onClick={() => enviarFeedback(false)}
+                        title="No fue útil"
+                      >
+                        👎 No
+                      </button>
+                    </div>
+                    <textarea
+                      className="feedback-comentario"
+                      placeholder="(Opcional) Cuéntanos cómo podemos mejorar..."
+                      value={comentarioFeedback}
+                      onChange={(e) => setComentarioFeedback(e.target.value)}
+                      rows="2"
+                    />
+                  </div>
                 )}
               </div>
             </div>

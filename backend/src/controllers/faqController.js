@@ -27,7 +27,8 @@ exports.consultarFAQ = async (req, res) => {
         exito: true,
         respuesta: resultado.respuesta,
         preguntaRelacionada: resultado.pregunta,
-        categoria: resultado.categoria
+        categoria: resultado.categoria,
+        faqId: resultado.id
       });
     }
 
