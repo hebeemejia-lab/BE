@@ -128,6 +128,7 @@ const login = async (req, res) => {
         nombre: usuario.nombre,
         email: usuario.email,
         saldo: parseFloat(usuario.saldo),
+        rol: usuario.rol || 'cliente',
       },
       token,
     });
