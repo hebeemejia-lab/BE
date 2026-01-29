@@ -42,6 +42,7 @@ export default function Navbar() {
                 <Link to="/prestamos" className="nav-link">Préstamos</Link>
               </div>
               
+              <Link to="/admin" className="nav-link admin-link">⚙️ Admin Panel</Link>
               <Link to="/perfil" className="nav-link">👤 Perfil</Link>
               <button onClick={handleLogout} className="nav-button logout-btn">
                 Cerrar Sesión
