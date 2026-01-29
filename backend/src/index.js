@@ -129,10 +129,13 @@ app.use((req, res) => {
 
 // Iniciar servidor
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const HOST = '0.0.0.0'; // Escuchar en todas las interfaces, no solo localhost
+
+app.listen(PORT, HOST, () => {
   console.log(`\n╔════════════════════════════════════╗`);
   console.log(`║   BANCO EXCLUSIVO - BACKEND        ║`);
   console.log(`║   Servidor corriendo en:           ║`);
-  console.log(`║   http://localhost:${PORT}          ║`);
+  console.log(`║   Puerto: ${PORT}                    ║`);
+  console.log(`║   Host: ${HOST}                      ║`);
   console.log(`╚════════════════════════════════════╝\n`);
 });

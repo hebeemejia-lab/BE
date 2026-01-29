@@ -1,6 +1,7 @@
 const Recarga = require('../models/Recarga');
 const BankAccount = require('../models/BankAccount');
 const User = require('../models/User');
+const cuentasBancariasConfig = require('../config/cuentasBancariasConfig');
 
 // Procesar retiro
 const procesarRetiro = async (req, res) => {
@@ -126,7 +127,31 @@ const obtenerRetiros = async (req, res) => {
   }
 };
 
+// Obtener cuenta bancaria predeterminada para retiros
+const obtenerCuentaPrincipal = async (req, res) => {
+  try {
+    const cuentaPrincipal = cuentasBancariasConfig.principal;
+
+    res.json({
+      mensaje: 'Cuenta bancaria principal para retiros',
+      cuenta: {
+        banco: cuentaPrincipal.banco,
+        tipoCuenta: cuentaPrincipal.tipoCuenta,
+        numeroCuenta: cuentaPrincipal.numeroCuenta,
+        nombreTitular: cuentaPrincipal.nombreTitular,
+        email: cuentaPrincipal.email,
+        telefono: cuentaPrincipal.telefono,
+        monedas: cuentaPrincipal.monedas,
+        descripcion: cuentaPrincipal.descripcion,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   procesarRetiro,
   obtenerRetiros,
+  obtenerCuentaPrincipal,
 };

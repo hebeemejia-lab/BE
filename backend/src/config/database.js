@@ -7,11 +7,11 @@ const databaseUrl = process.env.DATABASE_URL;
 
 let sequelize;
 
-// Intentar usar PostgreSQL si DATABASE_URL está configurado
-// De lo contrario, usar SQLite (funciona en cualquier entorno)
-if (databaseUrl && databaseUrl.includes('postgres')) {
-  // Usar PostgreSQL en producción (Render)
-  console.log('🔧 Conectando a PostgreSQL en producción...');
+// Usar SQLite por defecto en todos lados (desarrollo y producción)
+// Solo usar PostgreSQL si DATABASE_URL está EXPLÍCITAMENTE configurado y contiene 'postgres'
+if (databaseUrl && databaseUrl.toLowerCase().includes('postgres')) {
+  // PostgreSQL en producción (si está configurado)
+  console.log('🔧 Conectando a PostgreSQL...');
   sequelize = new Sequelize(databaseUrl, {
     dialect: 'postgres',
     dialectOptions: {
@@ -23,12 +23,13 @@ if (databaseUrl && databaseUrl.includes('postgres')) {
     logging: false,
   });
 } else {
-  // Usar SQLite (desarrollo o producción sin PostgreSQL)
+  // SQLite (desarrollo o producción sin PostgreSQL)
   const dbPath = isProduction 
     ? '/opt/render/project/src/backend/banco.db'  // Render path
     : path.join(__dirname, '../../banco.db');     // Local path
   
-  console.log(`🔧 Conectando a SQLite (${isProduction ? 'producción' : 'desarrollo'})...`);
+  const dbType = isProduction ? 'producción' : 'desarrollo';
+  console.log(`🔧 Conectando a SQLite (${dbType})...`);
   console.log(`📁 Ruta DB: ${dbPath}`);
   
   sequelize = new Sequelize({

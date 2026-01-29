@@ -11,6 +11,7 @@ export default function Retiros() {
     cuentaId: '',
   });
   const [cuentas, setCuentas] = useState([]);
+  const [cuentaPrincipal, setCuentaPrincipal] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -24,7 +25,17 @@ export default function Retiros() {
   React.useEffect(() => {
     cargarCuentas();
     cargarRetiros();
+    cargarCuentaPrincipal();
   }, []);
+
+  const cargarCuentaPrincipal = async () => {
+    try {
+      const response = await retiroAPI.obtenerCuentaPrincipal();
+      setCuentaPrincipal(response.data.cuenta);
+    } catch (err) {
+      console.error('Error cargando cuenta principal:', err);
+    }
+  };
 
   const cargarRetiros = async () => {
     try {
@@ -187,6 +198,41 @@ export default function Retiros() {
 
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
+
+        {/* Información de la cuenta bancaria principal */}
+        {cuentaPrincipal && (
+          <div className="cuenta-principal-info">
+            <div className="info-header">
+              <h4>🏦 Cuenta Principal para Retiros</h4>
+            </div>
+            <div className="info-grid">
+              <div className="info-item">
+                <span className="label">Banco:</span>
+                <span className="value">{cuentaPrincipal.banco}</span>
+              </div>
+              <div className="info-item">
+                <span className="label">Titular:</span>
+                <span className="value">{cuentaPrincipal.nombreTitular}</span>
+              </div>
+              <div className="info-item">
+                <span className="label">Tipo de Cuenta:</span>
+                <span className="value">{cuentaPrincipal.tipoCuenta}</span>
+              </div>
+              <div className="info-item">
+                <span className="label">Número de Cuenta:</span>
+                <span className="value">{cuentaPrincipal.numeroCuenta}</span>
+              </div>
+              <div className="info-item">
+                <span className="label">Email:</span>
+                <span className="value">{cuentaPrincipal.email}</span>
+              </div>
+              <div className="info-item">
+                <span className="label">Monedas:</span>
+                <span className="value">{cuentaPrincipal.monedas.join(', ')}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Verificación de identidad antes de mostrar el formulario */}
         {!verificado ? (
