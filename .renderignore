@@ -1,0 +1,13 @@
+# Ignorar frontend para evitar que Render lo detecte como static site
+frontend/
+
+# Archivos de desarrollo
+.git
+.gitignore
+.env
+.env.example
+*.md
+node_modules/
+.vscode/
+.idea/
+*.log
