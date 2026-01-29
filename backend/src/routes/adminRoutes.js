@@ -2,10 +2,10 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
-const authMiddleware = require('../middleware/authMiddleware');
+const verificarAdmin = require('../middleware/adminMiddleware');
 
-// TODO: Agregar middleware de autorización para admin
-// const isAdmin = require('../middleware/isAdmin');
+// Todas las rutas requieren autenticación de admin
+router.use(verificarAdmin);
 
 // 📊 Dashboard
 router.get('/dashboard', adminController.obtenerDashboard);
