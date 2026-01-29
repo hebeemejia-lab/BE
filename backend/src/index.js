@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const path = require('path');
 const { connectDB } = require('./config/database');
 const { spawn } = require('child_process');
 
@@ -142,8 +143,8 @@ const server = app.listen(PORT, HOST, () => {
 
   // Ejecutar migraciones en background después de que el servidor esté listo
   console.log('⏳ Ejecutando migraciones en background...');
-  const migrate = spawn('node', ['migrate.js'], {
-    cwd: __dirname,
+  const migrate = spawn('node', [path.join(__dirname, '..', 'migrate.js')], {
+    cwd: path.join(__dirname, '..'),
     stdio: ['ignore', 'pipe', 'pipe']
   });
 
