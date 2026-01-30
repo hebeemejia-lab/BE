@@ -6,6 +6,14 @@ import './Navbar.css';
 export default function Navbar() {
   const { usuario, logout } = useContext(AuthContext);
 
+  const formatMoney = (value) => {
+    const numberValue = Number(value);
+    if (Number.isFinite(numberValue)) {
+      return numberValue.toFixed(2);
+    }
+    return '0.00';
+  };
+
   const handleLogout = () => {
     logout();
   };
@@ -26,7 +34,7 @@ export default function Navbar() {
                   ? `${usuario.nombre} ${usuario.apellido}`
                   : usuario.nombre || usuario.apellido || 'Usuario'}
               </span>
-              <span className="user-balance">Balance: ${usuario.saldo?.toFixed(2) || '0.00'}</span>
+              <span className="user-balance">Balance: ${formatMoney(usuario?.saldo)}</span>
             </div>
             <div className="navbar-links">
               <Link to="/dashboard" className="nav-link">📊 Dashboard</Link>

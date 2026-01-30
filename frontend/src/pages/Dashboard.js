@@ -11,6 +11,14 @@ export default function Dashboard() {
   const [prestamos, setPrestamos] = useState([]);
   const [loadingDatos, setLoadingDatos] = useState(true);
 
+  const formatMoney = (value) => {
+    const numberValue = Number(value);
+    if (Number.isFinite(numberValue)) {
+      return numberValue.toFixed(2);
+    }
+    return '0.00';
+  };
+
   // Redirigir a login si no hay usuario y no está cargando
   React.useEffect(() => {
     if (!usuario && !loading) {
@@ -48,7 +56,7 @@ export default function Dashboard() {
         <div className="balance-card">
           <div className="balance-content">
             <span className="balance-label">Saldo Disponible</span>
-            <span className="balance-amount">${usuario?.saldo?.toFixed(2) || '0.00'}</span>
+            <span className="balance-amount">${formatMoney(usuario?.saldo)}</span>
           </div>
           <span className="balance-icon">💰</span>
         </div>
@@ -89,7 +97,7 @@ export default function Dashboard() {
                     </div>
                     <div className="transaction-amount">
                       <span className={`amount ${trans.remitente._id === usuario?._id ? 'negative' : 'positive'}`}>
-                        {trans.remitente._id === usuario?._id ? '-' : '+'}${trans.monto.toFixed(2)}
+                        {trans.remitente._id === usuario?._id ? '-' : '+'}${formatMoney(trans.monto)}
                       </span>
                       <span className="transaction-date">
                         {new Date(trans.fechaTransferencia).toLocaleDateString('es-ES')}
@@ -110,7 +118,7 @@ export default function Dashboard() {
                 prestamos.map((prestamo) => (
                   <div key={prestamo._id} className={`loan-item ${prestamo.estado}`}>
                     <div className="loan-header">
-                      <span className="loan-amount">${prestamo.montoSolicitado.toFixed(2)}</span>
+                      <span className="loan-amount">${formatMoney(prestamo.montoSolicitado)}</span>
                       <span className={`loan-status ${prestamo.estado}`}>{prestamo.estado.toUpperCase()}</span>
                     </div>
                     <div className="loan-details">
