@@ -433,7 +433,7 @@ exports.enviarVerificacionMasiva = async (req, res) => {
   }
 };
 
-// 🧪 Probar configuración SMTP
+// 🧪 Probar configuración de Email
 exports.probarSMTP = async (req, res) => {
   try {
     const { emailDestino } = req.body;
@@ -445,7 +445,7 @@ exports.probarSMTP = async (req, res) => {
       });
     }
 
-    console.log(`🧪 Probando SMTP enviando a: ${emailDestino}`);
+    console.log(`🧪 Probando Email Service enviando a: ${emailDestino}`);
 
     // Crear usuario de prueba
     const usuarioPrueba = {
@@ -461,18 +461,18 @@ exports.probarSMTP = async (req, res) => {
       exito: true,
       mensaje: 'Email de prueba enviado',
       resultado: resultado,
-      smtp: {
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT,
-        user: process.env.SMTP_USER,
-        from: process.env.SMTP_FROM
+      config: {
+        sendgridApiKey: process.env.SENDGRID_API_KEY ? '✅ SET' : '❌ NOT SET',
+        sendgridFrom: process.env.SENDGRID_FROM,
+        smtpHost: process.env.SMTP_HOST || '❌ NOT SET',
+        resendApiKey: process.env.RESEND_API_KEY ? '✅ SET' : '❌ NOT SET'
       }
     });
   } catch (error) {
-    console.error('❌ Error probando SMTP:', error);
+    console.error('❌ Error probando Email Service:', error);
     res.status(500).json({
       exito: false,
-      mensaje: 'Error al probar SMTP',
+      mensaje: 'Error al probar Email Service',
       error: error.message,
       stack: error.stack
     });
