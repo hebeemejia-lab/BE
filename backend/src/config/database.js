@@ -7,11 +7,16 @@ const databaseUrl = process.env.DATABASE_URL;
 
 let sequelize;
 
+// ⚠️ IMPORTANTE: Usar SQLite por defecto en Render para evitar timeouts de PostgreSQL
+// Si RENDER_FORCE_SQLITE=true (configurado en Render), ignorar DATABASE_URL completamente
+const forceUseSQLite = process.env.RENDER_FORCE_SQLITE === 'true';
+
 // Usar SQLite por defecto en todos lados (desarrollo y producción)
-// Solo usar PostgreSQL si DATABASE_URL está EXPLÍCITAMENTE configurado y contiene 'postgres'
-if (databaseUrl && databaseUrl.toLowerCase().includes('postgres')) {
-  // PostgreSQL en producción (si está configurado)
+// Solo usar PostgreSQL si DATABASE_URL está EXPLÍCITAMENTE configurado y contiene 'postgres' Y RENDER_FORCE_SQLITE no está activado
+if (!forceUseSQLite && databaseUrl && databaseUrl.toLowerCase().includes('postgres')) {
+  // PostgreSQL en producción (si está configurado y no está forzado a SQLite)
   console.log('🔧 Conectando a PostgreSQL...');
+  console.log('⚠️  Nota: Para usar SQLite, configure RENDER_FORCE_SQLITE=true en Render');
   sequelize = new Sequelize(databaseUrl, {
     dialect: 'postgres',
     dialectOptions: {
