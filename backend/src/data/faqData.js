@@ -14,8 +14,8 @@ const faqData = [
 - PayPal y otros medios digitales
 
 🏦 **Depósito bancario:**
-- Banco: ${process.env.BANCO_NOMBRE || 'Banco Barenvas'}
-- Cuenta: ${process.env.BANCO_CUENTA || '9608141071'}
+- Banco: Banco Ejemplo
+- Cuenta: XXXX-XXXX-XXXX-1234
 - Después del depósito, envía el comprobante para aprobar tu recarga
 
 Las recargas se acreditan inmediatamente (pagos en línea) o en 24-48 horas (depósitos bancarios).`,
