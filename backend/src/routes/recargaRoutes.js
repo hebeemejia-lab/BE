@@ -21,6 +21,8 @@ router.get('/debug', (req, res) => {
     endpoints: [
       'POST /crear',
       'POST /crear-rapyd ← ENDPOINT RAPYD',
+      'POST /crear-paypal ← ENDPOINT PAYPAL',
+      'POST /paypal/capturar ← CAPTURA PAYPAL',
       'POST /webhook-rapyd ← WEBHOOK RAPYD',
       'POST /procesar-tarjeta',
       'POST /procesar',
@@ -37,6 +39,8 @@ router.post('/webhook-rapyd', webhookRapyd);
 // Todas requieren autenticación
 router.post('/crear', verificarToken, crearRecargaStripe);
 router.post('/crear-rapyd', verificarToken, crearRecargaRapyd);
+router.post('/crear-paypal', verificarToken, require('../controllers/recargaController').crearRecargaPayPal);
+router.post('/paypal/capturar', verificarToken, require('../controllers/recargaController').capturarRecargaPayPal);
 router.post('/crear-2checkout', verificarToken, require('../controllers/recargaController').crearRecargaTwoCheckout);
 router.post('/procesar-tarjeta', verificarToken, procesarRecargaTarjeta);
 router.post('/procesar', verificarToken, procesarRecargaExitosa);

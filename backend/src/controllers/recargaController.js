@@ -3,6 +3,7 @@ const CodigoRecarga = require('../models/CodigoRecarga');
 const User = require('../models/User');
 const stripeService = require('../services/stripeService');
 const rapydService = require('../services/rapydService');
+const paypalService = require('../services/paypalService');
 
 console.log('✅ RecargaController loaded - v2.1 with Rapyd support');
 
@@ -235,6 +236,112 @@ const procesarRecargaTarjeta = async (req, res) => {
         recargaId: recarga.id,
       });
     }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Crear recarga con PayPal (LIVE o SANDBOX según credenciales)
+const crearRecargaPayPal = async (req, res) => {
+  try {
+    const { monto } = req.body;
+    const usuarioId = req.usuario.id;
+    const usuario = await User.findByPk(usuarioId);
+
+    if (!monto || monto <= 0) {
+      return res.status(400).json({ mensaje: 'Monto debe ser mayor a 0' });
+    }
+
+    if (!usuario) {
+      return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+    }
+
+    // Crear recarga pendiente en BD
+    const recarga = await Recarga.create({
+      usuarioId,
+      monto,
+      montoNeto: monto,
+      comision: 0,
+      metodo: 'paypal',
+      estado: 'pendiente',
+      numeroReferencia: `PP-${Date.now()}`,
+    });
+
+    const returnUrl = `${process.env.FRONTEND_URL}/recargas?success=true`;
+    const cancelUrl = `${process.env.FRONTEND_URL}/recargas?error=cancelled`;
+
+    const order = await paypalService.crearOrden({
+      monto,
+      currency: 'USD',
+      returnUrl,
+      cancelUrl,
+      referencia: recarga.numeroReferencia,
+    });
+
+    const approveLink = (order.links || []).find((link) => link.rel === 'approve');
+    if (!approveLink?.href) {
+      throw new Error('PayPal no devolvió URL de aprobación');
+    }
+
+    recarga.paypalOrderId = order.id;
+    await recarga.save();
+
+    res.json({
+      mensaje: 'Orden PayPal creada',
+      checkoutUrl: approveLink.href,
+      orderId: order.id,
+      recargaId: recarga.id,
+      monto: recarga.monto,
+      numeroReferencia: recarga.numeroReferencia,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Capturar recarga PayPal
+const capturarRecargaPayPal = async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    if (!orderId) {
+      return res.status(400).json({ mensaje: 'orderId requerido' });
+    }
+
+    const recarga = await Recarga.findOne({ where: { paypalOrderId: orderId } });
+    if (!recarga) {
+      return res.status(404).json({ mensaje: 'Recarga no encontrada' });
+    }
+
+    const capture = await paypalService.capturarOrden(orderId);
+    const status = capture.status;
+
+    if (status !== 'COMPLETED') {
+      recarga.estado = 'fallida';
+      recarga.mensajeError = `PayPal status: ${status}`;
+      await recarga.save();
+      return res.status(400).json({ mensaje: 'Pago no completado', status });
+    }
+
+    const captureId = capture.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+
+    recarga.estado = 'exitosa';
+    recarga.paypalCaptureId = captureId || null;
+    recarga.fechaProcesamiento = new Date();
+    await recarga.save();
+
+    const usuario = await User.findByPk(recarga.usuarioId);
+    if (usuario) {
+      usuario.saldo = parseFloat(usuario.saldo) + parseFloat(recarga.montoNeto);
+      await usuario.save();
+    }
+
+    return res.json({
+      mensaje: 'Pago PayPal completado',
+      recargaId: recarga.id,
+      nuevoSaldo: usuario?.saldo,
+      orderId,
+      captureId,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -522,6 +629,8 @@ const webhookRapyd = async (req, res) => {
 module.exports = {
   crearRecargaStripe,
   crearRecargaRapyd,
+  crearRecargaPayPal,
+  capturarRecargaPayPal,
   procesarRecargaTarjeta,
   procesarRecargaExitosa,
   obtenerRecargas,

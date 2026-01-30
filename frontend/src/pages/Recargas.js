@@ -16,7 +16,50 @@ export default function Recargas() {
   // Verificar estado del backend al cargar
   useEffect(() => {
     verificarBackend();
+    verificarRetornoPayPal();
   }, []);
+
+  const verificarRetornoPayPal = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const success = params.get('success');
+    const cancelled = params.get('error');
+    const token = params.get('token'); // PayPal order ID
+
+    if (cancelled === 'cancelled') {
+      setError('Pago cancelado por el usuario.');
+      return;
+    }
+
+    if (success === 'true' && token) {
+      try {
+        setLoading(true);
+        const authToken = localStorage.getItem('token');
+        if (!authToken) {
+          setError('Debes estar autenticado para completar el pago.');
+          return;
+        }
+
+        const response = await axios.post(
+          `${API_URL}/recargas/paypal/capturar`,
+          { orderId: token },
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        setSuccess('✅ Pago PayPal completado. Saldo actualizado.');
+        console.log('✅ Captura PayPal:', response.data);
+      } catch (err) {
+        console.error('❌ Error capturando PayPal:', err);
+        setError('Error al completar el pago PayPal.');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
 
   const verificarBackend = async () => {
     try {
@@ -57,12 +100,12 @@ export default function Recargas() {
         return;
       }
 
-      console.log('📤 Enviando solicitud de pago a:', `${API_URL}/recargas/crear-2checkout`);
+      console.log('📤 Enviando solicitud de pago a:', `${API_URL}/recargas/crear-paypal`);
       console.log('📋 Configuración API_URL:', API_URL);
       console.log('📋 Token presente:', !!token);
       
       const response = await axios.post(
-        `${API_URL}/recargas/crear-2checkout`,
+        `${API_URL}/recargas/crear-paypal`,
         { monto: montoNum },
         { 
           headers: { 
@@ -77,7 +120,7 @@ export default function Recargas() {
       // Verificar si hay URL de pago
       const paymentUrl = response.data.paymentUrl || response.data.checkoutUrl;
       if (paymentUrl) {
-        setSuccess('✅ Redirigiendo a formulario de pago seguro...');
+        setSuccess('✅ Redirigiendo a PayPal...');
         setTimeout(() => {
           window.location.href = paymentUrl;
         }, 1500);
@@ -94,7 +137,7 @@ export default function Recargas() {
       
       if (err.response?.status === 404) {
         mensajeError = '❌ Error 404: El endpoint no existe. Verifica que el backend esté corriendo y la URL sea correcta.';
-        console.error('🔍 URL intentada:', `${API_URL}/recargas/crear-2checkout`);
+        console.error('🔍 URL intentada:', `${API_URL}/recargas/crear-paypal`);
       } else if (err.response?.data?.mensaje) {
         mensajeError = err.response.data.mensaje;
       } else if (err.response?.data?.error) {
@@ -154,7 +197,7 @@ export default function Recargas() {
           className={`tab-button ${activeTab === 'tarjeta' ? 'active' : ''}`}
           onClick={() => setActiveTab('tarjeta')}
         >
-          💳 Pagar con Tarjeta
+          🅿️ Pagar con PayPal
         </button>
         <button
           className={`tab-button ${activeTab === 'codigo' ? 'active' : ''}`}
@@ -190,8 +233,8 @@ export default function Recargas() {
         <div className="payment-container">
           <div className="payment-card">
             <div className="card-title">
-              <h2>Pago con Tarjeta de Crédito o Débito</h2>
-              <p className="card-subtitle">Visa, Mastercard y más tarjetas internacionales</p>
+              <h2>Pago con PayPal</h2>
+              <p className="card-subtitle">Paga de forma segura con tu cuenta PayPal</p>
             </div>
 
             <form onSubmit={handlePagoTarjeta} className="payment-form">
@@ -247,11 +290,8 @@ export default function Recargas() {
                 <div className="info-section">
                   <h3>✅ Métodos de Pago Aceptados</h3>
                   <div className="payment-methods">
-                    <span className="method">💳 Visa</span>
-                    <span className="method">💳 Mastercard</span>
-                    <span className="method">💳 American Express</span>
-                    <span className="method">💳 Diners Club</span>
-                    <span className="method">🌐 Wallets Internacionales</span>
+                    <span className="method">🅿️ PayPal</span>
+                    <span className="method">💳 Tarjeta vinculada a PayPal</span>
                   </div>
                 </div>
 
@@ -259,7 +299,7 @@ export default function Recargas() {
                   <h3>🔒 Seguridad Garantizada</h3>
                   <ul className="security-list">
                     <li>Encriptación SSL de nivel banco</li>
-                    <li>Procesado por Rapyd (Plataforma Internacional Certificada)</li>
+                    <li>Procesado por PayPal</li>
                     <li>Tu información nunca se almacena en nuestros servidores</li>
                     <li>Garantía de reembolso si hay problemas</li>
                   </ul>
