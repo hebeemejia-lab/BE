@@ -7,6 +7,11 @@ const verificarAdmin = require('../middleware/adminMiddleware');
 // Todas las rutas requieren autenticación de admin
 router.use(verificarAdmin);
 
+// 🧪 Test endpoint
+router.get('/test', (req, res) => {
+  res.json({ status: 'ok', message: 'Admin routes working' });
+});
+
 // 📊 Dashboard
 router.get('/dashboard', adminController.obtenerDashboard);
 
