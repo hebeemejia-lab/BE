@@ -71,10 +71,10 @@ export default function Recargas() {
         return;
       }
 
-      console.log('📤 Enviando solicitud de recarga a:', `${API_URL}/recargas/crear-rapyd`);
+      console.log('📤 Enviando solicitud de recarga a:', `${API_URL}/recargas/crear-2checkout`);
       
       const response = await axios.post(
-        `${API_URL}/recargas/crear-rapyd`,
+        `${API_URL}/recargas/crear-2checkout`,
         { monto: montoNum },
         { headers: { Authorization: `Bearer ${token}` } }
       );
