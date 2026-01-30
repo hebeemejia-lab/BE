@@ -9,12 +9,23 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const normalizarUsuario = (data) => {
+    if (!data) {
+      return data;
+    }
+    const saldoNormalizado = Number(data.saldo);
+    return {
+      ...data,
+      saldo: Number.isFinite(saldoNormalizado) ? saldoNormalizado : 0,
+    };
+  };
+
   useEffect(() => {
     const cargarUsuario = async () => {
       if (token) {
         try {
           const response = await authAPI.getPerfil();
-          setUsuario(response.data);
+          setUsuario(normalizarUsuario(response.data));
         } catch (err) {
           localStorage.removeItem('token');
           setToken(null);
@@ -33,7 +44,7 @@ export const AuthProvider = ({ children }) => {
       const { token, usuario } = response.data;
       localStorage.setItem('token', token);
       setToken(token);
-      setUsuario(usuario);
+      setUsuario(normalizarUsuario(usuario));
       return response.data;
     } catch (err) {
       const mensaje = err.response?.data?.mensaje || 'Error en el login';
@@ -57,7 +68,7 @@ export const AuthProvider = ({ children }) => {
       const { token, usuario } = response.data;
       localStorage.setItem('token', token);
       setToken(token);
-      setUsuario(usuario);
+      setUsuario(normalizarUsuario(usuario));
       return response.data;
     } catch (err) {
       const mensaje = err.response?.data?.mensaje || 'Error en el registro';
