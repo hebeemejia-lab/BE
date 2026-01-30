@@ -4,47 +4,45 @@
 const nodemailer = require('nodemailer');
 const axios = require('axios');
 
-// Configuración SendGrid
-const sendgridApiKey = process.env.SENDGRID_API_KEY;
-const sendgridFrom = process.env.SENDGRID_FROM || 'noreply@bancoexclusivo.lat';
+// Función para obtener configuración dinamicamente
+const getConfig = () => ({
+  sendgridApiKey: process.env.SENDGRID_API_KEY,
+  sendgridFrom: process.env.SENDGRID_FROM || 'noreply@bancoexclusivo.lat',
+  smtpHost: process.env.SMTP_HOST,
+  smtpPort: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587,
+  smtpUser: process.env.SMTP_USER,
+  smtpPass: process.env.SMTP_PASS,
+  smtpFrom: process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@bancoexclusivo.lat',
+  resendApiKey: process.env.RESEND_API_KEY,
+  resendFrom: process.env.RESEND_FROM || (process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@bancoexclusivo.lat'),
+  frontendUrl: (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, ''),
+});
 
-// Configuración SMTP
-const smtpHost = process.env.SMTP_HOST;
-const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
-const smtpUser = process.env.SMTP_USER;
-const smtpPass = process.env.SMTP_PASS;
-const smtpFrom = process.env.SMTP_FROM || smtpUser || 'no-reply@bancoexclusivo.lat';
-
-// Configuración Resend
-const resendApiKey = process.env.RESEND_API_KEY;
-const resendFrom = process.env.RESEND_FROM || smtpFrom;
-
-const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
-
-// Log para debugging
-console.log('📧 Email Service Configuration:');
-console.log(`  SendGrid API Key: ${sendgridApiKey ? '✅ SET' : '❌ NOT SET'}`);
-console.log(`  SMTP Host: ${smtpHost || '❌ NOT SET'}`);
-console.log(`  Resend API Key: ${resendApiKey ? '✅ SET' : '❌ NOT SET'}`);
+// Log inicial para debugging
+console.log('📧 Email Service cargado - configuración se obtiene dinámicamente');
 
 const crearTransporter = () => {
-  if (!smtpHost || !smtpUser || !smtpPass) {
+  const config = getConfig();
+  
+  if (!config.smtpHost || !config.smtpUser || !config.smtpPass) {
     return null;
   }
 
   return nodemailer.createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure: smtpPort === 465,
+    host: config.smtpHost,
+    port: config.smtpPort,
+    secure: config.smtpPort === 465,
     auth: {
-      user: smtpUser,
-      pass: smtpPass,
+      user: config.smtpUser,
+      pass: config.smtpPass,
     },
   });
 };
 
 const enviarConSendGrid = async ({ to, subject, html }) => {
-  if (!sendgridApiKey) {
+  const config = getConfig();
+  
+  if (!config.sendgridApiKey) {
     console.error('❌ SendGrid API Key no está configurado');
     return { enviado: false, error: 'SENDGRID_API_KEY no configurado' };
   }
@@ -62,7 +60,7 @@ const enviarConSendGrid = async ({ to, subject, html }) => {
           },
         ],
         from: {
-          email: sendgridFrom,
+          email: config.sendgridFrom,
           name: 'Banco Exclusivo',
         },
         content: [
@@ -74,7 +72,7 @@ const enviarConSendGrid = async ({ to, subject, html }) => {
       },
       {
         headers: {
-          Authorization: `Bearer ${sendgridApiKey}`,
+          Authorization: `Bearer ${config.sendgridApiKey}`,
           'Content-Type': 'application/json',
         },
         timeout: 15000,
@@ -91,7 +89,9 @@ const enviarConSendGrid = async ({ to, subject, html }) => {
 };
 
 const enviarConResend = async ({ to, subject, html }) => {
-  if (!resendApiKey) {
+  const config = getConfig();
+  
+  if (!config.resendApiKey) {
     return { enviado: false, error: 'RESEND_API_KEY no configurado' };
   }
 
@@ -99,14 +99,14 @@ const enviarConResend = async ({ to, subject, html }) => {
     const response = await axios.post(
       'https://api.resend.com/emails',
       {
-        from: resendFrom,
+        from: config.resendFrom,
         to: Array.isArray(to) ? to : [to],
         subject,
         html,
       },
       {
         headers: {
-          Authorization: `Bearer ${resendApiKey}`,
+          Authorization: `Bearer ${config.resendApiKey}`,
           'Content-Type': 'application/json',
         },
         timeout: 15000,
@@ -124,7 +124,8 @@ const emailService = {
   // Enviar verificación de email
   enviarVerificacionEmail: async (usuario, token) => {
     try {
-      const verifyUrl = `${frontendUrl}/verificar-email?token=${encodeURIComponent(token)}`;
+      const config = getConfig();
+      const verifyUrl = `${config.frontendUrl}/verificar-email?token=${encodeURIComponent(token)}`;
 
       const html = `
         <h2>Hola, ${usuario.nombre}</h2>
@@ -135,7 +136,7 @@ const emailService = {
       `;
 
       // Preferir SendGrid
-      if (sendgridApiKey) {
+      if (config.sendgridApiKey) {
         const resultadoSendGrid = await enviarConSendGrid({
           to: usuario.email,
           subject: 'Verifica tu correo - Banco Exclusivo',
@@ -155,7 +156,7 @@ const emailService = {
       if (transporter) {
         try {
           await transporter.sendMail({
-            from: smtpFrom,
+            from: config.smtpFrom,
             to: usuario.email,
             subject: 'Verifica tu correo - Banco Exclusivo',
             html,
@@ -169,7 +170,7 @@ const emailService = {
       }
 
       // Fallback a Resend
-      if (resendApiKey) {
+      if (config.resendApiKey) {
         const resultadoResend = await enviarConResend({
           to: usuario.email,
           subject: 'Verifica tu correo - Banco Exclusivo',
