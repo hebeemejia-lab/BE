@@ -11,6 +11,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
+import ResendVerification from './pages/ResendVerification';
 import Dashboard from './pages/Dashboard';
 import Transferencias from './pages/Transferencias';
 import TransferenciaBancaria from './pages/TransferenciaBancaria';
@@ -36,6 +37,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/verificar-email" element={<VerifyEmail />} />
+          <Route path="/reenviar-verificacion" element={<ResendVerification />} />
           
           <Route
             path="/dashboard"

@@ -93,6 +93,8 @@ export default function Login() {
             <button type="button" className="link-button" onClick={handleResendVerification}>
               Reenviar verificación
             </button>
+            {' o '}
+            <a href="/reenviar-verificacion">ir a la página de reenvío</a>
           </p>
         </div>
       </div>

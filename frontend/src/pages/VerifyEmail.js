@@ -7,6 +7,8 @@ export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState('loading');
   const [message, setMessage] = useState('Verificando tu correo...');
+  const [email, setEmail] = useState('');
+  const [resendInfo, setResendInfo] = useState('');
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -29,6 +31,21 @@ export default function VerifyEmail() {
       });
   }, [searchParams]);
 
+  const handleResendVerification = async () => {
+    setResendInfo('');
+    if (!email) {
+      setResendInfo('Por favor ingresa tu email');
+      return;
+    }
+
+    try {
+      const response = await authAPI.resendVerification(email);
+      setResendInfo(response.data?.mensaje || 'Se envió un nuevo correo de verificación');
+    } catch (err) {
+      setResendInfo(err.response?.data?.mensaje || 'Error al reenviar');
+    }
+  };
+
   return (
     <div className="auth-container">
       <div className="auth-card">
@@ -39,7 +56,32 @@ export default function VerifyEmail() {
 
         {status === 'loading' && <div className="success-message">{message}</div>}
         {status === 'success' && <div className="success-message">{message}</div>}
-        {status === 'error' && <div className="error-message">{message}</div>}
+        {status === 'error' && (
+          <>
+            <div className="error-message">{message}</div>
+            <div style={{ marginTop: '20px' }}>
+              <h3 style={{ marginBottom: '15px', fontSize: '16px' }}>¿No recibiste el correo?</h3>
+              <div className="form-group">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  style={{ marginBottom: '10px' }}
+                />
+              </div>
+              <button 
+                type="button" 
+                className="btn-submit" 
+                onClick={handleResendVerification}
+                style={{ marginBottom: '10px' }}
+              >
+                Reenviar correo de verificación
+              </button>
+              {resendInfo && <div className="success-message" style={{ marginTop: '10px' }}>{resendInfo}</div>}
+            </div>
+          </>
+        )}
 
         <div className="auth-footer">
           <p>
