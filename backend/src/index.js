@@ -33,6 +33,7 @@ const allowedOrigins = [
   'https://bancoexclusivo.lat',
   'http://www.bancoexclusivo.lat',
   'http://bancoexclusivo.lat',
+  'https://be-2-3wc8.onrender.com',
 ];
 
 // Agregar FRONTEND_URL si está configurado y no está vacío
