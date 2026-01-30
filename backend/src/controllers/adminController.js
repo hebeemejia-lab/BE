@@ -5,6 +5,9 @@ const { Op } = require('sequelize');
 const crypto = require('crypto');
 const emailService = require('../services/emailService');
 
+// Forzar que las relaciones se inicialicen
+require('../models');
+
 // Dashboard: Estadísticas generales
 exports.obtenerDashboard = async (req, res) => {
   try {
