@@ -432,16 +432,21 @@ const crearRecargaTwoCheckout = async (req, res) => {
     }
 
     // Crear URL de pago directo de 2Checkout
+    // Nota: 2Checkout requiere parámetros específicos. Usar direct checkout
     const paymentUrl = `https://secure.2checkout.com/order/checkout.php?` +
       `merchant=${merchantCode}&` +
-      `product_id=${recarga.numeroReferencia}&` +
-      `name=Recarga+de+saldo&` +
-      `price=${monto}&` +
-      `qty=1&` +
+      `type=dynamic&` +
+      `dynamic=true&` +
+      `item_id_1=1&` +
+      `item_name_1=Recarga+de+Saldo+Banco+Exclusivo&` +
+      `item_price_1=${monto}&` +
+      `item_qty_1=1&` +
       `currency=USD&` +
       `return_url=${encodeURIComponent(process.env.FRONTEND_URL + '/recargas?success=true')}&` +
-      `customer_email=${encodeURIComponent(user.email)}&` +
-      `customer_name=${encodeURIComponent(user.nombre || 'Usuario')}`;
+      `return_url_fail=${encodeURIComponent(process.env.FRONTEND_URL + '/recargas?error=cancelled')}&` +
+      `email=${encodeURIComponent(user.email)}&` +
+      `name=${encodeURIComponent(user.nombre || 'Usuario')}&` +
+      `ref=${recarga.numeroReferencia}`;
 
     console.log('✅ URL de pago 2Checkout generada:', paymentUrl.substring(0, 100) + '...');
 
