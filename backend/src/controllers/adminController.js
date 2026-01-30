@@ -70,7 +70,7 @@ exports.listarPrestamos = async (req, res) => {
     const prestamos = await Loan.findAll({
       include: [{
         model: User,
-        attributes: ['id', 'nombre', 'apellido', 'correo']
+        attributes: ['id', 'nombre', 'apellido', 'email']
       }],
       order: [['createdAt', 'DESC']]
     });
@@ -129,7 +129,7 @@ exports.obtenerPrestamo = async (req, res) => {
     const prestamo = await Loan.findByPk(id, {
       include: [{
         model: User,
-        attributes: ['id', 'nombre', 'apellido', 'correo', 'telefono']
+        attributes: ['id', 'nombre', 'apellido', 'email', 'telefono']
       }]
     });
 
@@ -248,7 +248,7 @@ exports.obtenerReciboPago = async (req, res) => {
     const prestamo = await Loan.findByPk(cuota.prestamoId, {
       include: [{
         model: User,
-        attributes: ['id', 'nombre', 'apellido', 'correo']
+        attributes: ['id', 'nombre', 'apellido', 'email']
       }]
     });
 
@@ -256,8 +256,8 @@ exports.obtenerReciboPago = async (req, res) => {
       numeroRecibo: `REC-${cuota.id}-${Date.now()}`,
       fecha: cuota.fechaPago,
       cliente: {
-        nombre: `${prestamo.User.nombre} ${prestamo.User.apellido}`,
-        correo: prestamo.User.correo
+        nombre: `${prestamo.User.nombre} ${prestamo.User.apellido || ''}`.trim(),
+        correo: prestamo.User.email
       },
       prestamo: {
         id: prestamo.id,
