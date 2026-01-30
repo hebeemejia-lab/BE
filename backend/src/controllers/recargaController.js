@@ -397,10 +397,16 @@ const generarCodigos = async (req, res) => {
 
 const crearRecargaTwoCheckout = async (req, res) => {
   try {
-    const { monto, token } = req.body;
+    const { monto } = req.body;
     const usuarioId = req.usuario.id;
-    if (!monto || monto <= 0 || !token) {
-      return res.status(400).json({ mensaje: 'Monto y token requeridos' });
+    
+    if (!monto || monto <= 0) {
+      return res.status(400).json({ mensaje: 'Monto debe ser mayor a 0' });
+    }
+
+    const user = await User.findByPk(usuarioId);
+    if (!user) {
+      return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     }
 
     // Crear recarga pendiente en BD
@@ -414,40 +420,39 @@ const crearRecargaTwoCheckout = async (req, res) => {
       numeroReferencia: `2CO-${Date.now()}`,
     });
 
-    try {
-      // Crear orden en 2Checkout
-      const user = await User.findByPk(usuarioId);
-      const order = await twoCheckoutService.createOrder({
-        token,
-        amount: monto,
-        email: user.email,
-        reference: recarga.numeroReferencia,
+    // Generar URL de pago de 2Checkout
+    const merchantCode = process.env.TWOCHECKOUT_MERCHANT_CODE;
+    const publishableKey = process.env.TWOCHECKOUT_PUBLISHABLE_KEY;
+    
+    if (!merchantCode || !publishableKey) {
+      return res.status(500).json({ 
+        mensaje: 'Configuración de 2Checkout incompleta',
+        detalles: 'Faltan credenciales en el servidor'
       });
+    }
 
-      if (order && order.RefNo) {
-        recarga.estado = 'exitosa';
-        recarga.descripcion = `2CO Order: ${order.RefNo}`;
-        await recarga.save();
-        // Sumar saldo
-        user.saldo = parseFloat(user.saldo) + parseFloat(monto);
-        await user.save();
-        return res.json({
-          mensaje: 'Recarga exitosa',
-          recarga: {
-            id: recarga.id,
-            numeroReferencia: recarga.numeroReferencia,
-            estado: recarga.estado,
-            orderRef: order.RefNo,
-          },
-          nuevoSaldo: user.saldo,
-        });
-      } else {
-        recarga.estado = 'fallida';
-        recarga.mensajeError = 'No se pudo crear la orden en 2Checkout';
-        await recarga.save();
-        return res.status(400).json({ mensaje: 'Error creando orden en 2Checkout', detalle: order });
-      }
-    } catch (err) {
+    // Crear URL de pago directo de 2Checkout
+    const paymentUrl = `https://secure.2checkout.com/order/checkout.php?` +
+      `merchant=${merchantCode}&` +
+      `product_id=${recarga.numeroReferencia}&` +
+      `name=Recarga+de+saldo&` +
+      `price=${monto}&` +
+      `qty=1&` +
+      `currency=USD&` +
+      `return_url=${encodeURIComponent(process.env.FRONTEND_URL + '/recargas?success=true')}&` +
+      `customer_email=${encodeURIComponent(user.email)}&` +
+      `customer_name=${encodeURIComponent(user.nombre || 'Usuario')}`;
+
+    console.log('✅ URL de pago 2Checkout generada:', paymentUrl.substring(0, 100) + '...');
+
+    res.json({
+      mensaje: 'URL de pago generada',
+      paymentUrl: paymentUrl,
+      recargaId: recarga.id,
+      monto: recarga.monto,
+      numeroReferencia: recarga.numeroReferencia,
+    });
+  } catch (err) {
       recarga.estado = 'fallida';
       recarga.mensajeError = err.message;
       await recarga.save();

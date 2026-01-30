@@ -74,11 +74,12 @@ export default function Recargas() {
 
       console.log('✅ Respuesta del servidor:', response.data);
 
-      // Verificar si hay URL de checkout
-      if (response.data.checkoutUrl) {
+      // Verificar si hay URL de pago
+      const paymentUrl = response.data.paymentUrl || response.data.checkoutUrl;
+      if (paymentUrl) {
         setSuccess('✅ Redirigiendo a formulario de pago seguro...');
         setTimeout(() => {
-          window.location.href = response.data.checkoutUrl;
+          window.location.href = paymentUrl;
         }, 1500);
       } else {
         setError('El servidor no proporcionó URL de pago. Intenta de nuevo.');
