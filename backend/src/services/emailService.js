@@ -73,6 +73,24 @@ const emailService = {
           <p>Este enlace expirará en 24 horas.</p>
         `;
 
+      // Preferir SMTP sobre Resend
+      if (transporter) {
+        try {
+          await transporter.sendMail({
+            from: smtpFrom,
+            to: usuario.email,
+            subject: 'Verifica tu correo - Banco Exclusivo',
+            html,
+          });
+
+          return { enviado: true, provider: 'smtp' };
+        } catch (smtpError) {
+          console.error(`⚠️ SMTP falló: ${smtpError.message}`);
+          // Caer a Resend si SMTP falla
+        }
+      }
+
+      // Fallback a Resend si SMTP no está disponible o falló
       if (resendApiKey) {
         const resultadoResend = await enviarConResend({
           to: usuario.email,
@@ -84,20 +102,17 @@ const emailService = {
           return resultadoResend;
         }
 
-        console.warn(`⚠️ Resend falló: ${resultadoResend.error}`);
+        console.warn(`⚠️ Resend también falló: ${resultadoResend.error}`);
       }
 
-      if (!transporter) {
-        console.warn('⚠️ SMTP no configurado. No se pudo enviar email de verificación.');
-        console.log(`🔗 Link de verificación: ${verifyUrl}`);
-        return { enviado: false, motivo: 'SMTP no configurado', verifyUrl };
-      }
-
-      await transporter.sendMail({
-        from: smtpFrom,
-        to: usuario.email,
-        subject: 'Verifica tu correo - Banco Exclusivo',
-        html,
+      console.warn('⚠️ Ni SMTP ni Resend están configurados.');
+      console.log(`🔗 Link de verificación: ${verifyUrl}`);
+      return { enviado: false, motivo: 'SMTP y Resend no configurados', verifyUrl };
+    } catch (error) {
+      console.error('Error enviando email de verificación:', error);
+      return { enviado: false, error: error.message };
+    }
+  },
       });
 
       return { enviado: true, provider: 'smtp' };
