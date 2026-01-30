@@ -150,6 +150,12 @@ export default function Register() {
 
         <div className="auth-footer">
           <p>¿Ya tienes cuenta? <a href="/login">Inicia sesión aquí</a></p>
+          {success && (
+            <p style={{ marginTop: '10px' }}>
+              ¿No lo recibiste?{' '}
+              <a href="/reenviar-verificacion">Reenviar correo de verificación</a>
+            </p>
+          )}
         </div>
       </div>
     </div>
