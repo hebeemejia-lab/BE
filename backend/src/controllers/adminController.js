@@ -445,7 +445,11 @@ exports.probarSMTP = async (req, res) => {
       });
     }
 
-    console.log(`🧪 Probando Email Service enviando a: ${emailDestino}`);
+    console.log(`\n🧪 ========== PROBANDO EMAIL SERVICE ==========`);
+    console.log(`Destino: ${emailDestino}`);
+    console.log(`SENDGRID_API_KEY en proceso.env: ${process.env.SENDGRID_API_KEY ? '✅ EXISTS' : '❌ NOT EXISTS'}`);
+    console.log(`SENDGRID_API_KEY length: ${process.env.SENDGRID_API_KEY?.length || 0}`);
+    console.log(`SENDGRID_FROM: ${process.env.SENDGRID_FROM}`);
 
     // Crear usuario de prueba
     const usuarioPrueba = {
@@ -456,6 +460,10 @@ exports.probarSMTP = async (req, res) => {
 
     const token = 'test-token-123456';
     const resultado = await emailService.enviarVerificacionEmail(usuarioPrueba, token);
+
+    console.log(`\n📊 Resultado del envío:`);
+    console.log(JSON.stringify(resultado, null, 2));
+    console.log(`🧪 ========== FIN TEST ==========\n`);
 
     res.json({
       exito: true,
