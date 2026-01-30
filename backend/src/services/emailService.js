@@ -2,6 +2,7 @@
 // Requiere configurar SMTP en variables de entorno
 
 const nodemailer = require('nodemailer');
+const axios = require('axios');
 
 const smtpHost = process.env.SMTP_HOST;
 const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
@@ -9,6 +10,8 @@ const smtpUser = process.env.SMTP_USER;
 const smtpPass = process.env.SMTP_PASS;
 const smtpFrom = process.env.SMTP_FROM || smtpUser || 'no-reply@bancoexclusivo.lat';
 const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+const resendApiKey = process.env.RESEND_API_KEY;
+const resendFrom = process.env.RESEND_FROM || smtpFrom;
 
 const crearTransporter = () => {
   if (!smtpHost || !smtpUser || !smtpPass) {
@@ -26,12 +29,63 @@ const crearTransporter = () => {
   });
 };
 
+const enviarConResend = async ({ to, subject, html }) => {
+  if (!resendApiKey) {
+    return { enviado: false, error: 'RESEND_API_KEY no configurado' };
+  }
+
+  try {
+    const response = await axios.post(
+      'https://api.resend.com/emails',
+      {
+        from: resendFrom,
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        html,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 15000,
+      }
+    );
+
+    return { enviado: true, provider: 'resend', id: response.data?.id };
+  } catch (error) {
+    const mensajeError = error.response?.data?.message || error.message || 'Error desconocido en Resend';
+    return { enviado: false, error: mensajeError, provider: 'resend' };
+  }
+};
+
 const emailService = {
   // Enviar verificación de email
   enviarVerificacionEmail: async (usuario, token) => {
     try {
       const transporter = crearTransporter();
       const verifyUrl = `${frontendUrl}/verificar-email?token=${encodeURIComponent(token)}`;
+
+      const html = `
+          <h2>Hola, ${usuario.nombre}</h2>
+          <p>Para activar tu cuenta, confirma tu correo haciendo clic en el siguiente enlace:</p>
+          <p><a href="${verifyUrl}">${verifyUrl}</a></p>
+          <p>Este enlace expirará en 24 horas.</p>
+        `;
+
+      if (resendApiKey) {
+        const resultadoResend = await enviarConResend({
+          to: usuario.email,
+          subject: 'Verifica tu correo - Banco Exclusivo',
+          html,
+        });
+
+        if (resultadoResend.enviado) {
+          return resultadoResend;
+        }
+
+        console.warn(`⚠️ Resend falló: ${resultadoResend.error}`);
+      }
 
       if (!transporter) {
         console.warn('⚠️ SMTP no configurado. No se pudo enviar email de verificación.');
@@ -43,15 +97,10 @@ const emailService = {
         from: smtpFrom,
         to: usuario.email,
         subject: 'Verifica tu correo - Banco Exclusivo',
-        html: `
-          <h2>Hola, ${usuario.nombre}</h2>
-          <p>Para activar tu cuenta, confirma tu correo haciendo clic en el siguiente enlace:</p>
-          <p><a href="${verifyUrl}">${verifyUrl}</a></p>
-          <p>Este enlace expirará en 24 horas.</p>
-        `,
+        html,
       });
 
-      return { enviado: true };
+      return { enviado: true, provider: 'smtp' };
     } catch (error) {
       console.error('Error enviando email de verificación:', error);
       return { enviado: false, error: error.message };
