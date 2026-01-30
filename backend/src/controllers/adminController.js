@@ -382,7 +382,11 @@ exports.enviarVerificacionMasiva = async (req, res) => {
         );
 
         // Enviar email
-        await emailService.enviarVerificacionEmail(usuario, token);
+        const resultado = await emailService.enviarVerificacionEmail(usuario, token);
+
+        if (resultado && resultado.enviado === false) {
+          throw new Error(resultado.motivo || 'Email no enviado');
+        }
 
         enviados++;
         reporteDetallado.push({
@@ -420,6 +424,52 @@ exports.enviarVerificacionMasiva = async (req, res) => {
       exito: false,
       mensaje: 'Error al enviar emails de verificación',
       error: error.message
+    });
+  }
+};
+
+// 🧪 Probar configuración SMTP
+exports.probarSMTP = async (req, res) => {
+  try {
+    const { emailDestino } = req.body;
+    
+    if (!emailDestino) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'Debes proporcionar un email de destino'
+      });
+    }
+
+    console.log(`🧪 Probando SMTP enviando a: ${emailDestino}`);
+
+    // Crear usuario de prueba
+    const usuarioPrueba = {
+      id: 999,
+      nombre: 'Usuario Prueba',
+      email: emailDestino
+    };
+
+    const token = 'test-token-123456';
+    const resultado = await emailService.enviarVerificacionEmail(usuarioPrueba, token);
+
+    res.json({
+      exito: true,
+      mensaje: 'Email de prueba enviado',
+      resultado: resultado,
+      smtp: {
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        user: process.env.SMTP_USER,
+        from: process.env.SMTP_FROM
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error probando SMTP:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al probar SMTP',
+      error: error.message,
+      stack: error.stack
     });
   }
 };
