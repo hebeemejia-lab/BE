@@ -69,17 +69,20 @@ exports.obtenerDashboard = async (req, res) => {
 // Listar todos los préstamos con información del cliente
 exports.listarPrestamos = async (req, res) => {
   try {
+    // Obtener todos los préstamos
     const prestamos = await Loan.findAll({
-      include: [{
-        model: User,
-        attributes: ['id', 'nombre', 'apellido', 'email']
-      }],
       order: [['createdAt', 'DESC']]
     });
 
-    // Obtener cuotas para cada préstamo
-    const prestamosConCuotas = await Promise.all(
+    // Obtener usuarios por separado y agregar manualmente
+    const prestamosConInfo = await Promise.all(
       prestamos.map(async (prestamo) => {
+        // Obtener usuario
+        const usuario = await User.findByPk(prestamo.usuarioId, {
+          attributes: ['id', 'nombre', 'apellido', 'email']
+        });
+
+        // Obtener cuotas
         const cuotas = await CuotaPrestamo.findAll({
           where: { prestamoId: prestamo.id },
           order: [['numeroCuota', 'ASC']]
@@ -91,6 +94,7 @@ exports.listarPrestamos = async (req, res) => {
 
         return {
           ...prestamo.toJSON(),
+          User: usuario ? usuario.toJSON() : null,
           cuotas: cuotas.map(c => ({
             id: c.id,
             numero: c.numeroCuota,
@@ -110,8 +114,8 @@ exports.listarPrestamos = async (req, res) => {
 
     res.json({
       exito: true,
-      total: prestamosConCuotas.length,
-      prestamos: prestamosConCuotas
+      total: prestamosConInfo.length,
+      prestamos: prestamosConInfo
     });
   } catch (error) {
     console.error('❌ Error listando préstamos:', error);
@@ -128,12 +132,7 @@ exports.obtenerPrestamo = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const prestamo = await Loan.findByPk(id, {
-      include: [{
-        model: User,
-        attributes: ['id', 'nombre', 'apellido', 'email', 'telefono']
-      }]
-    });
+    const prestamo = await Loan.findByPk(id);
 
     if (!prestamo) {
       return res.status(404).json({
@@ -141,6 +140,11 @@ exports.obtenerPrestamo = async (req, res) => {
         mensaje: 'Préstamo no encontrado'
       });
     }
+
+    // Obtener usuario manualmente
+    const usuario = await User.findByPk(prestamo.usuarioId, {
+      attributes: ['id', 'nombre', 'apellido', 'email', 'telefono']
+    });
 
     const cuotas = await CuotaPrestamo.findAll({
       where: { prestamoId: id },
@@ -151,6 +155,7 @@ exports.obtenerPrestamo = async (req, res) => {
       exito: true,
       prestamo: {
         ...prestamo.toJSON(),
+        User: usuario ? usuario.toJSON() : null,
         cuotas
       }
     });
