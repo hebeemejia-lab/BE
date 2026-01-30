@@ -13,6 +13,13 @@ const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replac
 const resendApiKey = process.env.RESEND_API_KEY;
 const resendFrom = process.env.RESEND_FROM || smtpFrom;
 
+// Log para debugging
+console.log('📧 Email Service Configuration:');
+console.log(`  SMTP Host: ${smtpHost}`);
+console.log(`  SMTP User: ${smtpUser}`);
+console.log(`  SMTP Pass: ${smtpPass ? '***' : 'NOT SET'}`);
+console.log(`  Resend API Key: ${resendApiKey ? '***' : 'NOT SET'}`);
+
 const crearTransporter = () => {
   if (!smtpHost || !smtpUser || !smtpPass) {
     return null;
