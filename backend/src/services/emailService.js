@@ -45,10 +45,13 @@ const crearTransporter = () => {
 
 const enviarConSendGrid = async ({ to, subject, html }) => {
   if (!sendgridApiKey) {
+    console.error('❌ SendGrid API Key no está configurado');
     return { enviado: false, error: 'SENDGRID_API_KEY no configurado' };
   }
 
   try {
+    console.log(`📤 Intentando enviar con SendGrid a: ${Array.isArray(to) ? to.join(', ') : to}`);
+    
     const response = await axios.post(
       'https://api.sendgrid.com/v3/mail/send',
       {
@@ -78,8 +81,10 @@ const enviarConSendGrid = async ({ to, subject, html }) => {
       }
     );
 
+    console.log(`✅ Email enviado exitosamente con SendGrid (ID: ${response.headers['x-message-id']})`);
     return { enviado: true, provider: 'sendgrid', id: response.headers['x-message-id'] };
   } catch (error) {
+    console.error('❌ Error en SendGrid:', error.response?.status, error.response?.data || error.message);
     const mensajeError = error.response?.data?.errors?.[0]?.message || error.message || 'Error desconocido en SendGrid';
     return { enviado: false, error: mensajeError, provider: 'sendgrid' };
   }
