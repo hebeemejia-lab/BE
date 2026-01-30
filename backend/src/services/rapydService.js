@@ -103,12 +103,6 @@ async function rapydRequest(method, path, body = null) {
     });
     throw error;
   }
-      errorCode: error.response?.data?.status?.error_code,
-      data: error.response?.data
-    });
-    const errorMessage = error.response?.data?.status?.message || error.message || 'Error en Rapyd API';
-    throw new Error(errorMessage);
-  }
 }
 
 // Obtener países soportados
