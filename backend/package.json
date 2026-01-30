@@ -9,7 +9,6 @@
     "migrate": "node migrate.js",
     "test:rapyd": "node test-rapyd.js",
     "verify": "node verificar-endpoints.js",
-    "migrate": "node migrate.js",
     "verificacion-masiva": "node enviar-verificacion-masiva.js"
   },
   "keywords": [
@@ -28,7 +27,7 @@
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.6.3",
-    "nodemailer": "^6.9.14",
+    "nodemailer": "^6.10.1",
     "pg": "^8.11.3",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.7",
