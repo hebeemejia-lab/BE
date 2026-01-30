@@ -18,21 +18,26 @@ const getAccessToken = async () => {
   }
 
   const baseUrl = getBaseUrl();
-  const response = await axios.post(
-    `${baseUrl}/v1/oauth2/token`,
-    'grant_type=client_credentials',
-    {
-      auth: {
-        username: clientId,
-        password: clientSecret,
-      },
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    }
-  );
+  try {
+    const response = await axios.post(
+      `${baseUrl}/v1/oauth2/token`,
+      'grant_type=client_credentials',
+      {
+        auth: {
+          username: clientId,
+          password: clientSecret,
+        },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }
+    );
 
-  return response.data.access_token;
+    return response.data.access_token;
+  } catch (error) {
+    const details = error.response?.data || error.message;
+    throw new Error(`PayPal token error: ${JSON.stringify(details)}`);
+  }
 };
 
 const crearOrden = async ({ monto, currency = 'USD', returnUrl, cancelUrl, referencia }) => {
@@ -58,32 +63,42 @@ const crearOrden = async ({ monto, currency = 'USD', returnUrl, cancelUrl, refer
     },
   };
 
-  const response = await axios.post(`${baseUrl}/v2/checkout/orders`, payload, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  try {
+    const response = await axios.post(`${baseUrl}/v2/checkout/orders`, payload, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-  return response.data;
+    return response.data;
+  } catch (error) {
+    const details = error.response?.data || error.message;
+    throw new Error(`PayPal create order error: ${JSON.stringify(details)}`);
+  }
 };
 
 const capturarOrden = async (orderId) => {
   const accessToken = await getAccessToken();
   const baseUrl = getBaseUrl();
 
-  const response = await axios.post(
-    `${baseUrl}/v2/checkout/orders/${orderId}/capture`,
-    {},
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
+  try {
+    const response = await axios.post(
+      `${baseUrl}/v2/checkout/orders/${orderId}/capture`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
-  return response.data;
+    return response.data;
+  } catch (error) {
+    const details = error.response?.data || error.message;
+    throw new Error(`PayPal capture error: ${JSON.stringify(details)}`);
+  }
 };
 
 module.exports = {

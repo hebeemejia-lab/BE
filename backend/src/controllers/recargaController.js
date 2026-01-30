@@ -58,6 +58,7 @@ const crearRecargaStripe = async (req, res) => {
       });
     }
   } catch (error) {
+    console.error('❌ Error crearRecargaPayPal:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -237,6 +238,7 @@ const procesarRecargaTarjeta = async (req, res) => {
       });
     }
   } catch (error) {
+    console.error('❌ Error capturarRecargaPayPal:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
