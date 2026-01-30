@@ -9,7 +9,8 @@
     "migrate": "node migrate.js",
     "test:rapyd": "node test-rapyd.js",
     "verify": "node verificar-endpoints.js",
-    "migrate": "node migrate.js"
+    "migrate": "node migrate.js",
+    "verificacion-masiva": "node enviar-verificacion-masiva.js"
   },
   "keywords": [
     "banking",
