@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
 const { connectDB } = require('./config/database');
+require('./models');
 const { spawn } = require('child_process');
 
 // Rutas - v2.1 with Rapyd checkout integration
