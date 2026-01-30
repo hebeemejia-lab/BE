@@ -27,7 +27,7 @@ BankAccount.belongsTo(User, {
 // Préstamo tiene muchas cuotas
 Loan.hasMany(CuotaPrestamo, {
   foreignKey: 'prestamoId',
-  as: 'cuotas'
+  as: 'cuotasPrestamo'
 });
 
 CuotaPrestamo.belongsTo(Loan, {
