@@ -1,8 +1,5 @@
 // Controlador del Panel de Administración
-const Loan = require('../models/Loan');
-const User = require('../models/User');
-const BankAccount = require('../models/BankAccount');
-const CuotaPrestamo = require('../models/CuotaPrestamo');
+const { Loan, User, BankAccount, CuotaPrestamo } = require('../models');
 const FAQFeedback = require('../models/FAQFeedback');
 const { Op } = require('sequelize');
 const crypto = require('crypto');
