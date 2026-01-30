@@ -453,13 +453,8 @@ const crearRecargaTwoCheckout = async (req, res) => {
       numeroReferencia: recarga.numeroReferencia,
     });
   } catch (err) {
-      recarga.estado = 'fallida';
-      recarga.mensajeError = err.message;
-      await recarga.save();
-      return res.status(400).json({ mensaje: 'Error procesando pago 2Checkout', error: err.message });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('❌ Error en crearRecargaTwoCheckout:', err);
+    return res.status(400).json({ mensaje: 'Error procesando pago 2Checkout', error: err.message });
   }
 };
 
