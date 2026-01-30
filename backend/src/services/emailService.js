@@ -42,6 +42,10 @@ const crearTransporter = () => {
 const enviarConSendGrid = async ({ to, subject, html }) => {
   const config = getConfig();
   
+  console.log('🔍 DEBUG SendGrid:');
+  console.log(`   config.sendgridApiKey: ${config.sendgridApiKey ? '✅ VALUE EXISTS' : '❌ NULL/UNDEFINED'}`);
+  console.log(`   process.env.SENDGRID_API_KEY: ${process.env.SENDGRID_API_KEY ? '✅ VALUE EXISTS' : '❌ NULL/UNDEFINED'}`);
+  
   if (!config.sendgridApiKey) {
     console.error('❌ SendGrid API Key no está configurado');
     return { enviado: false, error: 'SENDGRID_API_KEY no configurado' };
@@ -125,6 +129,12 @@ const emailService = {
   enviarVerificacionEmail: async (usuario, token) => {
     try {
       const config = getConfig();
+      
+      console.log('🔍 DEBUG enviarVerificacionEmail:');
+      console.log(`   sendgridApiKey existe: ${config.sendgridApiKey ? '✅ SI' : '❌ NO'}`);
+      console.log(`   smtpHost existe: ${config.smtpHost ? '✅ SI' : '❌ NO'}`);
+      console.log(`   resendApiKey existe: ${config.resendApiKey ? '✅ SI' : '❌ NO'}`);
+      
       const verifyUrl = `${config.frontendUrl}/verificar-email?token=${encodeURIComponent(token)}`;
 
       const html = `
@@ -137,6 +147,7 @@ const emailService = {
 
       // Preferir SendGrid
       if (config.sendgridApiKey) {
+        console.log('📧 Intentando con SendGrid...');
         const resultadoSendGrid = await enviarConSendGrid({
           to: usuario.email,
           subject: 'Verifica tu correo - Banco Exclusivo',
@@ -152,6 +163,7 @@ const emailService = {
       }
 
       // Fallback a SMTP
+      console.log('📧 Intentando con SMTP...');
       const transporter = crearTransporter();
       if (transporter) {
         try {
@@ -171,6 +183,7 @@ const emailService = {
 
       // Fallback a Resend
       if (config.resendApiKey) {
+        console.log('📧 Intentando con Resend...');
         const resultadoResend = await enviarConResend({
           to: usuario.email,
           subject: 'Verifica tu correo - Banco Exclusivo',
