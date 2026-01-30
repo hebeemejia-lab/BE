@@ -7,6 +7,13 @@ const databaseUrl = process.env.DATABASE_URL;
 
 let sequelize;
 
+console.log('🔍 Detectando base de datos...');
+console.log(`📌 NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`📌 DATABASE_URL presente: ${databaseUrl ? 'SÍ' : 'NO'}`);
+if (databaseUrl) {
+  console.log(`📌 DATABASE_URL inicia con: ${databaseUrl.substring(0, 20)}...`);
+}
+
 // Usar PostgreSQL en producción, SQLite en desarrollo
 if (databaseUrl && databaseUrl.toLowerCase().includes('postgres')) {
   // PostgreSQL en producción
@@ -20,6 +27,12 @@ if (databaseUrl && databaseUrl.toLowerCase().includes('postgres')) {
       }
     },
     logging: false,
+    pool: {
+      max: 5,
+      min: 0,
+      idle: 10000,
+      acquire: 30000
+    }
   });
 } else {
   // SQLite (desarrollo o producción sin PostgreSQL)
