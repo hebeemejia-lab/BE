@@ -98,6 +98,11 @@ async function rapydRequest(method, path, body = null) {
       status: error.response?.status,
       statusText: error.response?.statusText,
       message: error.response?.data?.status?.message,
+      data: error.response?.data,
+      path: error.config?.url,
+    });
+    throw error;
+  }
       errorCode: error.response?.data?.status?.error_code,
       data: error.response?.data
     });
@@ -216,7 +221,7 @@ async function crearPagoRecarga(datos) {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     
     const body = {
-      amount: Math.round(datos.monto), // Rapyd ya espera el monto en la unidad menor (centavos)
+      amount: Math.round(datos.monto * 100), // Convertir a centavos (moneda mínima)
       currency: 'USD',
       customer_email: datos.email,
       description: `Recarga de saldo - Usuario: ${datos.usuarioId}`,
@@ -236,12 +241,13 @@ async function crearPagoRecarga(datos) {
         email: datos.email,
         name: `${datos.nombre} ${datos.apellido}`,
       },
-      // País del cliente (requerido en algunos casos)
+      // País del cliente (requerido)
       country: datos.pais || 'US',
     };
     
-    console.log('📤 Enviando checkout a Rapyd:', { 
-      amount: body.amount, 
+    console.log('📤 Creando checkout Rapyd:', { 
+      monto_original: datos.monto,
+      monto_en_centavos: body.amount, 
       currency: body.currency,
       email: body.customer_email,
       country: body.country
@@ -249,10 +255,14 @@ async function crearPagoRecarga(datos) {
     
     const response = await rapydRequest('POST', '/v1/checkouts', body);
     
+    if (response.status?.status === 'ERROR') {
+      throw new Error(`Rapyd API Error: ${response.status?.message}`);
+    }
+    
     console.log('✅ Checkout Rapyd creado:', {
       id: response.data?.id,
       redirect_url: response.data?.redirect_url,
-      status: response.data?.status
+      status: response.status?.status
     });
     
     // Rapyd devuelve redirect_url, no checkout_url
@@ -262,7 +272,11 @@ async function crearPagoRecarga(datos) {
       status: response.data?.status,
     };
   } catch (error) {
-    console.error('❌ Error creando checkout Rapyd:', error.message);
+    console.error('❌ Error creando checkout Rapyd:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     throw error;
   }
 }
