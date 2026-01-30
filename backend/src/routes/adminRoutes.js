@@ -28,4 +28,7 @@ router.get('/cuotas/:cuotaId/recibo', adminController.obtenerReciboPago);
 router.post('/verificacion-masiva', adminController.enviarVerificacionMasiva);
 router.post('/probar-smtp', adminController.probarSMTP);
 
+// 💳 Pagos
+router.get('/probar-2checkout', adminController.probar2Checkout);
+
 module.exports = router;
