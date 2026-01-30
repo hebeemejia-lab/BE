@@ -187,14 +187,7 @@ const emailService = {
       return { enviado: false, error: error.message };
     }
   },
-      });
 
-      return { enviado: true, provider: 'smtp' };
-    } catch (error) {
-      console.error('Error enviando email de verificación:', error);
-      return { enviado: false, error: error.message };
-    }
-  },
   // Enviar notificación de nuevo préstamo solicitado
   enviarNotificacionSolicitud: async (usuario, prestamo) => {
     try {
