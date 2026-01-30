@@ -7,7 +7,7 @@ const axios = require('axios');
 // Función para obtener configuración dinamicamente
 const getConfig = () => ({
   sendgridApiKey: process.env.SENDGRID_API_KEY,
-  sendgridFrom: process.env.SENDGRID_FROM || 'noreply@bancoexclusivo.lat',
+  sendgridFrom: process.env.SENDGRID_FROM || 'banco.exclusivo@bancoexclusivo.lat',
   smtpHost: process.env.SMTP_HOST,
   smtpPort: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587,
   smtpUser: process.env.SMTP_USER,
