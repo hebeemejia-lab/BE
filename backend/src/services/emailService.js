@@ -1,7 +1,62 @@
-// Servicio de email para notificaciones de préstamos
-// Requiere configurar un servicio de email real como nodemailer
+// Servicio de email para notificaciones y verificación
+// Requiere configurar SMTP en variables de entorno
+
+const nodemailer = require('nodemailer');
+
+const smtpHost = process.env.SMTP_HOST;
+const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
+const smtpUser = process.env.SMTP_USER;
+const smtpPass = process.env.SMTP_PASS;
+const smtpFrom = process.env.SMTP_FROM || smtpUser || 'no-reply@bancoexclusivo.lat';
+const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+
+const crearTransporter = () => {
+  if (!smtpHost || !smtpUser || !smtpPass) {
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpPort === 465,
+    auth: {
+      user: smtpUser,
+      pass: smtpPass,
+    },
+  });
+};
 
 const emailService = {
+  // Enviar verificación de email
+  enviarVerificacionEmail: async (usuario, token) => {
+    try {
+      const transporter = crearTransporter();
+      const verifyUrl = `${frontendUrl}/verificar-email?token=${encodeURIComponent(token)}`;
+
+      if (!transporter) {
+        console.warn('⚠️ SMTP no configurado. No se pudo enviar email de verificación.');
+        console.log(`🔗 Link de verificación: ${verifyUrl}`);
+        return { enviado: false, motivo: 'SMTP no configurado', verifyUrl };
+      }
+
+      await transporter.sendMail({
+        from: smtpFrom,
+        to: usuario.email,
+        subject: 'Verifica tu correo - Banco Exclusivo',
+        html: `
+          <h2>Hola, ${usuario.nombre}</h2>
+          <p>Para activar tu cuenta, confirma tu correo haciendo clic en el siguiente enlace:</p>
+          <p><a href="${verifyUrl}">${verifyUrl}</a></p>
+          <p>Este enlace expirará en 24 horas.</p>
+        `,
+      });
+
+      return { enviado: true };
+    } catch (error) {
+      console.error('Error enviando email de verificación:', error);
+      return { enviado: false, error: error.message };
+    }
+  },
   // Enviar notificación de nuevo préstamo solicitado
   enviarNotificacionSolicitud: async (usuario, prestamo) => {
     try {

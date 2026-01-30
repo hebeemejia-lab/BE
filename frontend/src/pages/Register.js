@@ -14,6 +14,7 @@ export default function Register() {
     direccion: '',
   });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -28,11 +29,16 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
-      await register(formData);
-      navigate('/dashboard');
+      const response = await register(formData);
+      if (response?.requiereVerificacion) {
+        setSuccess('Registro exitoso. Revisa tu correo para verificar tu cuenta.');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.response?.data?.mensaje || 'Error en el registro');
     } finally {
@@ -49,6 +55,7 @@ export default function Register() {
         </div>
 
         {error && <div className="error-message">{error}</div>}
+        {success && <div className="success-message">{success}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">

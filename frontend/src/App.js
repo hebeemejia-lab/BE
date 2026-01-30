@@ -10,6 +10,7 @@ import ChatBotFAQ from './components/ChatBotFAQ';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import Transferencias from './pages/Transferencias';
 import TransferenciaBancaria from './pages/TransferenciaBancaria';
@@ -34,6 +35,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verificar-email" element={<VerifyEmail />} />
           
           <Route
             path="/dashboard"

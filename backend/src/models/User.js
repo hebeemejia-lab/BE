@@ -23,6 +23,18 @@ const User = sequelize.define('User', {
     unique: true,
     lowercase: true,
   },
+  emailVerificado: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  emailVerificationToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  emailVerificationExpires: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
   password: {
     type: DataTypes.STRING,
     allowNull: false,
