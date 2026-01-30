@@ -51,6 +51,14 @@ const Recarga = sequelize.define('Recarga', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  paypalOrderId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  paypalCaptureId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   numeroReferencia: {
     type: DataTypes.STRING,
     allowNull: true,
