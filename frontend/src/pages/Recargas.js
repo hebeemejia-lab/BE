@@ -57,12 +57,12 @@ export default function Recargas() {
         return;
       }
 
-      console.log('📤 Enviando solicitud de pago a:', `${API_URL}/recargas/crear-rapyd`);
+      console.log('📤 Enviando solicitud de pago a:', `${API_URL}/recargas/crear-2checkout`);
       console.log('📋 Configuración API_URL:', API_URL);
       console.log('📋 Token presente:', !!token);
       
       const response = await axios.post(
-        `${API_URL}/recargas/crear-rapyd`,
+        `${API_URL}/recargas/crear-2checkout`,
         { monto: montoNum },
         { 
           headers: { 
@@ -93,7 +93,7 @@ export default function Recargas() {
       
       if (err.response?.status === 404) {
         mensajeError = '❌ Error 404: El endpoint no existe. Verifica que el backend esté corriendo y la URL sea correcta.';
-        console.error('🔍 URL intentada:', `${API_URL}/recargas/crear-rapyd`);
+        console.error('🔍 URL intentada:', `${API_URL}/recargas/crear-2checkout`);
       } else if (err.response?.data?.mensaje) {
         mensajeError = err.response.data.mensaje;
       } else if (err.response?.data?.error) {
