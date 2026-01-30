@@ -5,6 +5,8 @@ const BankAccount = require('../models/BankAccount');
 const CuotaPrestamo = require('../models/CuotaPrestamo');
 const FAQFeedback = require('../models/FAQFeedback');
 const { Op } = require('sequelize');
+const crypto = require('crypto');
+const emailService = require('../services/emailService');
 
 // Dashboard: Estadísticas generales
 exports.obtenerDashboard = async (req, res) => {
@@ -333,6 +335,90 @@ exports.crearCuotasPrestamo = async (req, res) => {
     res.status(500).json({
       exito: false,
       mensaje: 'Error al crear cuotas',
+      error: error.message
+    });
+  }
+};
+
+// 📧 Enviar emails de verificación masiva
+exports.enviarVerificacionMasiva = async (req, res) => {
+  try {
+    console.log('🚀 Iniciando envío de emails de verificación masiva...');
+    
+    // Obtener todos los usuarios no verificados
+    const usuariosNoVerificados = await User.findAll({
+      where: { emailVerificado: false },
+      raw: true
+    });
+
+    console.log(`📨 Encontrados ${usuariosNoVerificados.length} usuarios para verificar`);
+
+    if (usuariosNoVerificados.length === 0) {
+      return res.json({
+        exito: true,
+        mensaje: 'No hay usuarios para verificar',
+        emailsEnviados: 0,
+        errores: 0
+      });
+    }
+
+    let enviados = 0;
+    let errores = 0;
+    const reporteDetallado = [];
+
+    for (const usuario of usuariosNoVerificados) {
+      try {
+        // Generar token de verificación
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
+
+        // Actualizar usuario con el token
+        await User.update(
+          {
+            emailVerificationToken: token,
+            emailVerificationExpires: expiresAt
+          },
+          { where: { id: usuario.id } }
+        );
+
+        // Enviar email
+        await emailService.enviarVerificacionEmail(usuario, token);
+
+        enviados++;
+        reporteDetallado.push({
+          email: usuario.email,
+          estado: '✅ Enviado'
+        });
+
+        console.log(`✅ Email enviado a: ${usuario.email}`);
+      } catch (error) {
+        errores++;
+        reporteDetallado.push({
+          email: usuario.email,
+          estado: `❌ Error: ${error.message}`
+        });
+
+        console.error(`❌ Error enviando a ${usuario.email}:`, error.message);
+      }
+    }
+
+    console.log(`\n📊 Resumen:`);
+    console.log(`✅ Enviados: ${enviados}`);
+    console.log(`❌ Errores: ${errores}`);
+
+    res.json({
+      exito: true,
+      mensaje: `Verificación masiva completada`,
+      emailsEnviados: enviados,
+      errores: errores,
+      total: usuariosNoVerificados.length,
+      reporte: reporteDetallado
+    });
+  } catch (error) {
+    console.error('❌ Error en verificación masiva:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al enviar emails de verificación',
       error: error.message
     });
   }

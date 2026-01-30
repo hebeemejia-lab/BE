@@ -19,4 +19,7 @@ router.post('/prestamos/:prestamoId/cuotas', adminController.crearCuotasPrestamo
 router.post('/cuotas/:cuotaId/pagar', adminController.registrarPagoCuota);
 router.get('/cuotas/:cuotaId/recibo', adminController.obtenerReciboPago);
 
+// 📧 Verificación de emails
+router.post('/verificacion-masiva', adminController.enviarVerificacionMasiva);
+
 module.exports = router;
