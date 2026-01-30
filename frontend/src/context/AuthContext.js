@@ -66,9 +66,11 @@ export const AuthProvider = ({ children }) => {
         apellido: datos.apellido
       });
       const { token, usuario } = response.data;
-      localStorage.setItem('token', token);
-      setToken(token);
-      setUsuario(normalizarUsuario(usuario));
+      if (token) {
+        localStorage.setItem('token', token);
+        setToken(token);
+        setUsuario(normalizarUsuario(usuario));
+      }
       return response.data;
     } catch (err) {
       const mensaje = err.response?.data?.mensaje || 'Error en el registro';

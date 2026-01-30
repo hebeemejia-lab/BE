@@ -26,7 +26,8 @@ async function crearUsuarioAdmin() {
       
       await adminExistente.update({
         password: passwordHash,
-        rol: 'admin'
+        rol: 'admin',
+        emailVerificado: true
       });
       
       console.log('✅ Usuario admin actualizado');
@@ -46,7 +47,8 @@ async function crearUsuarioAdmin() {
         telefono: '000-000-0000',
         direccion: 'Oficina Central',
         saldo: 0,
-        rol: 'admin'
+        rol: 'admin',
+        emailVerificado: true
       });
 
       console.log('✅ Usuario admin creado exitosamente');

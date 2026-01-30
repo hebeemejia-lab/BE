@@ -1,12 +1,14 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { authAPI } from '../services/api';
 import './Auth.css';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -14,6 +16,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setInfo('');
     setLoading(true);
 
     try {
@@ -26,6 +29,22 @@ export default function Login() {
     }
   };
 
+  const handleResendVerification = async () => {
+    setError('');
+    setInfo('');
+    if (!email) {
+      setError('Ingresa tu email para reenviar la verificación');
+      return;
+    }
+
+    try {
+      const response = await authAPI.resendVerification(email);
+      setInfo(response.data?.mensaje || 'Se envió un nuevo enlace de verificación');
+    } catch (err) {
+      setError(err.response?.data?.mensaje || 'No se pudo reenviar la verificación');
+    }
+  };
+
   return (
     <div className="auth-container">
       <div className="auth-card">
@@ -35,6 +54,7 @@ export default function Login() {
         </div>
 
         {error && <div className="error-message">{error}</div>}
+        {info && <div className="success-message">{info}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -68,6 +88,12 @@ export default function Login() {
 
         <div className="auth-footer">
           <p>¿No tienes cuenta? <a href="/register">Regístrate aquí</a></p>
+          <p>
+            ¿No recibiste el correo?{' '}
+            <button type="button" className="link-button" onClick={handleResendVerification}>
+              Reenviar verificación
+            </button>
+          </p>
         </div>
       </div>
     </div>

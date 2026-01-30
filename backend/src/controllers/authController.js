@@ -25,7 +25,10 @@ const updatePerfil = async (req, res) => {
   }
 };
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const { Op } = require('sequelize');
 const User = require('../models/User');
+const emailService = require('../services/emailService');
 
 // Registrar usuario
 const register = async (req, res) => {
@@ -52,6 +55,9 @@ const register = async (req, res) => {
       return res.status(400).json({ mensaje: 'La cédula ya está registrada' });
     }
 
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
     const nuevoUsuario = await User.create({
       nombre,
       apellido,
@@ -61,26 +67,26 @@ const register = async (req, res) => {
       telefono,
       direccion,
       saldo: saldo || 0,
+      emailVerificado: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: verificationExpires,
     });
 
     console.log('✅ Usuario creado:', nuevoUsuario.id);
 
-    const token = jwt.sign(
-      { id: nuevoUsuario.id, email: nuevoUsuario.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    await emailService.enviarVerificacionEmail(nuevoUsuario, verificationToken);
 
     res.status(201).json({
-      mensaje: 'Usuario registrado exitosamente',
+      mensaje: 'Usuario registrado. Revisa tu correo para verificar tu cuenta.',
+      requiereVerificacion: true,
       usuario: {
         id: nuevoUsuario.id,
         nombre: nuevoUsuario.nombre,
         apellido: nuevoUsuario.apellido,
         email: nuevoUsuario.email,
         saldo: parseFloat(nuevoUsuario.saldo),
+        emailVerificado: false,
       },
-      token,
     });
   } catch (error) {
     console.error('❌ Error en registro:', error.message);
@@ -107,6 +113,11 @@ const login = async (req, res) => {
       return res.status(401).json({ mensaje: 'Credenciales inválidas' });
     }
 
+    if (!usuario.emailVerificado && usuario.rol !== 'admin') {
+      console.warn('⚠️ Login - Email no verificado:', email);
+      return res.status(403).json({ mensaje: 'Verifica tu correo antes de iniciar sesión' });
+    }
+
     const esValida = await usuario.comparePassword(password);
     if (!esValida) {
       console.warn('⚠️ Login - Contraseña incorrecta para:', email);
@@ -129,12 +140,79 @@ const login = async (req, res) => {
         email: usuario.email,
         saldo: parseFloat(usuario.saldo),
         rol: usuario.rol || 'cliente',
+        emailVerificado: usuario.emailVerificado,
       },
       token,
     });
   } catch (error) {
     console.error('❌ Error en login:', error.message);
     res.status(500).json({ error: error.message });
+  }
+};
+
+// Verificar email
+const verifyEmail = async (req, res) => {
+  try {
+    const token = req.query.token || req.body.token;
+
+    if (!token) {
+      return res.status(400).json({ mensaje: 'Token de verificación requerido' });
+    }
+
+    const usuario = await User.findOne({
+      where: {
+        emailVerificationToken: token,
+        emailVerificationExpires: { [Op.gt]: new Date() },
+      },
+    });
+
+    if (!usuario) {
+      return res.status(400).json({ mensaje: 'Token inválido o expirado' });
+    }
+
+    usuario.emailVerificado = true;
+    usuario.emailVerificationToken = null;
+    usuario.emailVerificationExpires = null;
+    await usuario.save();
+
+    return res.json({ mensaje: 'Email verificado exitosamente' });
+  } catch (error) {
+    console.error('❌ Error verificando email:', error.message);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+// Reenviar verificación
+const resendVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ mensaje: 'Email requerido' });
+    }
+
+    const usuario = await User.findOne({ where: { email } });
+
+    if (!usuario) {
+      return res.json({ mensaje: 'Si el email existe, se enviará un enlace de verificación' });
+    }
+
+    if (usuario.emailVerificado) {
+      return res.json({ mensaje: 'El email ya está verificado' });
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    usuario.emailVerificationToken = verificationToken;
+    usuario.emailVerificationExpires = verificationExpires;
+    await usuario.save();
+
+    await emailService.enviarVerificacionEmail(usuario, verificationToken);
+
+    return res.json({ mensaje: 'Se envió un nuevo enlace de verificación' });
+  } catch (error) {
+    console.error('❌ Error reenviando verificación:', error.message);
+    return res.status(500).json({ error: error.message });
   }
 };
 
@@ -153,4 +231,4 @@ const getPerfil = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getPerfil, updatePerfil };
+module.exports = { register, login, getPerfil, updatePerfil, verifyEmail, resendVerification };
