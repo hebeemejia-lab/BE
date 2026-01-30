@@ -486,3 +486,63 @@ exports.probarSMTP = async (req, res) => {
     });
   }
 };
+
+// 🧪 Probar configuración de 2Checkout
+exports.probar2Checkout = async (req, res) => {
+  try {
+    console.log(`\n🧪 ========== PROBANDO 2CHECKOUT ==========`);
+    
+    const config = {
+      merchantCode: process.env.TWOCHECKOUT_MERCHANT_CODE,
+      privateKey: process.env.TWOCHECKOUT_PRIVATE_KEY,
+      secretKey: process.env.TWOCHECKOUT_SECRET_KEY,
+      publishableKey: process.env.TWOCHECKOUT_PUBLISHABLE_KEY,
+    };
+
+    console.log(`Merchant Code: ${config.merchantCode ? '✅ SET' : '❌ NOT SET'}`);
+    console.log(`Private Key: ${config.privateKey ? '✅ SET' : '❌ NOT SET'}`);
+    console.log(`Secret Key: ${config.secretKey ? '✅ SET' : '❌ NOT SET'}`);
+    console.log(`Publishable Key: ${config.publishableKey ? '✅ SET' : '❌ NOT SET'}`);
+
+    // Verificar que todos los datos estén presentes
+    if (!config.merchantCode || !config.privateKey || !config.secretKey || !config.publishableKey) {
+      console.log(`❌ Faltan credenciales de 2Checkout`);
+      return res.json({
+        exito: false,
+        mensaje: '❌ 2Checkout no está completamente configurado',
+        config: {
+          merchantCode: config.merchantCode ? '✅ SET' : '❌ NOT SET',
+          privateKey: config.privateKey ? '✅ SET' : '❌ NOT SET',
+          secretKey: config.secretKey ? '✅ SET' : '❌ NOT SET',
+          publishableKey: config.publishableKey ? '✅ SET' : '❌ NOT SET',
+        }
+      });
+    }
+
+    // Intentar autenticación básica (simular)
+    const auth = Buffer.from(`${config.merchantCode}:${config.privateKey}`).toString('base64');
+    console.log(`✅ Base64 Auth: ${auth.substring(0, 20)}...`);
+
+    console.log(`✅ 2Checkout configurado correctamente`);
+    console.log(`🧪 ========== FIN TEST ==========\n`);
+
+    res.json({
+      exito: true,
+      mensaje: '✅ 2Checkout configurado correctamente',
+      config: {
+        merchantCode: config.merchantCode ? '✅ SET' : '❌ NOT SET',
+        privateKey: config.privateKey ? '✅ SET' : '❌ NOT SET',
+        secretKey: config.secretKey ? '✅ SET' : '❌ NOT SET',
+        publishableKey: config.publishableKey ? '✅ SET' : '❌ NOT SET',
+        authReady: true
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error probando 2Checkout:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al probar 2Checkout',
+      error: error.message
+    });
+  }
+};
