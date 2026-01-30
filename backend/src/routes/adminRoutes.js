@@ -21,5 +21,6 @@ router.get('/cuotas/:cuotaId/recibo', adminController.obtenerReciboPago);
 
 // 📧 Verificación de emails
 router.post('/verificacion-masiva', adminController.enviarVerificacionMasiva);
+router.post('/probar-smtp', adminController.probarSMTP);
 
 module.exports = router;
