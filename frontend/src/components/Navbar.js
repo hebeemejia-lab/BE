@@ -60,32 +60,23 @@ export default function Navbar() {
               
               <div className="navbar-links">
                 <Link to="/dashboard" className="nav-link" onClick={handleMenuClose}>📊 Dashboard</Link>
+                <Link to="/recargas" className="nav-link" onClick={handleMenuClose}>💳 Recargas</Link>
+                <Link to="/retiros" className="nav-link" onClick={handleMenuClose}>💸 Retiros</Link>
+                <Link to="/vincular-cuenta" className="nav-link" onClick={handleMenuClose}>🏧 Vincular Cuenta</Link>
+                <Link to="/transferencias" className="nav-link" onClick={handleMenuClose}>🔄 Transferencias</Link>
+                <Link to="/transferencias-bancarias" className="nav-link" onClick={handleMenuClose}>🏦 Transf. Bancaria</Link>
+                <Link to="/transferencias-internacionales" className="nav-link" onClick={handleMenuClose}>🌍 Transf. Internacional</Link>
+                <Link to="/prestamos" className="nav-link" onClick={handleMenuClose}>📈 Préstamos</Link>
                 
-                {/* Servicios con dinero real */}
-                <div className="nav-section">
-                  <span className="nav-section-label">💰 Dinero</span>
-                  <Link to="/recargas" className="nav-link" onClick={handleMenuClose}>💳 Recargas</Link>
-                  <Link to="/retiros" className="nav-link" onClick={handleMenuClose}>💸 Retiros</Link>
-                  <Link to="/vincular-cuenta" className="nav-link" onClick={handleMenuClose}>🏧 Cuentas</Link>
-                  <Link to="/transferencias" className="nav-link" onClick={handleMenuClose}>🔄 Transferencias</Link>
-                  <Link to="/transferencias-bancarias" className="nav-link" onClick={handleMenuClose}>🏦 Transf. Bancaria</Link>
-                  <Link to="/prestamos" className="nav-link" onClick={handleMenuClose}>📈 Préstamos</Link>
-                </div>
-                
-                {/* Mostrar Admin Panel solo si el usuario es admin */}
                 {usuario.rol === 'admin' && (
-                  <Link to="/admin" className="nav-link admin-link" onClick={handleMenuClose}>⚙️ Admin Panel</Link>
+                  <Link to="/admin" className="nav-link admin-link" onClick={handleMenuClose}>⚙️ Admin</Link>
                 )}
                 
                 <Link to="/perfil" className="nav-link" onClick={handleMenuClose}>👤 Perfil</Link>
                 
                 <button onClick={handleLogout} className="nav-button logout-btn">
-                  Cerrar Sesión
+                  🚪 Cerrar Sesión
                 </button>
-
-                <a href="/politica_privacidad.md" target="_blank" rel="noopener noreferrer" className="nav-link priv-link">
-                  📋 Política de Privacidad
-                </a>
               </div>
             </div>
             {menuOpen && <div className="navbar-overlay" onClick={handleMenuClose}></div>}
