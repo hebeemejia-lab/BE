@@ -16,6 +16,13 @@
   height: 70px;
 }
 
+.navbar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
 .navbar-logo {
   display: flex;
   align-items: center;
@@ -30,10 +37,49 @@
   font-size: 32px;
 }
 
+.logo-text {
+  display: inline;
+}
+
+.hamburger {
+  display: none;
+  flex-direction: column;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  gap: 6px;
+}
+
+.hamburger span {
+  display: block;
+  width: 25px;
+  height: 3px;
+  background-color: #ffffff;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.hamburger.active span:nth-child(1) {
+  transform: rotate(45deg) translate(10px, 10px);
+}
+
+.hamburger.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -7px);
+}
+
 .navbar-right {
   display: flex;
   align-items: center;
   gap: 15px;
+}
+
+.navbar-overlay {
+  display: none;
 }
 
 .user-info {
@@ -140,18 +186,82 @@
   color: #ffffff;
 }
 
+.priv-link {
+  font-size: 12px;
+}
+
+/* RESPONSIVE STYLES */
 @media (max-width: 768px) {
   .navbar-container {
-    flex-direction: column;
-    height: auto;
     padding: 15px 20px;
+    height: auto;
+  }
+
+  .navbar-header {
+    width: 100%;
     gap: 15px;
   }
 
+  .hamburger {
+    display: flex;
+  }
+
+  .logo-text {
+    display: none;
+  }
+
+  .navbar-logo {
+    font-size: 20px;
+  }
+
   .navbar-right {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
     flex-direction: column;
-    width: 100%;
+    background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
+    padding: 20px;
     gap: 15px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  .navbar-right.open {
+    max-height: 500px;
+  }
+
+  .navbar-overlay {
+    display: block;
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+  }
+
+  .navbar-overlay.show {
+    display: block;
+  }
+
+  .user-info {
+    width: 100%;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    align-items: flex-start;
+  }
+
+  .user-name {
+    font-size: 14px;
+  }
+
+  .user-balance {
+    font-size: 11px;
   }
 
   .navbar-links {
@@ -172,23 +282,26 @@
   .nav-section-label {
     font-size: 11px;
     margin-right: 0;
+    width: 100%;
   }
 
   .nav-link {
     padding: 10px 12px;
     font-size: 14px;
     width: 100%;
-  }
-
-  .user-name {
-    font-size: 14px;
-  }
-
-  .user-balance {
-    font-size: 11px;
+    text-align: left;
   }
 
   .nav-button {
     width: 100%;
+  }
+
+  .admin-link {
+    width: 100%;
+  }
+
+  .priv-link {
+    width: 100%;
+    text-align: left;
   }
 }
