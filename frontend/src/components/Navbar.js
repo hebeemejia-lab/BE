@@ -60,7 +60,10 @@ export default function Navbar() {
               
               <div className="navbar-links">
                 <Link to="/dashboard" className="nav-link" onClick={handleMenuClose}>📊 Dashboard</Link>
-                <Link to="/recargas" className="nav-link" onClick={handleMenuClose}>💳 Recargas</Link>
+                <Link to="/recargas" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
+                  <img src="/imagen/BE (2) (1).png" alt="Recargas" className="nav-icon" />
+                  Recargas
+                </Link>
                 <Link to="/retiros" className="nav-link" onClick={handleMenuClose}>💸 Retiros</Link>
                 <Link to="/vincular-cuenta" className="nav-link" onClick={handleMenuClose}>🏧 Vincular Cuenta</Link>
                 <Link to="/transferencias" className="nav-link" onClick={handleMenuClose}>🔄 Transferencias</Link>
