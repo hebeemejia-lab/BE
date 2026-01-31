@@ -64,7 +64,10 @@ export default function Navbar() {
                   <img src="/imagen/BE (2) (1).png" alt="Recargas" className="nav-icon" />
                   Recargas
                 </Link>
-                <Link to="/retiros" className="nav-link" onClick={handleMenuClose}>💸 Retiros</Link>
+                <Link to="/retiros" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
+                  <img src="/imagen/BE (3) (1).png" alt="Retiros" className="nav-icon" />
+                  Retiros
+                </Link>
                 <Link to="/vincular-cuenta" className="nav-link" onClick={handleMenuClose}>🏧 Vincular Cuenta</Link>
                 <Link to="/transferencias" className="nav-link" onClick={handleMenuClose}>🔄 Transferencias</Link>
                 <Link to="/transferencias-bancarias" className="nav-link" onClick={handleMenuClose}>🏦 Transf. Bancaria</Link>
