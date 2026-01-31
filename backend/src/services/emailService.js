@@ -138,11 +138,234 @@ const emailService = {
       const verifyUrl = `${config.frontendUrl}/verificar-email?token=${encodeURIComponent(token)}`;
 
       const html = `
-        <h2>Hola, ${usuario.nombre}</h2>
-        <p>Para activar tu cuenta, confirma tu correo haciendo clic en el siguiente enlace:</p>
-        <p><a href="${verifyUrl}">Verificar correo</a></p>
-        <p>O copia este enlace: ${verifyUrl}</p>
-        <p>Este enlace expirará en 24 horas.</p>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifica tu cuenta - Banco Exclusivo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        .header {
+            background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .header-title {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .content {
+            padding: 40px 30px;
+            background: #ffffff;
+        }
+        .greeting {
+            font-size: 24px;
+            color: #001a4d;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 16px;
+            color: #333333;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .verify-button {
+            display: inline-block;
+            padding: 16px 40px;
+            background: linear-gradient(135deg, #cc0000 0%, #ff3333 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(204, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        .verify-button:hover {
+            background: linear-gradient(135deg, #ff3333 0%, #ff6666 100%);
+            box-shadow: 0 6px 20px rgba(204, 0, 0, 0.4);
+            transform: translateY(-2px);
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #003d99;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+        .info-box p {
+            margin: 0;
+            font-size: 14px;
+            color: #666666;
+        }
+        .link-container {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            word-break: break-all;
+        }
+        .link-text {
+            font-size: 13px;
+            color: #003d99;
+            font-family: monospace;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+        }
+        .footer-text {
+            font-size: 14px;
+            color: #666666;
+            margin-bottom: 10px;
+        }
+        .footer-link {
+            color: #003d99;
+            text-decoration: none;
+        }
+        .security-note {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+        }
+        .security-note p {
+            font-size: 14px;
+            color: #856404;
+            margin: 0;
+        }
+        .features {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .feature {
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+            padding: 10px;
+        }
+        .feature-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .feature-text {
+            font-size: 13px;
+            color: #666666;
+        }
+        @media only screen and (max-width: 600px) {
+            body { padding: 20px 10px; }
+            .content { padding: 30px 20px; }
+            .greeting { font-size: 20px; }
+            .verify-button { padding: 14px 30px; font-size: 16px; }
+            .features { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🏦</div>
+            <h1 class="header-title">Banco Exclusivo</h1>
+        </div>
+        
+        <div class="content">
+            <h2 class="greeting">¡Bienvenido, ${usuario.nombre}! 👋</h2>
+            
+            <p class="message">
+                Estás a un solo paso de activar tu cuenta en <strong>Banco Exclusivo</strong>. 
+                Para comenzar a disfrutar de todos nuestros servicios financieros, necesitamos verificar tu dirección de correo electrónico.
+            </p>
+            
+            <div class="button-container">
+                <a href="${verifyUrl}" class="verify-button">
+                    ✅ Verificar mi cuenta
+                </a>
+            </div>
+            
+            <div class="info-box">
+                <p>
+                    <strong>⏰ Este enlace expirará en 24 horas</strong><br>
+                    Si no solicitaste crear una cuenta, puedes ignorar este correo.
+                </p>
+            </div>
+            
+            <p class="message" style="font-size: 14px; color: #666;">
+                Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:
+            </p>
+            
+            <div class="link-container">
+                <p class="link-text">${verifyUrl}</p>
+            </div>
+            
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">💳</div>
+                    <p class="feature-text">Recargas seguras</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">💸</div>
+                    <p class="feature-text">Transferencias rápidas</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📊</div>
+                    <p class="feature-text">Control total</p>
+                </div>
+            </div>
+            
+            <div class="security-note">
+                <p>
+                    🔒 <strong>Seguridad:</strong> Nunca compartas este enlace con nadie. 
+                    Banco Exclusivo jamás te pedirá tu contraseña por correo.
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p class="footer-text">
+                <strong>Banco Exclusivo</strong><br>
+                Tu aliado financiero de confianza
+            </p>
+            <p class="footer-text">
+                <a href="${config.frontendUrl}" class="footer-link">www.bancoexclusivo.lat</a> | 
+                <a href="${config.frontendUrl}/politica_privacidad.md" class="footer-link">Política de Privacidad</a>
+            </p>
+            <p class="footer-text" style="font-size: 12px; margin-top: 15px; color: #999;">
+                © ${new Date().getFullYear()} Banco Exclusivo. Todos los derechos reservados.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
       `;
 
       // Preferir SendGrid
