@@ -398,26 +398,28 @@
   display: flex;
   gap: 10px;
   align-items: center;
-  background: white;
+  background: #f8f9fa;
   padding: 15px;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap;
 }
 
 .formulario-pago select,
 .formulario-pago input {
-  padding: 8px 12px;
+  padding: 10px 12px;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   font-size: 14px;
 }
 
 .formulario-pago select {
-  min-width: 130px;
+  min-width: 140px;
 }
 
 .formulario-pago input {
   flex: 1;
+  min-width: 150px;
 }
 
 .btn-confirmar {
@@ -486,6 +488,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
+  align-items: end;
 }
 
 .cliente-form input {

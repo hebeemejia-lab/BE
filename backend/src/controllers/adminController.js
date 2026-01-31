@@ -358,16 +358,23 @@ exports.registrarPagoCuota = async (req, res) => {
     const { cuotaId } = req.params;
     const { metodoPago, referenciaPago, notas } = req.body;
 
+    console.log('🔍 Buscando cuota con ID:', cuotaId);
+    console.log('📦 Datos recibidos:', { metodoPago, referenciaPago, notas });
+
     const cuota = await CuotaPrestamo.findByPk(cuotaId);
 
     if (!cuota) {
+      console.log('❌ Cuota no encontrada');
       return res.status(404).json({
         exito: false,
         mensaje: 'Cuota no encontrada'
       });
     }
 
+    console.log('✅ Cuota encontrada:', cuota.toJSON());
+
     if (cuota.pagado) {
+      console.log('⚠️ Cuota ya pagada');
       return res.status(400).json({
         exito: false,
         mensaje: 'Esta cuota ya está pagada'
@@ -380,7 +387,10 @@ exports.registrarPagoCuota = async (req, res) => {
     cuota.metodoPago = metodoPago || 'Efectivo';
     cuota.referenciaPago = referenciaPago || null;
     cuota.notas = notas || null;
+    
+    console.log('💾 Guardando cuota actualizada...');
     await cuota.save();
+    console.log('✅ Cuota guardada correctamente');
 
     // Verificar si todas las cuotas están pagadas
     const todasCuotas = await CuotaPrestamo.findAll({
@@ -395,6 +405,7 @@ exports.registrarPagoCuota = async (req, res) => {
       if (prestamo) {
         prestamo.estado = 'pagado';
         await prestamo.save();
+        console.log('✅ Préstamo marcado como pagado');
       }
     }
 
@@ -406,6 +417,7 @@ exports.registrarPagoCuota = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error registrando pago:', error);
+    console.error('❌ Stack:', error.stack);
     res.status(500).json({
       exito: false,
       mensaje: 'Error al registrar pago',
