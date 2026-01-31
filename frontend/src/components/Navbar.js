@@ -29,7 +29,7 @@ export default function Navbar() {
       <div className="navbar-container">
         <div className="navbar-header">
           <Link to="/" className="navbar-logo" onClick={handleMenuClose}>
-            <span className="logo-icon">🏦</span>
+            <img src="/logo-banco.png" alt="Banco Exclusivo" className="logo-img" />
             <span className="logo-text">Banco Exclusivo</span>
           </Link>
 
