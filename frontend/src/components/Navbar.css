@@ -117,11 +117,20 @@
   transition: all 0.3s ease;
   white-space: nowrap;
   font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .nav-link:hover {
   background-color: rgba(204, 0, 0, 0.2);
   color: #ff3333;
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 
 .admin-link {
