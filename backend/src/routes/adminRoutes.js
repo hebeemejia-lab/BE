@@ -15,6 +15,9 @@ router.get('/test', (req, res) => {
 // 📊 Dashboard
 router.get('/dashboard', adminController.obtenerDashboard);
 
+// 👥 Usuarios
+router.get('/usuarios', adminController.listarUsuarios);
+
 // 💰 Préstamos
 router.get('/prestamos', adminController.listarPrestamos);
 router.get('/prestamos/:id', adminController.obtenerPrestamo);

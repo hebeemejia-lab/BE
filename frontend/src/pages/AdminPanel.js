@@ -6,6 +6,7 @@ const AdminPanel = () => {
   const [vistaActual, setVistaActual] = useState('dashboard');
   const [dashboard, setDashboard] = useState(null);
   const [prestamos, setPrestamos] = useState([]);
+  const [usuariosAdmin, setUsuariosAdmin] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [prestamoSeleccionado, setPrestamoSeleccionado] = useState(null);
 
@@ -29,8 +30,12 @@ const AdminPanel = () => {
   const cargarPrestamos = async () => {
     try {
       setCargando(true);
-      const response = await api.get('/admin/prestamos');
-      setPrestamos(response.data.prestamos);
+      const [prestamosRes, usuariosRes] = await Promise.all([
+        api.get('/admin/prestamos'),
+        api.get('/admin/usuarios')
+      ]);
+      setPrestamos(prestamosRes.data.prestamos);
+      setUsuariosAdmin(usuariosRes.data.usuarios || []);
       setVistaActual('prestamos');
     } catch (error) {
       console.error('Error cargando préstamos:', error);
@@ -411,6 +416,7 @@ const AdminPanel = () => {
             onRegistrarPago={registrarPago}
             onImprimirRecibo={imprimirRecibo}
             onCrearPrestamo={crearPrestamoAdmin}
+            usuariosAdmin={usuariosAdmin}
             onImprimirPrestamo={(prestamo, formato) => {
               if (formato === 'pdf') {
                 imprimirPrestamoPDF(prestamo);
@@ -488,10 +494,10 @@ const DashboardView = ({ dashboard }) => (
 );
 
 // Componente Préstamos
-const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPrestamo, onImprimirPrestamo }) => {
+const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPrestamo, onImprimirPrestamo, usuariosAdmin }) => {
   const [prestamoExpandido, setPrestamoExpandido] = useState(null);
   const [nuevoPrestamo, setNuevoPrestamo] = useState({
-    usuarioEmail: '',
+    usuarioId: '',
     monto: '',
     plazo: '',
     tasaInteres: '5',
@@ -503,14 +509,14 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
     e.preventDefault();
     setCreandoPrestamo(true);
     await onCrearPrestamo({
-      usuarioEmail: nuevoPrestamo.usuarioEmail,
+      usuarioId: nuevoPrestamo.usuarioId,
       monto: nuevoPrestamo.monto,
       plazo: nuevoPrestamo.plazo,
       tasaInteres: nuevoPrestamo.tasaInteres,
       fechaPrimerVencimiento: nuevoPrestamo.fechaPrimerVencimiento || null
     });
     setNuevoPrestamo({
-      usuarioEmail: '',
+      usuarioId: '',
       monto: '',
       plazo: '',
       tasaInteres: '5',
@@ -526,13 +532,18 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
       <div className="prestamo-crear">
         <h3>Crear nuevo préstamo</h3>
         <form className="prestamo-form" onSubmit={handleCrearPrestamo}>
-          <input
-            type="email"
-            placeholder="Email del usuario"
-            value={nuevoPrestamo.usuarioEmail}
-            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, usuarioEmail: e.target.value })}
+          <select
+            value={nuevoPrestamo.usuarioId}
+            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, usuarioId: e.target.value })}
             required
-          />
+          >
+            <option value="">Selecciona usuario</option>
+            {usuariosAdmin.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.nombre} {u.apellido} - {u.email}
+              </option>
+            ))}
+          </select>
           <input
             type="number"
             step="0.01"

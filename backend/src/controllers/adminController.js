@@ -66,6 +66,29 @@ exports.obtenerDashboard = async (req, res) => {
   }
 };
 
+// Listar usuarios básicos (admin)
+exports.listarUsuarios = async (req, res) => {
+  try {
+    const usuarios = await User.findAll({
+      attributes: ['id', 'nombre', 'apellido', 'email'],
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      exito: true,
+      total: usuarios.length,
+      usuarios
+    });
+  } catch (error) {
+    console.error('❌ Error listando usuarios:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al listar usuarios',
+      error: error.message
+    });
+  }
+};
+
 // Listar todos los préstamos con información del cliente
 exports.listarPrestamos = async (req, res) => {
   try {
