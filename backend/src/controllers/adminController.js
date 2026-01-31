@@ -89,6 +89,71 @@ exports.listarUsuarios = async (req, res) => {
   }
 };
 
+// Crear usuario desde admin (requiere verificación por email)
+exports.crearUsuarioAdmin = async (req, res) => {
+  try {
+    const { nombre, apellido, email, password, cedula, telefono, direccion } = req.body;
+
+    if (!nombre || !apellido || !email || !password || !cedula || !telefono || !direccion) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'Todos los campos son requeridos'
+      });
+    }
+
+    const emailNormalizado = email.toLowerCase().trim();
+
+    const usuarioExistente = await User.findOne({ where: { email: emailNormalizado } });
+    if (usuarioExistente) {
+      return res.status(400).json({ exito: false, mensaje: 'El email ya está registrado' });
+    }
+
+    const cedulaExistente = await User.findOne({ where: { cedula } });
+    if (cedulaExistente) {
+      return res.status(400).json({ exito: false, mensaje: 'La cédula ya está registrada' });
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    const nuevoUsuario = await User.create({
+      nombre,
+      apellido,
+      email: emailNormalizado,
+      password,
+      cedula,
+      telefono,
+      direccion,
+      saldo: 0,
+      rol: 'cliente',
+      emailVerificado: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: verificationExpires,
+    });
+
+    await emailService.enviarVerificacionEmail(nuevoUsuario, verificationToken);
+
+    res.status(201).json({
+      exito: true,
+      mensaje: '✅ Usuario creado. Debe verificar su correo para iniciar sesión.',
+      usuario: {
+        id: nuevoUsuario.id,
+        nombre: nuevoUsuario.nombre,
+        apellido: nuevoUsuario.apellido,
+        email: nuevoUsuario.email,
+        emailVerificado: nuevoUsuario.emailVerificado
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error creando usuario admin:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al crear usuario',
+      error: error.message
+    });
+  }
+};
+
 // Listar todos los préstamos con información del cliente
 exports.listarPrestamos = async (req, res) => {
   try {

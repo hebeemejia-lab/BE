@@ -17,6 +17,7 @@ router.get('/dashboard', adminController.obtenerDashboard);
 
 // 👥 Usuarios
 router.get('/usuarios', adminController.listarUsuarios);
+router.post('/usuarios', adminController.crearUsuarioAdmin);
 
 // 💰 Préstamos
 router.get('/prestamos', adminController.listarPrestamos);
