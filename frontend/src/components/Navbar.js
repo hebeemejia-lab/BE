@@ -61,15 +61,18 @@ export default function Navbar() {
               <div className="navbar-links">
                 <Link to="/dashboard" className="nav-link" onClick={handleMenuClose}>📊 Dashboard</Link>
                 <Link to="/recargas" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
-                  <img src="/imagen/BE (2) (1).png" alt="Recargas" className="nav-icon" />
+                  <img src="/imagen/BE (4) (1).png" alt="Recargas" className="nav-icon" />
                   Recargas
                 </Link>
                 <Link to="/retiros" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
-                  <img src="/imagen/BE (3) (1).png" alt="Retiros" className="nav-icon" />
+                  <img src="/imagen/BE (5) (1).png" alt="Retiros" className="nav-icon" />
                   Retiros
                 </Link>
                 <Link to="/vincular-cuenta" className="nav-link" onClick={handleMenuClose}>🏧 Vincular Cuenta</Link>
-                <Link to="/transferencias" className="nav-link" onClick={handleMenuClose}>🔄 Transferencias</Link>
+                <Link to="/transferencias" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
+                  <img src="/imagen/BE (6) (1).png" alt="Transferencias" className="nav-icon" />
+                  Transferencias
+                </Link>
                 <Link to="/transferencias-bancarias" className="nav-link" onClick={handleMenuClose}>🏦 Transf. Bancaria</Link>
                 <Link to="/transferencias-internacionales" className="nav-link" onClick={handleMenuClose}>🌍 Transf. Internacional</Link>
                 <Link to="/prestamos" className="nav-link" onClick={handleMenuClose}>📈 Préstamos</Link>
