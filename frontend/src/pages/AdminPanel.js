@@ -9,6 +9,7 @@ const AdminPanel = () => {
   const [usuariosAdmin, setUsuariosAdmin] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [prestamoSeleccionado, setPrestamoSeleccionado] = useState(null);
+  const [usuariosCargando, setUsuariosCargando] = useState(false);
 
   useEffect(() => {
     cargarDashboard();
@@ -42,6 +43,34 @@ const AdminPanel = () => {
       alert('Error al cargar préstamos');
     } finally {
       setCargando(false);
+    }
+  };
+
+  const cargarUsuarios = async () => {
+    try {
+      setUsuariosCargando(true);
+      const response = await api.get('/admin/usuarios');
+      setUsuariosAdmin(response.data.usuarios || []);
+      setVistaActual('clientes');
+    } catch (error) {
+      console.error('Error cargando usuarios:', error);
+      alert('Error al cargar usuarios');
+    } finally {
+      setUsuariosCargando(false);
+    }
+  };
+
+  const crearUsuarioAdmin = async (data) => {
+    try {
+      setUsuariosCargando(true);
+      const response = await api.post('/admin/usuarios', data);
+      alert(response.data.mensaje || 'Usuario creado');
+      await cargarUsuarios();
+    } catch (error) {
+      console.error('Error creando usuario:', error);
+      alert('Error al crear usuario');
+    } finally {
+      setUsuariosCargando(false);
     }
   };
 
@@ -392,6 +421,12 @@ const AdminPanel = () => {
             💰 Gestión Préstamos
           </button>
           <button 
+            className={vistaActual === 'clientes' ? 'active' : ''}
+            onClick={cargarUsuarios}
+          >
+            👤 Clientes
+          </button>
+          <button 
             className={vistaActual === 'faq' ? 'active' : ''}
             onClick={() => setVistaActual('faq')}
           >
@@ -424,6 +459,14 @@ const AdminPanel = () => {
                 imprimirPrestamo88(prestamo);
               }
             }}
+          />
+        )}
+
+        {vistaActual === 'clientes' && (
+          <ClientesView
+            usuarios={usuariosAdmin}
+            cargando={usuariosCargando}
+            onCrearUsuario={crearUsuarioAdmin}
           />
         )}
 
@@ -492,6 +535,117 @@ const DashboardView = ({ dashboard }) => (
     </div>
   </div>
 );
+
+// Componente Clientes
+const ClientesView = ({ usuarios, cargando, onCrearUsuario }) => {
+  const [form, setForm] = useState({
+    nombre: '',
+    apellido: '',
+    email: '',
+    password: '',
+    cedula: '',
+    telefono: '',
+    direccion: ''
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await onCrearUsuario(form);
+    setForm({
+      nombre: '',
+      apellido: '',
+      email: '',
+      password: '',
+      cedula: '',
+      telefono: '',
+      direccion: ''
+    });
+  };
+
+  return (
+    <div className="clientes-view">
+      <h1>👤 Clientes</h1>
+
+      <div className="cliente-crear">
+        <h3>Crear cliente</h3>
+        <form className="cliente-form" onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder="Nombre"
+            value={form.nombre}
+            onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Apellido"
+            value={form.apellido}
+            onChange={(e) => setForm({ ...form, apellido: e.target.value })}
+            required
+          />
+          <input
+            type="email"
+            placeholder="Correo"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Contraseña"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Cédula"
+            value={form.cedula}
+            onChange={(e) => setForm({ ...form, cedula: e.target.value })}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Teléfono"
+            value={form.telefono}
+            onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Dirección"
+            value={form.direccion}
+            onChange={(e) => setForm({ ...form, direccion: e.target.value })}
+            required
+          />
+          <button type="submit" className="btn-crear">
+            ➕ Crear cliente
+          </button>
+        </form>
+      </div>
+
+      {cargando ? (
+        <div className="admin-loading">Cargando...</div>
+      ) : (
+        <div className="clientes-lista">
+          {usuarios.length === 0 ? (
+            <p>No hay clientes registrados</p>
+          ) : (
+            usuarios.map((u) => (
+              <div key={u.id} className="cliente-item">
+                <div>
+                  <strong>{u.nombre} {u.apellido}</strong>
+                  <div className="cliente-email">{u.email}</div>
+                </div>
+                <span className="cliente-id">#{u.id}</span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Componente Préstamos
 const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPrestamo, onImprimirPrestamo, usuariosAdmin }) => {
