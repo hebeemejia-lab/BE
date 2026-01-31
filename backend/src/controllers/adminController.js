@@ -127,6 +127,101 @@ exports.listarPrestamos = async (req, res) => {
   }
 };
 
+// Crear préstamo desde admin (con cuotas)
+exports.crearPrestamoAdmin = async (req, res) => {
+  try {
+    const { usuarioEmail, usuarioId, monto, plazo, tasaInteres, fechaPrimerVencimiento } = req.body;
+
+    if ((!usuarioEmail && !usuarioId) || !monto || !plazo) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'Faltan datos obligatorios (usuario, monto, plazo)'
+      });
+    }
+
+    const montoNumero = parseFloat(monto);
+    const plazoNumero = parseInt(plazo, 10);
+    const tasaNumero = tasaInteres !== undefined && tasaInteres !== null && tasaInteres !== ''
+      ? parseFloat(tasaInteres)
+      : 5;
+
+    if (!Number.isFinite(montoNumero) || montoNumero <= 0) {
+      return res.status(400).json({ exito: false, mensaje: 'Monto inválido' });
+    }
+
+    if (!Number.isFinite(plazoNumero) || plazoNumero <= 0) {
+      return res.status(400).json({ exito: false, mensaje: 'Plazo inválido' });
+    }
+
+    const usuario = usuarioId
+      ? await User.findByPk(usuarioId)
+      : await User.findOne({ where: { email: usuarioEmail } });
+
+    if (!usuario) {
+      return res.status(404).json({ exito: false, mensaje: 'Usuario no encontrado' });
+    }
+
+    const prestamo = await Loan.create({
+      usuarioId: usuario.id,
+      montoSolicitado: montoNumero,
+      montoAprobado: montoNumero,
+      tasaInteres: tasaNumero,
+      plazo: plazoNumero,
+      estado: 'aprobado',
+      bancoDespositante: process.env.BANCO_NOMBRE,
+      cuentaBancaria: process.env.BANCO_CUENTA,
+      emailAprobacion: process.env.ADMIN_EMAIL,
+      fechaAprobacion: new Date(),
+      numeroReferencia: `PREST-ADMIN-${Date.now().toString().slice(-8)}`
+    });
+
+    const tasaMensual = tasaNumero > 0 ? (tasaNumero / 12 / 100) : 0;
+    let cuotaMensual = 0;
+    if (tasaMensual > 0) {
+      cuotaMensual = (montoNumero * tasaMensual * Math.pow(1 + tasaMensual, plazoNumero)) /
+        (Math.pow(1 + tasaMensual, plazoNumero) - 1);
+    } else {
+      cuotaMensual = montoNumero / plazoNumero;
+    }
+    cuotaMensual = Math.round(cuotaMensual * 100) / 100;
+
+    const cuotas = [];
+    const fechaBase = fechaPrimerVencimiento ? new Date(fechaPrimerVencimiento) : new Date();
+
+    for (let i = 1; i <= plazoNumero; i++) {
+      const fechaVencimiento = new Date(fechaBase);
+      fechaVencimiento.setMonth(fechaVencimiento.getMonth() + (fechaPrimerVencimiento ? (i - 1) : i));
+
+      const cuota = await CuotaPrestamo.create({
+        prestamoId: prestamo.id,
+        numeroCuota: i,
+        montoCuota: cuotaMensual,
+        pagado: false,
+        fechaVencimiento
+      });
+
+      cuotas.push(cuota);
+    }
+
+    usuario.saldo = parseFloat(usuario.saldo || 0) + montoNumero;
+    await usuario.save();
+
+    res.json({
+      exito: true,
+      mensaje: '✅ Préstamo creado con cuotas',
+      prestamo: prestamo.toJSON(),
+      cuotas: cuotas.map(c => c.toJSON())
+    });
+  } catch (error) {
+    console.error('❌ Error creando préstamo admin:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al crear préstamo',
+      error: error.message
+    });
+  }
+};
+
 // Obtener detalles de un préstamo específico
 exports.obtenerPrestamo = async (req, res) => {
   try {

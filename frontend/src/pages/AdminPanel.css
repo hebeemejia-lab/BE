@@ -131,6 +131,48 @@
   gap: 20px;
 }
 
+.prestamo-crear {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.prestamo-crear h3 {
+  margin: 0 0 15px 0;
+  color: #2d3748;
+}
+
+.prestamo-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.prestamo-form input {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.btn-crear {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.btn-crear:hover {
+  background: #1d4ed8;
+}
+
 .prestamo-card {
   background: white;
   border-radius: 12px;
@@ -228,6 +270,13 @@
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #e2e8f0;
+}
+
+.prestamo-acciones {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
 }
 
 .prestamo-detalles h4 {
@@ -439,5 +488,9 @@
 
   .formulario-pago {
     flex-direction: column;
+  }
+
+  .prestamo-form {
+    grid-template-columns: 1fr;
   }
 }
