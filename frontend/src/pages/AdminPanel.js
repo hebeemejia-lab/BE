@@ -76,6 +76,7 @@ const AdminPanel = () => {
 
   const registrarPago = async (cuotaId, metodoPago, referencia, notas) => {
     try {
+      console.log('📝 Registrando pago con:', { cuotaId, metodoPago, referencia, notas });
       const response = await api.post(`/admin/cuotas/${cuotaId}/pagar`, {
         metodoPago,
         referenciaPago: referencia,
@@ -85,8 +86,10 @@ const AdminPanel = () => {
       alert(response.data.mensaje);
       cargarPrestamos(); // Recargar lista
     } catch (error) {
-      console.error('Error registrando pago:', error);
-      alert('Error al registrar pago');
+      console.error('❌ Error completo registrando pago:', error);
+      console.error('❌ Respuesta del servidor:', error.response?.data);
+      console.error('❌ Status:', error.response?.status);
+      alert(`Error al registrar pago: ${error.response?.data?.mensaje || error.message}`);
     }
   };
 
