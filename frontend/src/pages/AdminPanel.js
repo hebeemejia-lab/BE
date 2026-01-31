@@ -56,6 +56,144 @@ const AdminPanel = () => {
     }
   };
 
+  const crearPrestamoAdmin = async (data) => {
+    try {
+      setCargando(true);
+      const response = await api.post('/admin/prestamos', data);
+      alert(response.data.mensaje || 'Préstamo creado');
+      await cargarPrestamos();
+    } catch (error) {
+      console.error('Error creando préstamo:', error);
+      alert('Error al crear préstamo');
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const imprimirPrestamoPDF = (prestamo) => {
+    const ventana = window.open('', '_blank');
+    const monto = parseFloat(prestamo.montoAprobado || prestamo.montoSolicitado || 0).toFixed(2);
+    ventana.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Factura Préstamo - #${prestamo.id}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .header h1 { color: #001a4d; margin: 0; }
+          .info { margin: 20px 0; }
+          .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+          .total { background: #f0f0f0; padding: 15px; margin-top: 20px; text-align: right; font-size: 18px; font-weight: bold; }
+          .footer { margin-top: 40px; text-align: center; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Banco Exclusivo</h1>
+          <p>Factura de Préstamo</p>
+          <p><strong>#${prestamo.id}</strong></p>
+        </div>
+        
+        <div class="info">
+          <div class="info-row">
+            <span><strong>Cliente:</strong></span>
+            <span>${prestamo.User?.nombre || ''} ${prestamo.User?.apellido || ''}</span>
+          </div>
+          <div class="info-row">
+            <span><strong>Correo:</strong></span>
+            <span>${prestamo.User?.email || ''}</span>
+          </div>
+          <div class="info-row">
+            <span><strong>Fecha:</strong></span>
+            <span>${new Date(prestamo.createdAt).toLocaleDateString()}</span>
+          </div>
+          <div class="info-row">
+            <span><strong>Plazo:</strong></span>
+            <span>${prestamo.plazo} cuotas</span>
+          </div>
+          <div class="info-row">
+            <span><strong>Tasa:</strong></span>
+            <span>${prestamo.tasaInteres}%</span>
+          </div>
+        </div>
+        
+        <div class="total">
+          Monto del Préstamo: $${monto}
+        </div>
+        
+        <div class="footer">
+          <p>Banco Exclusivo - www.bancoexclusivo.lat</p>
+          <p>Documento generado electrónicamente</p>
+        </div>
+      </body>
+      </html>
+    `);
+    ventana.document.close();
+    ventana.print();
+  };
+
+  const imprimirPrestamo88 = (prestamo) => {
+    const ventana = window.open('', '_blank');
+    const monto = parseFloat(prestamo.montoAprobado || prestamo.montoSolicitado || 0).toFixed(2);
+    ventana.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Factura Préstamo - #${prestamo.id}</title>
+        <style>
+          @media print {
+            @page { size: 88mm auto; margin: 0; }
+          }
+          body { 
+            font-family: 'Courier New', monospace; 
+            width: 88mm; 
+            margin: 0 auto; 
+            padding: 5mm;
+            font-size: 11px;
+          }
+          .center { text-align: center; }
+          .bold { font-weight: bold; }
+          .line { border-top: 1px dashed #000; margin: 5px 0; }
+          .row { display: flex; justify-content: space-between; margin: 3px 0; }
+          .total { font-size: 14px; font-weight: bold; margin-top: 10px; }
+        </style>
+      </head>
+      <body>
+        <div class="center bold">BANCO EXCLUSIVO</div>
+        <div class="center">www.bancoexclusivo.lat</div>
+        <div class="line"></div>
+        <div class="center bold">FACTURA PRÉSTAMO</div>
+        <div class="center">#${prestamo.id}</div>
+        <div class="line"></div>
+        <div class="row">
+          <span>Cliente:</span>
+          <span>${prestamo.User?.nombre || ''}</span>
+        </div>
+        <div class="row">
+          <span>Plazo:</span>
+          <span>${prestamo.plazo}</span>
+        </div>
+        <div class="row">
+          <span>Tasa:</span>
+          <span>${prestamo.tasaInteres}%</span>
+        </div>
+        <div class="line"></div>
+        <div class="row total">
+          <span>TOTAL:</span>
+          <span>$${monto}</span>
+        </div>
+        <div class="line"></div>
+        <div class="center" style="margin-top: 10px; font-size: 9px;">
+          ${new Date().toLocaleString()}
+        </div>
+      </body>
+      </html>
+    `);
+    ventana.document.close();
+    ventana.print();
+  };
+
   const imprimirRecibo = async (cuotaId, formato) => {
     try {
       const response = await api.get(`/admin/cuotas/${cuotaId}/recibo`);
@@ -272,6 +410,14 @@ const AdminPanel = () => {
             prestamos={prestamos} 
             onRegistrarPago={registrarPago}
             onImprimirRecibo={imprimirRecibo}
+            onCrearPrestamo={crearPrestamoAdmin}
+            onImprimirPrestamo={(prestamo, formato) => {
+              if (formato === 'pdf') {
+                imprimirPrestamoPDF(prestamo);
+              } else {
+                imprimirPrestamo88(prestamo);
+              }
+            }}
           />
         )}
 
@@ -342,12 +488,84 @@ const DashboardView = ({ dashboard }) => (
 );
 
 // Componente Préstamos
-const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo }) => {
+const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPrestamo, onImprimirPrestamo }) => {
   const [prestamoExpandido, setPrestamoExpandido] = useState(null);
+  const [nuevoPrestamo, setNuevoPrestamo] = useState({
+    usuarioEmail: '',
+    monto: '',
+    plazo: '',
+    tasaInteres: '5',
+    fechaPrimerVencimiento: ''
+  });
+  const [creandoPrestamo, setCreandoPrestamo] = useState(false);
+
+  const handleCrearPrestamo = async (e) => {
+    e.preventDefault();
+    setCreandoPrestamo(true);
+    await onCrearPrestamo({
+      usuarioEmail: nuevoPrestamo.usuarioEmail,
+      monto: nuevoPrestamo.monto,
+      plazo: nuevoPrestamo.plazo,
+      tasaInteres: nuevoPrestamo.tasaInteres,
+      fechaPrimerVencimiento: nuevoPrestamo.fechaPrimerVencimiento || null
+    });
+    setNuevoPrestamo({
+      usuarioEmail: '',
+      monto: '',
+      plazo: '',
+      tasaInteres: '5',
+      fechaPrimerVencimiento: ''
+    });
+    setCreandoPrestamo(false);
+  };
 
   return (
     <div className="prestamos-view">
       <h1>💰 Gestión de Préstamos</h1>
+
+      <div className="prestamo-crear">
+        <h3>Crear nuevo préstamo</h3>
+        <form className="prestamo-form" onSubmit={handleCrearPrestamo}>
+          <input
+            type="email"
+            placeholder="Email del usuario"
+            value={nuevoPrestamo.usuarioEmail}
+            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, usuarioEmail: e.target.value })}
+            required
+          />
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Monto"
+            value={nuevoPrestamo.monto}
+            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, monto: e.target.value })}
+            required
+          />
+          <input
+            type="number"
+            placeholder="Número de cuotas"
+            value={nuevoPrestamo.plazo}
+            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, plazo: e.target.value })}
+            required
+          />
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Tasa (%)"
+            value={nuevoPrestamo.tasaInteres}
+            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, tasaInteres: e.target.value })}
+          />
+          <input
+            type="date"
+            placeholder="Primer vencimiento"
+            value={nuevoPrestamo.fechaPrimerVencimiento}
+            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, fechaPrimerVencimiento: e.target.value })}
+          />
+          <button type="submit" className="btn-crear" disabled={creandoPrestamo}>
+            {creandoPrestamo ? 'Creando...' : '➕ Crear préstamo'}
+          </button>
+        </form>
+      </div>
       
       {prestamos.length === 0 ? (
         <p>No hay préstamos registrados</p>
@@ -363,6 +581,7 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo }) => {
               )}
               onRegistrarPago={onRegistrarPago}
               onImprimirRecibo={onImprimirRecibo}
+              onImprimirPrestamo={onImprimirPrestamo}
             />
           ))}
         </div>
@@ -372,7 +591,7 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo }) => {
 };
 
 // Componente Préstamo Card
-const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprimirRecibo }) => {
+const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprimirRecibo, onImprimirPrestamo }) => {
   const [mostrarFormularioPago, setMostrarFormularioPago] = useState(null);
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [referencia, setReferencia] = useState('');
@@ -419,6 +638,26 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
       {/* Detalles expandibles */}
       {expandido && (
         <div className="prestamo-detalles">
+          <div className="prestamo-acciones">
+            <button
+              className="btn-imprimir btn-pdf"
+              onClick={(e) => {
+                e.stopPropagation();
+                onImprimirPrestamo(prestamo, 'pdf');
+              }}
+            >
+              📄 Factura PDF
+            </button>
+            <button
+              className="btn-imprimir btn-factura88"
+              onClick={(e) => {
+                e.stopPropagation();
+                onImprimirPrestamo(prestamo, 'factura88');
+              }}
+            >
+              🧾 Factura 88mm
+            </button>
+          </div>
           <h4>Cuotas:</h4>
           <div className="cuotas-lista">
             {prestamo.cuotas.map(cuota => (

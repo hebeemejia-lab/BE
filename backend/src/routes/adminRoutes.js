@@ -18,6 +18,7 @@ router.get('/dashboard', adminController.obtenerDashboard);
 // 💰 Préstamos
 router.get('/prestamos', adminController.listarPrestamos);
 router.get('/prestamos/:id', adminController.obtenerPrestamo);
+router.post('/prestamos', adminController.crearPrestamoAdmin);
 router.post('/prestamos/:prestamoId/cuotas', adminController.crearCuotasPrestamo);
 
 // 💳 Cuotas
