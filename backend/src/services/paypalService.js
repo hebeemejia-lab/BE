@@ -60,7 +60,7 @@ const crearOrden = async ({ monto, currency = 'USD', returnUrl, cancelUrl, refer
       return_url: returnUrl,
       cancel_url: cancelUrl,
       user_action: 'CONTINUE',
-      landing_page: 'GUEST_CHECKOUT',
+      landing_page: 'BILLING',  // BILLING permite guest checkout sin login
     },
   };
 
