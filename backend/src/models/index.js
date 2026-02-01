@@ -14,14 +14,18 @@ Loan.belongsTo(User, {
   foreignKey: 'usuarioId'
 });
 
-// Usuario tiene una cuenta bancaria
-User.hasOne(BankAccount, {
+// Usuario tiene muchas cuentas bancarias
+User.hasMany(BankAccount, {
   foreignKey: 'usuarioId',
-  as: 'cuentaBancaria'
+  as: 'cuentasBancarias',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
 });
 
 BankAccount.belongsTo(User, {
-  foreignKey: 'usuarioId'
+  foreignKey: 'usuarioId',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
 });
 
 // Préstamo tiene muchas cuotas

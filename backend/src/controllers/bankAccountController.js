@@ -30,10 +30,10 @@ const vincularCuenta = async (req, res) => {
     ];
 
     if (bancosRD.includes(banco)) {
-      // Guardar cuenta local con código SWIFT
+      // Guardar cuenta local con código SWIFT (sin token único)
       const cuentaLocal = await BankAccount.create({
         usuarioId,
-        bankAccountToken: ruteo, // SWIFT code
+        bankAccountToken: null, // No usar token para bancos RD
         nombreCuenta,
         numerosCuenta: numeroCuenta.slice(-4),
         banco,
