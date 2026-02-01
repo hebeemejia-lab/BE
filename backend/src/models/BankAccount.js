@@ -17,8 +17,8 @@ const BankAccount = sequelize.define('BankAccount', {
   },
   bankAccountToken: {
     type: DataTypes.STRING,
-    allowNull: false, // Token de Stripe
-    unique: true,
+    allowNull: true, // Token de Stripe o NULL para bancos RD
+    unique: false,
   },
   nombreCuenta: {
     type: DataTypes.STRING,
