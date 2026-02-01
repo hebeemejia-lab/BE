@@ -2,11 +2,17 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Instalar dependencias de compilación para sqlite3
+RUN apk add --no-cache python3 make g++
+
 # Copiar package files
 COPY package*.json ./
 
 # Instalar dependencias incluyendo nodemon para desarrollo
 RUN npm ci && npm install --save-dev nodemon
+
+# Rebuild sqlite3 para la plataforma correcta
+RUN npm rebuild sqlite3
 
 # Copiar código fuente
 COPY . .

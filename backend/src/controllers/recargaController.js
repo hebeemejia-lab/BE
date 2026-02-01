@@ -258,6 +258,16 @@ const crearRecargaPayPal = async (req, res) => {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     }
 
+    // Validar credenciales de PayPal ANTES de crear la recarga
+    if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
+      console.error('❌ Credenciales de PayPal no configuradas');
+      return res.status(500).json({ 
+        error: 'Credenciales de PayPal no configuradas en el servidor',
+        detalles: 'PAYPAL_CLIENT_ID o PAYPAL_CLIENT_SECRET falta en .env',
+        ayuda: 'Contacta al administrador del servidor'
+      });
+    }
+
     // Crear recarga pendiente en BD
     const recarga = await Recarga.create({
       usuarioId,
@@ -273,6 +283,10 @@ const crearRecargaPayPal = async (req, res) => {
     const frontendUrl = process.env.FRONTEND_URL || 'https://www.bancoexclusivo.lat';
     const returnUrl = `${frontendUrl}/recargas?success=true&orderId=${recarga.id}`;
     const cancelUrl = `${frontendUrl}/recargas?error=cancelled`;
+
+    console.log(`📝 Creando orden PayPal: ${recarga.numeroReferencia}`);
+    console.log(`   Monto: ${monto} USD`);
+    console.log(`   Return URL: ${returnUrl}`);
 
     try {
       const order = await paypalService.crearOrden({
@@ -291,6 +305,8 @@ const crearRecargaPayPal = async (req, res) => {
       recarga.paypalOrderId = order.id;
       await recarga.save();
 
+      console.log(`✅ Orden PayPal creada: ${order.id}`);
+
       res.json({
         mensaje: 'Orden PayPal creada',
         checkoutUrl: approveLink.href,
@@ -301,18 +317,32 @@ const crearRecargaPayPal = async (req, res) => {
       });
     } catch (paypalError) {
       console.error('❌ Error PayPal:', paypalError.message);
+      console.error('📋 Detalles:', paypalError.response?.data || paypalError.message);
+      
       recarga.estado = 'fallida';
       recarga.mensajeError = paypalError.message;
       await recarga.save();
 
+      // Detectar si es error de autenticación
+      const isAuthError = paypalError.message?.includes('token') || 
+                         paypalError.message?.includes('unauthorized') ||
+                         paypalError.message?.includes('authentication');
+
       res.status(500).json({ 
         error: paypalError.message,
-        detalles: 'Error comunicándose con PayPal. Verifica las credenciales.'
+        detalles: isAuthError 
+          ? 'Error de autenticación con PayPal. Verifica que PAYPAL_CLIENT_ID y PAYPAL_CLIENT_SECRET sean correctos.'
+          : 'Error comunicándose con PayPal',
+        tipo: isAuthError ? 'AUTH_ERROR' : 'API_ERROR'
       });
     }
   } catch (error) {
     console.error('❌ Error en crearRecargaPayPal:', error.message);
-    res.status(500).json({ error: error.message });
+    console.error('📋 Stack:', error.stack);
+    res.status(500).json({ 
+      error: error.message,
+      detalles: 'Error interno del servidor'
+    });
   }
 };
 
