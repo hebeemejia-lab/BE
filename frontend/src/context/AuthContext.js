@@ -81,6 +81,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const refrescarPerfil = async () => {
+    if (token) {
+      try {
+        const response = await authAPI.getPerfil();
+        setUsuario(normalizarUsuario(response.data));
+        return response.data;
+      } catch (err) {
+        console.error('Error refrescando perfil:', err);
+        throw err;
+      }
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setToken(null);
@@ -88,7 +101,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ usuario, token, loading, error, login, register, logout }}>
+    <AuthContext.Provider value={{ usuario, token, loading, error, login, register, logout, refrescarPerfil }}>
       {children}
     </AuthContext.Provider>
   );

@@ -4,7 +4,7 @@ import { bankAccountAPI, retiroAPI } from '../services/api';
 import './Retiros.css';
 
 export default function Retiros() {
-  const { usuario } = useContext(AuthContext);
+  const { usuario, refrescarPerfil } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     monto: '',
     moneda: 'USD', // USD, DOP, EUR
@@ -136,6 +136,11 @@ export default function Retiros() {
         moneda: 'USD',
         cuentaId: formData.cuentaId,
       });
+
+      // Refrescar historial de retiros y saldo
+      await cargarRetiros();
+      await refrescarPerfil(); // ✅ Actualiza el saldo en el contexto
+      
     } catch (err) {
       setError(err.message || 'Error procesando el retiro');
     } finally {
