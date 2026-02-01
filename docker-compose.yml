@@ -6,17 +6,23 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: banco-exclusivo-backend
+    container_name: banco-backend
     ports:
       - "5000:5000"
     environment:
       NODE_ENV: development
       PORT: 5000
-      JWT_SECRET: ${JWT_SECRET:-tu-secret-aqui}
+      JWT_SECRET: ${JWT_SECRET:-tu-secret-desarrollo}
       PAYPAL_MODE: ${PAYPAL_MODE:-live}
       PAYPAL_BASE_URL: ${PAYPAL_BASE_URL:-https://api-m.paypal.com}
       PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID}
       PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET}
+      RAPYD_ACCESS_KEY: ${RAPYD_ACCESS_KEY}
+      RAPYD_SECRET_KEY: ${RAPYD_SECRET_KEY}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PUBLIC_KEY: ${STRIPE_PUBLIC_KEY}
+      TWOCHECKOUT_MERCHANT_CODE: ${TWOCHECKOUT_MERCHANT_CODE}
+      TWOCHECKOUT_PUBLISHABLE_KEY: ${TWOCHECKOUT_PUBLISHABLE_KEY}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     volumes:
       - ./backend:/app
@@ -25,19 +31,24 @@ services:
     restart: unless-stopped
     networks:
       - banco-network
-    depends_on:
-      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Frontend React
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: banco-exclusivo-frontend
+    container_name: banco-frontend
     ports:
       - "3000:3000"
     environment:
       REACT_APP_API_URL: http://localhost:5000
+      REACT_APP_API_URL_PROD: ${FRONTEND_API_URL:-https://be-backend-hfib.onrender.com}
       CI: false
     volumes:
       - ./frontend/src:/app/src
@@ -47,42 +58,8 @@ services:
     networks:
       - banco-network
     depends_on:
-      - backend
-
-  # PostgreSQL (opcional, para producción)
-  postgres:
-    image: postgres:15-alpine
-    container_name: banco-exclusivo-db
-    environment:
-      POSTGRES_USER: banco_user
-      POSTGRES_PASSWORD: banco_password
-      POSTGRES_DB: banco_exclusivo
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    restart: unless-stopped
-    networks:
-      - banco-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U banco_user"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Adminer (para ver DB en http://localhost:8080)
-  adminer:
-    image: adminer
-    container_name: banco-exclusivo-adminer
-    ports:
-      - "8080:8080"
-    networks:
-      - banco-network
-    depends_on:
-      - postgres
-
-volumes:
-  postgres_data:
+      backend:
+        condition: service_healthy
 
 networks:
   banco-network:
