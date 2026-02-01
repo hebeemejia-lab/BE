@@ -8,7 +8,7 @@ const { connectDB } = require('./config/database');
 const models = require('./models');
 const { spawn } = require('child_process');
 
-// Rutas - v2.1 with Rapyd checkout integration
+// Rutas - v2.3 with PayPal Payouts (automatic withdrawals)
 const authRoutes = require('./routes/authRoutes');
 const transferRoutes = require('./routes/transferRoutes');
 const loanRoutes = require('./routes/loanRoutes');
@@ -20,7 +20,6 @@ const transferenciaInternacionalRoutes = require('./routes/transferenciaInternac
 const faqRoutes = require('./routes/faqRoutes');
 const faqFeedbackRoutes = require('./routes/faqFeedbackRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const adminRetiroRoutes = require('./routes/adminRetiroRoutes');
 
 const app = express();
 
@@ -78,7 +77,6 @@ app.use('/cuentas-bancarias', bankAccountRoutes);
 app.use('/faq', faqRoutes);
 app.use('/faq-feedback', faqFeedbackRoutes);
 app.use('/admin', adminRoutes);
-app.use('/admin', adminRetiroRoutes);
 
 // Ruta de prueba
 app.get('/health', (req, res) => {
