@@ -269,34 +269,49 @@ const crearRecargaPayPal = async (req, res) => {
       numeroReferencia: `PP-${Date.now()}`,
     });
 
-    const returnUrl = `${process.env.FRONTEND_URL}/recargas?success=true`;
-    const cancelUrl = `${process.env.FRONTEND_URL}/recargas?error=cancelled`;
+    // URLs de retorno (usar fallback si FRONTEND_URL no está configurada)
+    const frontendUrl = process.env.FRONTEND_URL || 'https://www.bancoexclusivo.lat';
+    const returnUrl = `${frontendUrl}/recargas?success=true&orderId=${recarga.id}`;
+    const cancelUrl = `${frontendUrl}/recargas?error=cancelled`;
 
-    const order = await paypalService.crearOrden({
-      monto,
-      currency: 'USD',
-      returnUrl,
-      cancelUrl,
-      referencia: recarga.numeroReferencia,
-    });
+    try {
+      const order = await paypalService.crearOrden({
+        monto,
+        currency: 'USD',
+        returnUrl,
+        cancelUrl,
+        referencia: recarga.numeroReferencia,
+      });
 
-    const approveLink = (order.links || []).find((link) => link.rel === 'approve');
-    if (!approveLink?.href) {
-      throw new Error('PayPal no devolvió URL de aprobación');
+      const approveLink = (order.links || []).find((link) => link.rel === 'approve');
+      if (!approveLink?.href) {
+        throw new Error('PayPal no devolvió URL de aprobación. Respuesta: ' + JSON.stringify(order));
+      }
+
+      recarga.paypalOrderId = order.id;
+      await recarga.save();
+
+      res.json({
+        mensaje: 'Orden PayPal creada',
+        checkoutUrl: approveLink.href,
+        orderId: order.id,
+        recargaId: recarga.id,
+        monto: recarga.monto,
+        numeroReferencia: recarga.numeroReferencia,
+      });
+    } catch (paypalError) {
+      console.error('❌ Error PayPal:', paypalError.message);
+      recarga.estado = 'fallida';
+      recarga.mensajeError = paypalError.message;
+      await recarga.save();
+
+      res.status(500).json({ 
+        error: paypalError.message,
+        detalles: 'Error comunicándose con PayPal. Verifica las credenciales.'
+      });
     }
-
-    recarga.paypalOrderId = order.id;
-    await recarga.save();
-
-    res.json({
-      mensaje: 'Orden PayPal creada',
-      checkoutUrl: approveLink.href,
-      orderId: order.id,
-      recargaId: recarga.id,
-      monto: recarga.monto,
-      numeroReferencia: recarga.numeroReferencia,
-    });
   } catch (error) {
+    console.error('❌ Error en crearRecargaPayPal:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -532,6 +547,7 @@ const crearRecargaTwoCheckout = async (req, res) => {
     // Generar URL de pago de 2Checkout
     const merchantCode = process.env.TWOCHECKOUT_MERCHANT_CODE;
     const publishableKey = process.env.TWOCHECKOUT_PUBLISHABLE_KEY;
+    const frontendUrl = process.env.FRONTEND_URL || 'https://www.bancoexclusivo.lat';
     
     if (!merchantCode || !publishableKey) {
       return res.status(500).json({ 
@@ -548,8 +564,8 @@ const crearRecargaTwoCheckout = async (req, res) => {
       `price=${monto}&` +
       `qty=1&` +
       `currency=USD&` +
-      `return_url=${encodeURIComponent(process.env.FRONTEND_URL + '/recargas?success=true')}&` +
-      `return_url_fail=${encodeURIComponent(process.env.FRONTEND_URL + '/recargas?error=cancelled')}&` +
+      `return_url=${encodeURIComponent(frontendUrl + '/recargas?success=true')}&` +
+      `return_url_fail=${encodeURIComponent(frontendUrl + '/recargas?error=cancelled')}&` +
       `email=${encodeURIComponent(user.email)}&` +
       `name=${encodeURIComponent(user.nombre || 'Usuario')}&` +
       `ref=${recarga.numeroReferencia}`;
