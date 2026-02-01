@@ -59,7 +59,8 @@ const crearOrden = async ({ monto, currency = 'USD', returnUrl, cancelUrl, refer
     application_context: {
       return_url: returnUrl,
       cancel_url: cancelUrl,
-      user_action: 'PAY_NOW',
+      user_action: 'CONTINUE',
+      landing_page: 'GUEST_CHECKOUT',
     },
   };
 
