@@ -1,5 +1,5 @@
 .navbar {
-  background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
+  background: #001a4d;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
   position: fixed;
   left: 0;

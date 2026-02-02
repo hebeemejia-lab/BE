@@ -24,7 +24,7 @@
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
+  background: #001a4d;
   color: #333;
   min-height: 100vh;
   margin-left: 250px;
