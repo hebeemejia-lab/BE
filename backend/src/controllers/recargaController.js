@@ -368,14 +368,22 @@ const crearRecargaPayPal = async (req, res) => {
 const capturarRecargaPayPal = async (req, res) => {
   try {
     const { token } = req.body;
+    console.log('🔍 Capturando PayPal - token:', token);
+    
     if (!token) {
       return res.status(400).json({ mensaje: 'token requerido' });
     }
 
     // Buscar por ID de recarga (token)
     const recarga = await Recarga.findByPk(token);
+    console.log('🔍 Recarga encontrada:', recarga?.id, 'paypalOrderId:', recarga?.paypalOrderId);
+    
     if (!recarga) {
       return res.status(404).json({ mensaje: 'Recarga no encontrada' });
+    }
+
+    if (!recarga.paypalOrderId) {
+      return res.status(400).json({ mensaje: 'Recarga sin paypalOrderId asociado' });
     }
 
     const capture = await paypalService.capturarOrden(recarga.paypalOrderId);
