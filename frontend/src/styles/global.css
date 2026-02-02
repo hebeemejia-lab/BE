@@ -26,7 +26,9 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: #001a4d;
   color: #333;
-  min-height: 100vh;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
 }
 
 html, body {
@@ -37,38 +39,74 @@ html, body {
 #root {
   display: flex;
   height: 100vh;
-  width: 100%;
+  width: 100vw;
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 
-/* Sidebar ocupará 250px fijo */
+/* Sidebar fijo en izquierda 250px */
 nav {
   width: 250px;
+  height: 100vh;
   flex-shrink: 0;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  overflow-y: auto;
 }
 
-/* Contenido principal ocupará el resto */
+/* Contenido principal a la derecha con scroll */
 main, .main-content, .page-wrapper {
-  flex: 1;
+  margin-left: 250px;
   width: calc(100vw - 250px);
-  height: calc(100vh - 0px);
+  height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 30px 40px;
+  padding: 40px;
+  background: #001a4d;
 }
 
-/* Evitar scroll horizontal */
-body {
-  margin-left: 0;
-  overflow: hidden;
+/* Scrollbar styling */
+main::-webkit-scrollbar,
+.main-content::-webkit-scrollbar,
+.page-wrapper::-webkit-scrollbar {
+  width: 10px;
+}
+
+main::-webkit-scrollbar-track,
+.main-content::-webkit-scrollbar-track,
+.page-wrapper::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+main::-webkit-scrollbar-thumb,
+.main-content::-webkit-scrollbar-thumb,
+.page-wrapper::-webkit-scrollbar-thumb {
+  background: #cc0000;
+  border-radius: 5px;
+}
+
+main::-webkit-scrollbar-thumb:hover,
+.main-content::-webkit-scrollbar-thumb:hover,
+.page-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #ff3333;
 }
 
 @media (max-width: 768px) {
-  body {
-    margin-left: 0;
+  nav {
+    width: 100%;
+    height: auto;
+    position: sticky;
+    top: 0;
+    z-index: 100;
   }
   
   main, .main-content, .page-wrapper {
+    margin-left: 0;
     width: 100vw;
+    height: auto;
     padding: 20px;
   }
 }
