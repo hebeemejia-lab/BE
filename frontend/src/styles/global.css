@@ -57,7 +57,7 @@ nav {
   overflow-y: auto;
 }
 
-/* Contenido principal a la derecha con scroll */
+/* Contenido principal centrado con scroll */
 main, .main-content, .page-wrapper {
   margin-left: 250px;
   width: calc(100vw - 250px);
@@ -66,6 +66,16 @@ main, .main-content, .page-wrapper {
   overflow-x: hidden;
   padding: 40px;
   background: #001a4d;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Contenedor interno para centrar */
+.page-content {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
 /* Scrollbar styling */
