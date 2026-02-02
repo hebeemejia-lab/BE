@@ -23,7 +23,7 @@ export default function Recargas() {
     const params = new URLSearchParams(window.location.search);
     const success = params.get('success');
     const cancelled = params.get('error');
-    const token = params.get('token'); // PayPal order ID
+    const token = params.get('token'); // Recarga ID
 
     if (cancelled === 'cancelled') {
       setError('Pago cancelado por el usuario.');
@@ -41,7 +41,7 @@ export default function Recargas() {
 
         const response = await axios.post(
           `${API_URL}/recargas/paypal/capturar`,
-          { orderId: token },
+          { token },
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
