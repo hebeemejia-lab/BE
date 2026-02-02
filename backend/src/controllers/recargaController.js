@@ -25,27 +25,6 @@ const crearRecargaStripe = async (req, res) => {
       return res.status(400).json({ mensaje: 'Monto insuficiente para cubrir la comisión' });
     }
 
-    const montoNumerico = parseFloat(monto);
-    const comision = calcularComisionRecarga();
-    const montoNeto = calcularMontoNeto(montoNumerico, comision);
-    if (montoNeto <= 0) {
-      return res.status(400).json({ mensaje: 'Monto insuficiente para cubrir la comisión' });
-    }
-
-    const montoNumerico = parseFloat(monto);
-    const comision = calcularComisionRecarga();
-    const montoNeto = calcularMontoNeto(montoNumerico, comision);
-    if (montoNeto <= 0) {
-      return res.status(400).json({ mensaje: 'Monto insuficiente para cubrir la comisión' });
-    }
-
-    const montoNumerico = parseFloat(monto);
-    const comision = calcularComisionRecarga();
-    const montoNeto = calcularMontoNeto(montoNumerico, comision);
-    if (montoNeto <= 0) {
-      return res.status(400).json({ mensaje: 'Monto insuficiente para cubrir la comisión' });
-    }
-
     // Crear recarga pendiente en BD
     const recarga = await Recarga.create({
       usuarioId,
