@@ -4,6 +4,7 @@ const User = require('../models/User');
 const stripeService = require('../services/stripeService');
 const rapydService = require('../services/rapydService');
 const paypalService = require('../services/paypalService');
+const { calcularComisionRecarga, calcularMontoNeto } = require('../config/comisiones');
 
 console.log('✅ RecargaController loaded - v2.1 with Rapyd support');
 
@@ -17,12 +18,40 @@ const crearRecargaStripe = async (req, res) => {
       return res.status(400).json({ mensaje: 'Monto debe ser mayor a 0' });
     }
 
+    const montoNumerico = parseFloat(monto);
+    const comision = calcularComisionRecarga();
+    const montoNeto = calcularMontoNeto(montoNumerico, comision);
+    if (montoNeto <= 0) {
+      return res.status(400).json({ mensaje: 'Monto insuficiente para cubrir la comisión' });
+    }
+
+    const montoNumerico = parseFloat(monto);
+    const comision = calcularComisionRecarga();
+    const montoNeto = calcularMontoNeto(montoNumerico, comision);
+    if (montoNeto <= 0) {
+      return res.status(400).json({ mensaje: 'Monto insuficiente para cubrir la comisión' });
+    }
+
+    const montoNumerico = parseFloat(monto);
+    const comision = calcularComisionRecarga();
+    const montoNeto = calcularMontoNeto(montoNumerico, comision);
+    if (montoNeto <= 0) {
+      return res.status(400).json({ mensaje: 'Monto insuficiente para cubrir la comisión' });
+    }
+
+    const montoNumerico = parseFloat(monto);
+    const comision = calcularComisionRecarga();
+    const montoNeto = calcularMontoNeto(montoNumerico, comision);
+    if (montoNeto <= 0) {
+      return res.status(400).json({ mensaje: 'Monto insuficiente para cubrir la comisión' });
+    }
+
     // Crear recarga pendiente en BD
     const recarga = await Recarga.create({
       usuarioId,
-      monto,
-      montoNeto: monto,
-      comision: 0,
+      monto: montoNumerico,
+      montoNeto,
+      comision,
       metodo: 'tarjeta',
       estado: 'pendiente',
       numeroReferencia: `REC-${Date.now()}`,
@@ -31,7 +60,7 @@ const crearRecargaStripe = async (req, res) => {
     // Crear sesión de pago con Stripe
     try {
       const session = await stripeService.crearSesionPago(
-        monto,
+        montoNumerico,
         req.usuario.email,
         {
           recargaId: recarga.id,
@@ -81,9 +110,9 @@ const crearRecargaRapyd = async (req, res) => {
     // Crear recarga pendiente en BD
     const recarga = await Recarga.create({
       usuarioId,
-      monto,
-      montoNeto: monto,
-      comision: 0,
+      monto: montoNumerico,
+      montoNeto,
+      comision,
       metodo: 'rapyd',
       estado: 'pendiente',
       numeroReferencia: `REC-${Date.now()}`,
@@ -92,7 +121,7 @@ const crearRecargaRapyd = async (req, res) => {
     try {
       // Crear pago con Rapyd
       const pago = await rapydService.crearPagoRecarga({
-        monto,
+        monto: montoNumerico,
         email: usuario.email,
         nombre: usuario.nombre || 'Usuario',
         apellido: usuario.apellido || 'Banco Exclusivo',
@@ -166,12 +195,19 @@ const procesarRecargaTarjeta = async (req, res) => {
       return res.status(400).json({ mensaje: 'Datos de tarjeta incompletos' });
     }
 
+    const montoNumerico = parseFloat(monto);
+    const comision = calcularComisionRecarga();
+    const montoNeto = calcularMontoNeto(montoNumerico, comision);
+    if (montoNeto <= 0) {
+      return res.status(400).json({ mensaje: 'Monto insuficiente para cubrir la comisión' });
+    }
+
     // Crear recarga en BD (estado pendiente)
     const recarga = await Recarga.create({
       usuarioId,
-      monto,
-      montoNeto: monto,
-      comision: 0,
+      monto: montoNumerico,
+      montoNeto,
+      comision,
       metodo: 'tarjeta',
       estado: 'procesando',
       numeroReferencia: `REC-${Date.now()}`,
@@ -184,7 +220,7 @@ const procesarRecargaTarjeta = async (req, res) => {
       const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_fake');
       
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(monto * 100), // Convertir a centavos
+        amount: Math.round(montoNumerico * 100), // Convertir a centavos
         currency: 'usd',
         payment_method_types: ['card'],
         metadata: {
@@ -209,12 +245,13 @@ const procesarRecargaTarjeta = async (req, res) => {
 
         // Actualizar saldo del usuario
         const usuario = await User.findByPk(usuarioId);
-        usuario.saldo = parseFloat(usuario.saldo) + parseFloat(monto);
+        usuario.saldo = parseFloat(usuario.saldo) + parseFloat(recarga.montoNeto);
         await usuario.save();
 
         return res.json({
           mensaje: 'Recarga procesada exitosamente',
-          montoAgregado: monto,
+          montoAgregado: recarga.montoNeto,
+          comision: recarga.comision,
           nuevoSaldo: parseFloat(usuario.saldo),
           recarga: {
             id: recarga.id,
@@ -271,9 +308,9 @@ const crearRecargaPayPal = async (req, res) => {
     // Crear recarga pendiente en BD
     const recarga = await Recarga.create({
       usuarioId,
-      monto,
-      montoNeto: monto,
-      comision: 0,
+      monto: montoNumerico,
+      montoNeto,
+      comision,
       metodo: 'paypal',
       estado: 'pendiente',
       numeroReferencia: `PP-${Date.now()}`,
@@ -281,16 +318,16 @@ const crearRecargaPayPal = async (req, res) => {
 
     // URLs de retorno (usar fallback si FRONTEND_URL no está configurada)
     const frontendUrl = process.env.FRONTEND_URL || 'https://www.bancoexclusivo.lat';
-    const returnUrl = `${frontendUrl}/recargas?success=true&orderId=${recarga.id}`;
+    const returnUrl = `${frontendUrl}/recargas?success=true&token=${encodeURIComponent(recarga.id)}`;
     const cancelUrl = `${frontendUrl}/recargas?error=cancelled`;
 
     console.log(`📝 Creando orden PayPal: ${recarga.numeroReferencia}`);
-    console.log(`   Monto: ${monto} USD`);
+    console.log(`   Monto: ${montoNumerico} USD`);
     console.log(`   Return URL: ${returnUrl}`);
 
     try {
       const order = await paypalService.crearOrden({
-        monto,
+        monto: montoNumerico,
         currency: 'USD',
         returnUrl,
         cancelUrl,
@@ -313,6 +350,8 @@ const crearRecargaPayPal = async (req, res) => {
         orderId: order.id,
         recargaId: recarga.id,
         monto: recarga.monto,
+        montoNeto: recarga.montoNeto,
+        comision: recarga.comision,
         numeroReferencia: recarga.numeroReferencia,
       });
     } catch (paypalError) {
@@ -349,17 +388,18 @@ const crearRecargaPayPal = async (req, res) => {
 // Capturar recarga PayPal
 const capturarRecargaPayPal = async (req, res) => {
   try {
-    const { orderId } = req.body;
-    if (!orderId) {
-      return res.status(400).json({ mensaje: 'orderId requerido' });
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ mensaje: 'token requerido' });
     }
 
-    const recarga = await Recarga.findOne({ where: { paypalOrderId: orderId } });
+    // Buscar por ID de recarga (token)
+    const recarga = await Recarga.findByPk(token);
     if (!recarga) {
       return res.status(404).json({ mensaje: 'Recarga no encontrada' });
     }
 
-    const capture = await paypalService.capturarOrden(orderId);
+    const capture = await paypalService.capturarOrden(recarga.paypalOrderId);
     const status = capture.status;
 
     if (status !== 'COMPLETED') {
@@ -386,7 +426,7 @@ const capturarRecargaPayPal = async (req, res) => {
       mensaje: 'Pago PayPal completado',
       recargaId: recarga.id,
       nuevoSaldo: usuario?.saldo,
-      orderId,
+      paypalOrderId: recarga.paypalOrderId,
       captureId,
     });
   } catch (error) {
@@ -566,9 +606,9 @@ const crearRecargaTwoCheckout = async (req, res) => {
     // Crear recarga pendiente en BD
     const recarga = await Recarga.create({
       usuarioId,
-      monto,
-      montoNeto: monto,
-      comision: 0,
+      monto: montoNumerico,
+      montoNeto,
+      comision,
       metodo: '2checkout',
       estado: 'pendiente',
       numeroReferencia: `2CO-${Date.now()}`,
@@ -591,7 +631,7 @@ const crearRecargaTwoCheckout = async (req, res) => {
     const paymentUrl = `https://secure.2checkout.com/order/checkout.php?` +
       `merchant=${merchantCode}&` +
       `product_id=1&` +
-      `price=${monto}&` +
+      `price=${montoNumerico}&` +
       `qty=1&` +
       `currency=USD&` +
       `return_url=${encodeURIComponent(frontendUrl + '/recargas?success=true')}&` +
@@ -607,6 +647,8 @@ const crearRecargaTwoCheckout = async (req, res) => {
       paymentUrl: paymentUrl,
       recargaId: recarga.id,
       monto: recarga.monto,
+      montoNeto: recarga.montoNeto,
+      comision: recarga.comision,
       numeroReferencia: recarga.numeroReferencia,
     });
   } catch (err) {
