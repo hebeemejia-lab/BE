@@ -297,7 +297,7 @@ const crearRecargaPayPal = async (req, res) => {
 
     // URLs de retorno (usar fallback si FRONTEND_URL no está configurada)
     const frontendUrl = process.env.FRONTEND_URL || 'https://www.bancoexclusivo.lat';
-    const returnUrl = `${frontendUrl}/recargas?success=true&token=${encodeURIComponent(recarga.id)}`;
+    const returnUrl = `${frontendUrl}/recargas?success=true&recargaId=${encodeURIComponent(recarga.id)}`;
     const cancelUrl = `${frontendUrl}/recargas?error=cancelled`;
 
     console.log(`📝 Creando orden PayPal: ${recarga.numeroReferencia}`);
