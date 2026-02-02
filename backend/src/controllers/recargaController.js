@@ -375,38 +375,29 @@ const crearRecargaPayPal = async (req, res) => {
 // Capturar recarga PayPal
 const capturarRecargaPayPal = async (req, res) => {
   try {
-    const { token } = req.body;
-    console.log('🔍 Capturando PayPal - token:', token);
-    
-    if (!token) {
-    }
-
-    // Buscar por ID de recarga (token)
-    const recarga = await Recarga.findByPk(token);
-    console.log('🔍 Recarga encontrada:', recarga?.id, 'paypalOrderId:', recarga?.paypalOrderId);
-    
-    if (!recarga) {
-      return res.status(404).json({ mensaje: 'Recarga no encontrada' });
-    }
     const { token, recargaId } = req.body;
-      const id = recargaId || token;
-      console.log('🔍 Capturando PayPal - recargaId:', id);
-    
-      if (!id) {
-        return res.status(400).json({ mensaje: 'recargaId o token requerido' });
-      }
+    const id = recargaId || token;
 
-      const recarga = await Recarga.findByPk(id);
-      console.log('🔍 Recarga encontrada:', recarga?.id, 'paypalOrderId:', recarga?.paypalOrderId);
-    
-      if (!recarga) {
-        console.error('❌ Recarga no encontrada. ID:', id);
-        return res.status(404).json({ mensaje: 'Recarga no encontrada', id });
+    console.log('🔍 Capturando PayPal - recargaId:', id, '| Body:', req.body);
+
+    if (!id) {
+      return res.status(400).json({ mensaje: 'recargaId o token requerido' });
+    }
+
+    const recarga = await Recarga.findByPk(id);
+    console.log('🔍 Recarga encontrada:', recarga?.id, 'paypalOrderId:', recarga?.paypalOrderId);
+
+    if (!recarga) {
+      console.error('❌ Recarga no encontrada. ID:', id);
+      return res.status(404).json({ mensaje: 'Recarga no encontrada', id });
+    }
 
     if (!recarga.paypalOrderId) {
-      return res.status(400).json({ mensaje: 'Recarga sin paypalOrderId asociado' });
+      console.error('❌ Recarga sin paypalOrderId. RecargaId:', recarga.id);
+      return res.status(400).json({ mensaje: 'Recarga sin paypalOrderId asociado', recargaId: recarga.id });
     }
 
+    console.log('📝 Capturando orden PayPal:', recarga.paypalOrderId);
     const capture = await paypalService.capturarOrden(recarga.paypalOrderId);
     const status = capture.status;
 
@@ -438,6 +429,7 @@ const capturarRecargaPayPal = async (req, res) => {
       captureId,
     });
   } catch (error) {
+    console.error('❌ Error capturando PayPal:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
