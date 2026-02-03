@@ -3,6 +3,7 @@ const BankAccount = require('../models/BankAccount');
 const User = require('../models/User');
 const cuentasBancariasConfig = require('../config/cuentasBancariasConfig');
 const paypalPayoutsService = require('../services/paypalPayoutsService');
+const { calcularComisionRetiro, calcularMontoNeto } = require('../config/comisiones');
 
 // Procesar retiro automático con PayPal Payouts (DINERO REAL)
 const procesarRetiro = async (req, res) => {
@@ -13,6 +14,13 @@ const procesarRetiro = async (req, res) => {
     // Validaciones
     if (!monto || monto <= 0) {
       return res.status(400).json({ mensaje: 'Monto debe ser mayor a 0' });
+    }
+
+    const montoNumerico = parseFloat(monto);
+    const comision = calcularComisionRetiro();
+    const montoNeto = calcularMontoNeto(montoNumerico, comision);
+    if (montoNeto <= 0) {
+      return res.status(400).json({ mensaje: 'Monto insuficiente para cubrir la comisión' });
     }
 
     if (!moneda || !['USD', 'DOP', 'EUR'].includes(moneda)) {
@@ -30,11 +38,11 @@ const procesarRetiro = async (req, res) => {
     }
 
     const saldoDisponible = parseFloat(usuario.saldo);
-    if (monto > saldoDisponible) {
+    if (montoNumerico > saldoDisponible) {
       return res.status(400).json({ 
         mensaje: 'Saldo insuficiente',
         saldoDisponible,
-        montoSolicitado: monto,
+        montoSolicitado: montoNumerico,
       });
     }
 
@@ -72,7 +80,7 @@ const procesarRetiro = async (req, res) => {
       console.log(`💰 Procesando retiro PayPal para usuario ${usuarioId}...`);
 
       const resultadoPayout = await paypalPayoutsService.crearPayout({
-        monto,
+        monto: montoNeto,
         currency: moneda,
         numeroCuenta: cuenta.numerosCuenta,
         nombreBeneficiario: cuenta.nombreCuenta,
@@ -84,9 +92,9 @@ const procesarRetiro = async (req, res) => {
       // Crear registro en tabla Recarga
       const retiro = await Recarga.create({
         usuarioId,
-        monto,
-        montoNeto: monto,
-        comision: 0,
+        monto: montoNumerico,
+        montoNeto,
+        comision,
         metodo: 'paypal_payout',
         estado: 'exitosa',
         numeroReferencia,
@@ -97,7 +105,7 @@ const procesarRetiro = async (req, res) => {
       });
 
       // Restar dinero del saldo del usuario (DINERO REAL SALE)
-      usuario.saldo = saldoDisponible - monto;
+      usuario.saldo = saldoDisponible - montoNumerico;
       await usuario.save();
 
       console.log(`✅ Retiro completado: Batch ID ${resultadoPayout.batchId}`);
@@ -105,7 +113,9 @@ const procesarRetiro = async (req, res) => {
       return res.json({
         mensaje: 'Retiro procesado exitosamente. Dinero transferido a tu cuenta.',
         metodo: 'paypal_payout',
-        montoRetirado: monto,
+        montoRetirado: montoNumerico,
+        montoNeto,
+        comision,
         nuevoSaldo: parseFloat(usuario.saldo),
         retiro: {
           id: retiro.id,
