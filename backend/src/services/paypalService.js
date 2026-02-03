@@ -50,7 +50,7 @@ const crearOrden = async ({ monto, currency = 'USD', returnUrl, cancelUrl, refer
       {
         amount: {
           currency_code: currency,
-          value: Number(monto).toFixed(2),
+          value: parseFloat(Number(monto).toFixed(2)),
         },
         description: 'Recarga de saldo Banco Exclusivo',
         custom_id: referencia,
@@ -60,7 +60,7 @@ const crearOrden = async ({ monto, currency = 'USD', returnUrl, cancelUrl, refer
       return_url: returnUrl,
       cancel_url: cancelUrl,
       user_action: 'CONTINUE',
-      landing_page: 'BILLING',  // BILLING permite guest checkout sin login
+      landing_page: 'LOGIN',  // LOGIN requiere autenticación en PayPal
     },
   };
 
