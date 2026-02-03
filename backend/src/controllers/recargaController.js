@@ -309,13 +309,13 @@ const crearRecargaPayPal = async (req, res) => {
     const cancelUrl = `${frontendUrl}/recargas?error=cancelled`;
 
     console.log(`📝 Creando orden PayPal: ${recarga.numeroReferencia}`);
-    console.log(`   Monto: ${montoNumerico} USD`);
+    console.log(`   Monto: ${montoNumerico} DOP`);
     console.log(`   Return URL: ${returnUrl}`);
 
     try {
       const order = await paypalService.crearOrden({
         monto: montoNumerico,
-        currency: 'USD',
+        currency: 'DOP',
         returnUrl,
         cancelUrl,
         referencia: recarga.numeroReferencia,
@@ -705,7 +705,7 @@ const crearRecargaTwoCheckout = async (req, res) => {
       `product_id=1&` +
       `price=${montoNumerico}&` +
       `qty=1&` +
-      `currency=USD&` +
+      `currency=DOP&` +
       `return_url=${encodeURIComponent(frontendUrl + '/recargas?success=true')}&` +
       `return_url_fail=${encodeURIComponent(frontendUrl + '/recargas?error=cancelled')}&` +
       `email=${encodeURIComponent(user.email)}&` +
