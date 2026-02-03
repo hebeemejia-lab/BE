@@ -398,14 +398,35 @@ const capturarRecargaPayPal = async (req, res) => {
     }
 
     console.log('📝 Capturando orden PayPal:', recarga.paypalOrderId);
-    const capture = await paypalService.capturarOrden(recarga.paypalOrderId);
-    const status = capture.status;
+    let capture;
+    try {
+      capture = await paypalService.capturarOrden(recarga.paypalOrderId);
+      console.log('✅ Respuesta PayPal completa:', JSON.stringify(capture, null, 2));
+    } catch (error) {
+      console.error('❌ Error capturando PayPal:', error.message);
+      console.error('Stack:', error.stack);
+      recarga.estado = 'fallida';
+      recarga.mensajeError = `Error PayPal: ${error.message}`;
+      await recarga.save();
+      return res.status(400).json({ 
+        mensaje: 'Error capturando pago PayPal', 
+        error: error.message 
+      });
+    }
+    
+    const status = capture?.status;
+    console.log('📊 Status PayPal:', status);
 
     if (status !== 'COMPLETED') {
+      console.warn('⚠️ Pago no completado. Status:', status, 'Detalles:', capture);
       recarga.estado = 'fallida';
       recarga.mensajeError = `PayPal status: ${status}`;
       await recarga.save();
-      return res.status(400).json({ mensaje: 'Pago no completado', status });
+      return res.status(400).json({ 
+        mensaje: 'Pago no completado', 
+        status,
+        detalles: capture 
+      });
     }
 
     const captureId = capture.purchase_units?.[0]?.payments?.captures?.[0]?.id;
