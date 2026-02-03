@@ -43,26 +43,31 @@ html, body, #root {
   overflow-x: hidden;
 }
 
-/* Sidebar fijo 250px */
+/* Sidebar con menú hamburguesa */
 nav {
   width: 250px;
   height: 100vh;
   flex-shrink: 0;
   overflow-y: auto;
   position: fixed;
-  left: 0;
+  left: -250px;
   top: 0;
   z-index: 1000;
+  transition: left 0.3s ease;
 }
 
-/* Contenido con scroll - ocupa el resto */
+nav.open {
+  left: 0;
+}
+
+/* Contenido ocupa todo el ancho */
 main {
-  margin-left: 250px;
-  width: calc(100vw - 250px);
+  margin-left: 0;
+  width: 100vw;
   height: 100vh;
   overflow-y: scroll !important;
   overflow-x: hidden;
-  padding: 40px 60px;
+  padding: 80px 60px 40px;
   background: #001a4d;
   position: relative;
   box-sizing: border-box;

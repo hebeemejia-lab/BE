@@ -2,12 +2,17 @@
   background: #001a4d;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
   position: fixed;
-  left: 0;
+  left: -250px;
   top: 0;
   height: 100vh;
   width: 250px;
-  z-index: 100;
+  z-index: 1000;
   overflow-y: auto;
+  transition: left 0.3s ease;
+}
+
+.navbar.open {
+  left: 0;
 }
 
 .navbar-container {
@@ -25,6 +30,7 @@
   gap: 15px;
   padding-bottom: 15px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
 }
 
 .navbar-logo {
@@ -51,20 +57,35 @@
 }
 
 .hamburger {
-  display: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1001;
+  transition: left 0.3s ease;
 }
 
 .hamburger span {
   display: block;
-  width: 25px;
+  width: 28px;
   height: 3px;
   background-color: #ffffff;
   border-radius: 3px;
   transition: all 0.3s ease;
 }
 
+.hamburger.active {
+  left: 270px;
+}
+
 .hamburger.active span:nth-child(1) {
-  transform: rotate(45deg) translate(10px, 10px);
+  transform: rotate(45deg) translate(8px, 8px);
 }
 
 .hamburger.active span:nth-child(2) {
@@ -80,10 +101,28 @@
   flex-direction: column;
   gap: 15px;
   flex: 1;
+  transition: transform 0.3s ease;
+}
+
+.navbar-right.open {
+  transform: translateX(0);
 }
 
 .navbar-overlay {
-  display: none;
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .user-info {
