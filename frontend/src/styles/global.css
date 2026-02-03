@@ -59,8 +59,8 @@ nav {
 main {
   margin-left: 250px;
   width: calc(100vw - 250px);
-  min-height: 100vh;
-  overflow-y: auto;
+  height: 100vh;
+  overflow-y: scroll !important;
   overflow-x: hidden;
   padding: 40px 60px;
   background: #001a4d;
@@ -71,6 +71,22 @@ main {
 /* Asegurar que TODOS los containers respeten el layout */
 main > div {
   max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Forzar scroll en todos los containers de páginas */
+.recargas-container,
+.perfil-container,
+.dashboard-container,
+.prestamos-container,
+.transferencias-container,
+.transferencias-internacionales-container,
+.transferencia-bancaria-container,
+.vincular-container,
+.admin-panel-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
   box-sizing: border-box;
 }
 
