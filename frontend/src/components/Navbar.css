@@ -6,7 +6,7 @@
   top: 0;
   height: 100vh;
   width: 250px;
-  z-index: 1000;
+  z-index: 10000;
   overflow-y: auto;
   transition: left 0.3s ease;
 }
@@ -67,7 +67,7 @@
   position: fixed;
   top: 20px;
   left: 20px;
-  z-index: 1001;
+  z-index: 10001;
   transition: left 0.3s ease;
 }
 
@@ -112,11 +112,11 @@
   display: block;
   position: fixed;
   top: 0;
-  left: 0;
-  width: 100vw;
+  left: 250px;
+  width: calc(100vw - 250px);
   height: 100vh;
   background: transparent;
-  z-index: 999;
+  z-index: 9999;
 }
 
 .user-info {
