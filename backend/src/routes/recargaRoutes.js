@@ -36,11 +36,13 @@ router.get('/debug', (req, res) => {
 // Webhook de Rapyd (SIN autenticación - viene desde Rapyd)
 router.post('/webhook-rapyd', webhookRapyd);
 
+// Paypal capture (SIN autenticación - viene desde PayPal, no tiene JWT)
+router.post('/paypal/capturar', require('../controllers/recargaController').capturarRecargaPayPal);
+
 // Todas requieren autenticación
 router.post('/crear', verificarToken, crearRecargaStripe);
 router.post('/crear-rapyd', verificarToken, crearRecargaRapyd);
 router.post('/crear-paypal', verificarToken, require('../controllers/recargaController').crearRecargaPayPal);
-router.post('/paypal/capturar', verificarToken, require('../controllers/recargaController').capturarRecargaPayPal);
 router.post('/crear-2checkout', verificarToken, require('../controllers/recargaController').crearRecargaTwoCheckout);
 router.post('/procesar-tarjeta', verificarToken, procesarRecargaTarjeta);
 router.post('/procesar', verificarToken, procesarRecargaExitosa);
