@@ -385,11 +385,23 @@ const capturarRecargaPayPal = async (req, res) => {
     }
 
     const recarga = await Recarga.findByPk(id);
-    console.log('🔍 Recarga encontrada:', recarga?.id, 'paypalOrderId:', recarga?.paypalOrderId);
+    console.log('🔍 Recarga encontrada:', recarga?.id, 'Estado:', recarga?.estado, 'paypalOrderId:', recarga?.paypalOrderId);
 
     if (!recarga) {
       console.error('❌ Recarga no encontrada. ID:', id);
       return res.status(404).json({ mensaje: 'Recarga no encontrada', id });
+    }
+
+    // Si ya fue capturada exitosamente, no volver a capturar
+    if (recarga.estado === 'exitosa') {
+      console.log('ℹ️ Recarga ya capturada exitosamente. Retornando estado existente.');
+      const usuario = await User.findByPk(recarga.usuarioId);
+      return res.json({
+        mensaje: 'Pago PayPal ya había sido completado',
+        recargaId: recarga.id,
+        nuevoSaldo: usuario?.saldo,
+        yaCapturada: true,
+      });
     }
 
     if (!recarga.paypalOrderId) {
@@ -404,21 +416,29 @@ const capturarRecargaPayPal = async (req, res) => {
       console.log('✅ Respuesta PayPal completa:', JSON.stringify(capture, null, 2));
     } catch (error) {
       console.error('❌ Error capturando PayPal:', error.message);
-      console.error('Stack:', error.stack);
+      console.error('📋 Respuesta completa:', error.response?.data || 'Sin datos');
+      
+      // Intentar interpretar el error
+      const errorData = error.response?.data;
+      const errorCode = errorData?.name || errorData?.status?.error_code;
+      
       recarga.estado = 'fallida';
       recarga.mensajeError = `Error PayPal: ${error.message}`;
       await recarga.save();
+      
       return res.status(400).json({ 
         mensaje: 'Error capturando pago PayPal', 
-        error: error.message 
+        error: error.message,
+        errorCode: errorCode,
+        detalles: errorData
       });
     }
     
     const status = capture?.status;
-    console.log('📊 Status PayPal:', status);
+    console.log('📊 Status PayPal:', status, 'Capture ID:', capture?.id);
 
     if (status !== 'COMPLETED') {
-      console.warn('⚠️ Pago no completado. Status:', status, 'Detalles:', capture);
+      console.warn('⚠️ Pago no completado. Status:', status, 'Detalles:', JSON.stringify(capture));
       recarga.estado = 'fallida';
       recarga.mensajeError = `PayPal status: ${status}`;
       await recarga.save();
@@ -429,7 +449,7 @@ const capturarRecargaPayPal = async (req, res) => {
       });
     }
 
-    const captureId = capture.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+    const captureId = capture.id || capture.purchase_units?.[0]?.payments?.captures?.[0]?.id;
 
     recarga.estado = 'exitosa';
     recarga.paypalCaptureId = captureId || null;
@@ -440,18 +460,23 @@ const capturarRecargaPayPal = async (req, res) => {
     if (usuario) {
       usuario.saldo = parseFloat(usuario.saldo) + parseFloat(recarga.montoNeto);
       await usuario.save();
+      console.log(`✅ Saldo actualizado. Usuario: ${usuario.id}, Nuevo saldo: ${usuario.saldo}`);
     }
 
     return res.json({
-      mensaje: 'Pago PayPal completado',
+      mensaje: 'Pago PayPal completado exitosamente',
       recargaId: recarga.id,
       nuevoSaldo: usuario?.saldo,
       paypalOrderId: recarga.paypalOrderId,
       captureId,
     });
   } catch (error) {
-    console.error('❌ Error capturando PayPal:', error.message);
-    res.status(500).json({ error: error.message });
+    console.error('❌ Error en capturarRecargaPayPal:', error.message);
+    console.error('Stack:', error.stack);
+    res.status(500).json({ 
+      error: error.message,
+      detalles: 'Error interno del servidor'
+    });
   }
 };
 
