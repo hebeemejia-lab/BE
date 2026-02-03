@@ -171,6 +171,33 @@
   margin: 0;
   font-size: 0.95rem;
   color: #7f8c8d;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ff4444;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 /* Payment Form */

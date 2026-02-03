@@ -234,7 +234,7 @@ export default function Recargas() {
           <div className="payment-card">
             <div className="card-title">
               <h2>Pago con PayPal</h2>
-              <p className="card-subtitle">Paga de forma segura con tu cuenta PayPal</p>
+              <p className="card-subtitle">Paga de forma segura con tu cuenta PayPal <span className="live-badge">🔴 LIVE</span></p>
             </div>
 
             <form onSubmit={handlePagoTarjeta} className="payment-form">
