@@ -284,7 +284,10 @@ const crearRecargaPayPal = async (req, res) => {
       });
     }
 
+    console.log('🔍 Controller - Monto del req.body:', monto, 'Tipo:', typeof monto);
     const montoNumerico = parseFloat(monto);
+    console.log('🔍 Controller - Monto parseado:', montoNumerico, 'Tipo:', typeof montoNumerico);
+    
     const comision = calcularComisionRecarga();
     const montoNeto = calcularMontoNeto(montoNumerico, comision);
 
@@ -312,6 +315,7 @@ const crearRecargaPayPal = async (req, res) => {
     console.log(`   Monto: ${montoNumerico} USD`);
     console.log(`   Return URL: ${returnUrl}`);
 
+    console.log('🚀 Controller - Enviando a paypalService.crearOrden con monto:', montoNumerico);
     try {
       const order = await paypalService.crearOrden({
         monto: montoNumerico,
