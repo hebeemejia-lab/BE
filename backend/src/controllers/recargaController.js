@@ -444,11 +444,15 @@ const capturarRecargaPayPal = async (req, res) => {
     console.log('📝 Capturando orden PayPal:', recarga.paypalOrderId);
     let capture;
     try {
+      console.log('🔄 Llamando a paypalService.capturarOrden con:', recarga.paypalOrderId);
       capture = await paypalService.capturarOrden(recarga.paypalOrderId);
       console.log('✅ Respuesta PayPal completa:', JSON.stringify(capture, null, 2));
     } catch (error) {
-      console.error('❌ Error capturando PayPal:', error.message);
-      console.error('📋 Respuesta completa:', error.response?.data || 'Sin datos');
+      console.error('❌ ERROR CAPTURANDO PAYPAL:');
+      console.error('   Mensaje:', error.message);
+      console.error('   Status:', error.response?.status);
+      console.error('   Data:', JSON.stringify(error.response?.data, null, 2));
+      console.error('   OrderID intentado:', recarga.paypalOrderId);
       
       // Intentar interpretar el error
       const errorData = error.response?.data;
@@ -462,7 +466,9 @@ const capturarRecargaPayPal = async (req, res) => {
         mensaje: 'Error capturando pago PayPal', 
         error: error.message,
         errorCode: errorCode,
-        detalles: errorData
+        detalles: errorData,
+        orderId: recarga.paypalOrderId,
+        status: error.response?.status
       });
     }
     
