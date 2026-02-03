@@ -53,13 +53,15 @@ nav {
 
 /* Contenido con scroll - ocupa el resto */
 main {
-  margin-left: 250px;
-  width: calc(100vw - 250px);
-  height: 100vh;
+  margin-left: 250px !important;
+  width: calc(100vw - 250px) !important;
+  min-height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 40px 80px;
+  padding: 40px 60px;
   background: #001a4d;
+  position: relative;
+  z-index: 1;
 }
 
 /* Scrollbar */
