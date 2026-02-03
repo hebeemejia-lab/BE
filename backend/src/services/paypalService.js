@@ -84,6 +84,7 @@ const capturarOrden = async (orderId) => {
   const baseUrl = getBaseUrl();
 
   try {
+    console.log('🔄 PayPal Service: Capturando orden', orderId);
     const response = await axios.post(
       `${baseUrl}/v2/checkout/orders/${orderId}/capture`,
       {},
@@ -95,10 +96,18 @@ const capturarOrden = async (orderId) => {
       }
     );
 
+    console.log('✅ PayPal Service: Captura exitosa');
     return response.data;
   } catch (error) {
+    console.error('❌ PayPal Service: Error en captura');
+    console.error('   Status:', error.response?.status);
+    console.error('   Data:', JSON.stringify(error.response?.data, null, 2));
+    console.error('   Message:', error.message);
+    
     const details = error.response?.data || error.message;
-    throw new Error(`PayPal capture error: ${JSON.stringify(details)}`);
+    const err = new Error(`PayPal capture error: ${JSON.stringify(details)}`);
+    err.response = error.response; // Preservar respuesta original
+    throw err;
   }
 };
 

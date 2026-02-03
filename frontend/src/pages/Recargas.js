@@ -161,9 +161,19 @@ export default function Recargas() {
             console.error('❌ Error capturando PayPal:', err);
             console.error('   Respuesta del servidor:', err.response?.data);
             const errorMsg = err.response?.data?.mensaje || err.message || 'Error desconocido';
+            const detalles = err.response?.data?.detalles;
             const debugId = err.response?.data?.debug_id || 'N/A';
-            setError(`Error al completar el pago: ${errorMsg} (Debug ID: ${debugId})`);
             
+            // Mejorar mensaje si es INSTRUMENT_DECLINED
+            let mensajeUsuario = errorMsg;
+            if (detalles?.details?.[0]?.issue === 'INSTRUMENT_DECLINED') {
+              mensajeUsuario = '❌ Tu tarjeta fue rechazada. Verifica:\n• Que tenga fondos suficientes\n• Que no esté bloqueada\n• Intenta con otra tarjeta o cuenta bancaria';
+            } else if (detalles?.name === 'UNPROCESSABLE_ENTITY') {
+              mensajeUsuario = '❌ Error procesando el pago. Intenta con otro método de pago en PayPal';
+            }
+            setError(mensajeUsuario);
+            
+
             // Analytics: seguimiento de error
             if (window.gtag) {
               window.gtag('event', 'exception', {
