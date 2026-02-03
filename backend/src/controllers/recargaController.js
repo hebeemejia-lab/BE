@@ -372,7 +372,7 @@ const crearRecargaPayPal = async (req, res) => {
   }
 };
 
-// Capturar recarga PayPal
+// Capturar recarga PayPal (SIN autenticación - viene desde PayPal redirect)
 const capturarRecargaPayPal = async (req, res) => {
   try {
     const { token, recargaId } = req.body;
@@ -387,15 +387,32 @@ const capturarRecargaPayPal = async (req, res) => {
 
     if (!id || isNaN(id)) {
       console.error('❌ ID inválido:', id);
-      return res.status(400).json({ mensaje: 'recargaId o token requerido (debe ser número válido)', recibido: req.body });
+      return res.status(400).json({ 
+        mensaje: 'recargaId o token requerido (debe ser número válido)', 
+        recibido: req.body 
+      });
     }
 
+    // Buscar recarga
     const recarga = await Recarga.findByPk(id);
     console.log('🔍 Recarga encontrada:', recarga?.id, 'Estado:', recarga?.estado, 'paypalOrderId:', recarga?.paypalOrderId);
 
     if (!recarga) {
       console.error('❌ Recarga no encontrada. ID:', id);
-      return res.status(404).json({ mensaje: 'Recarga no encontrada', id, buscada: id });
+      return res.status(404).json({ 
+        mensaje: 'Recarga no encontrada', 
+        id,
+        buscada: id 
+      });
+    }
+
+    // Verificar que la recarga sea de PayPal
+    if (recarga.metodo !== 'paypal') {
+      console.error('❌ Recarga no es de PayPal. Metodo:', recarga.metodo);
+      return res.status(400).json({ 
+        mensaje: 'Esta recarga no es de PayPal',
+        metodo: recarga.metodo
+      });
     }
 
     // Si ya fue capturada exitosamente, no volver a capturar
@@ -412,7 +429,10 @@ const capturarRecargaPayPal = async (req, res) => {
 
     if (!recarga.paypalOrderId) {
       console.error('❌ Recarga sin paypalOrderId. RecargaId:', recarga.id);
-      return res.status(400).json({ mensaje: 'Recarga sin paypalOrderId asociado', recargaId: recarga.id });
+      return res.status(400).json({ 
+        mensaje: 'Recarga sin paypalOrderId asociado', 
+        recargaId: recarga.id 
+      });
     }
 
     console.log('📝 Capturando orden PayPal:', recarga.paypalOrderId);
