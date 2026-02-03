@@ -56,9 +56,11 @@ export default function Dashboard() {
         <div className="balance-card">
           <div className="balance-content">
             <span className="balance-label">Saldo Disponible</span>
-            <span className="balance-amount">${formatMoney(usuario?.saldo)}</span>
           </div>
-          <span className="balance-icon">💰</span>
+          <div className="balance-amount-row">
+            <span className="balance-amount">${formatMoney(usuario?.saldo)}</span>
+            <span className="balance-icon">💰</span>
+          </div>
         </div>
 
         <div className="stats-card">
