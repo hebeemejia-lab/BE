@@ -120,6 +120,11 @@ export default function Recargas() {
             setSuccess('🔄 Procesando pago...');
             
             console.log('🔄 Capturando pago PayPal:', data.orderID);
+            console.log('   recargaIdRef.current:', recargaIdRef.current);
+            console.log('   Enviando al backend:', { 
+              recargaId: recargaIdRef.current,
+              paypalOrderId: data.orderID
+            });
             
             const token = localStorage.getItem('token');
             const headers = token
@@ -128,7 +133,10 @@ export default function Recargas() {
 
             const response = await axios.post(
               `${API_URL}/recargas/paypal/capturar`,
-              { recargaId: recargaIdRef.current },
+              { 
+                recargaId: recargaIdRef.current,
+                paypalOrderId: data.orderID 
+              },
               { headers }
             );
 
@@ -151,6 +159,7 @@ export default function Recargas() {
             setTimeout(() => window.location.reload(), 3000);
           } catch (err) {
             console.error('❌ Error capturando PayPal:', err);
+            console.error('   Respuesta del servidor:', err.response?.data);
             const errorMsg = err.response?.data?.mensaje || err.message || 'Error desconocido';
             const debugId = err.response?.data?.debug_id || 'N/A';
             setError(`Error al completar el pago: ${errorMsg} (Debug ID: ${debugId})`);

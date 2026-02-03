@@ -383,13 +383,19 @@ const capturarRecargaPayPal = async (req, res) => {
       id = parseInt(id, 10);
     }
 
-    console.log('🔍 Capturando PayPal - recargaId:', id, 'Tipo:', typeof id, '| Body:', req.body);
+    console.log('🔍 CAPTURAR PAYPAL - INICIO');
+    console.log('   recargaId:', recargaId, 'tipo:', typeof recargaId);
+    console.log('   token:', token, 'tipo:', typeof token);
+    console.log('   id final:', id, 'tipo:', typeof id);
+    console.log('   req.body:', JSON.stringify(req.body));
 
     if (!id || isNaN(id)) {
       console.error('❌ ID inválido:', id);
       return res.status(400).json({ 
         mensaje: 'recargaId o token requerido (debe ser número válido)', 
-        recibido: req.body 
+        recibido: req.body,
+        recargaId,
+        token
       });
     }
 
