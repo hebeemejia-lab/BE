@@ -68,17 +68,22 @@
 
 .retiros-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
-  padding: 40px 20px;
+  background: transparent;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 30px;
+  align-items: center;
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
 }
 
 .retiros-card,
 .historial-card {
-  max-width: 600px;
-  margin: 0 auto;
+  max-width: 100%;
+  width: 100%;
+  margin: 0;
   background: white;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 26, 77, 0.15);
