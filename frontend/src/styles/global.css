@@ -66,12 +66,17 @@ main {
   background: #001a4d;
   position: relative;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 /* Asegurar que TODOS los containers respeten el layout */
 main > div {
   max-width: 100%;
   box-sizing: border-box;
+  width: 100%;
 }
 
 /* Forzar scroll en todos los containers de páginas */
@@ -85,7 +90,7 @@ main > div {
 .vincular-container,
 .admin-panel-container {
   width: 100%;
-  max-width: 900px;
+  max-width: 700px;
   margin: 0 auto;
   box-sizing: border-box;
 }
