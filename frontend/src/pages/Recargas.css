@@ -294,6 +294,19 @@
   font-size: 1.3rem;
 }
 
+.paypal-buttons {
+  width: 100%;
+  margin-top: 10px;
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: center;
+}
+
+.paypal-buttons > div {
+  width: 100%;
+  max-width: 420px;
+}
+
 .spinner {
   display: inline-block;
   animation: spin 1s linear infinite;
