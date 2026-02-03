@@ -35,51 +35,92 @@ export default function Recargas() {
       paypalButtonRef.current.innerHTML = '';
 
       window.paypal.Buttons({
-        createOrder: async () => {
-          setError('');
-          setSuccess('');
-
-          const montoNum = parseFloat(monto);
-          if (!montoNum || montoNum <= 0 || montoNum < 1) {
-            setError('El monto debe ser mayor a $1 USD');
-            throw new Error('Monto inválido');
-          }
-
-          if (montoNum > 10000) {
-            setError('El monto máximo por transacción es $10,000 USD');
-            throw new Error('Monto excedido');
-          }
-
-          const token = localStorage.getItem('token');
-          if (!token) {
-            setError('Debes estar autenticado para recargar');
-            throw new Error('No autenticado');
-          }
-
-          const response = await axios.post(
-            `${API_URL}/recargas/crear-paypal`,
-            { monto: montoNum },
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-
-          const orderId = response.data.orderId;
-          recargaIdRef.current = response.data.recargaId;
-
-          if (!orderId || !recargaIdRef.current) {
-            setError('No se pudo iniciar el pago. Intenta de nuevo.');
-            throw new Error('Orden inválida');
-          }
-
-          return orderId;
+        // ESTILO Y APARIENCIA
+        style: {
+          layout: 'vertical',
+          color: 'gold',
+          shape: 'rect',
+          label: 'paypal',
+          height: 45,
         },
-        onApprove: async () => {
+        
+        // CREAR ORDEN
+        createOrder: async () => {
+          try {
+            setError('');
+            setSuccess('');
+            setLoading(true);
+
+            const montoNum = parseFloat(monto);
+            
+            // Validaciones de monto
+            if (!montoNum || montoNum <= 0 || montoNum < 1) {
+              setError('El monto debe ser mayor a $1 USD');
+              throw new Error('Monto inválido');
+            }
+
+            if (montoNum > 10000) {
+              setError('El monto máximo por transacción es $10,000 USD');
+              throw new Error('Monto excedido');
+            }
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+              setError('Debes estar autenticado para recargar');
+              throw new Error('No autenticado');
+            }
+
+            console.log('🔄 Creando orden PayPal para $', montoNum);
+
+            const response = await axios.post(
+              `${API_URL}/recargas/crear-paypal`,
+              { monto: montoNum },
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
+
+            const orderId = response.data.orderId;
+            recargaIdRef.current = response.data.recargaId;
+
+            if (!orderId || !recargaIdRef.current) {
+              setError('No se pudo iniciar el pago. Intenta de nuevo.');
+              throw new Error('Orden inválida');
+            }
+
+            console.log('✅ Orden creada:', orderId);
+            
+            // Analytics: seguimiento de inicio de conversión
+            if (window.gtag) {
+              window.gtag('event', 'begin_checkout', {
+                currency: 'USD',
+                value: montoNum,
+                items: [{ id: orderId, name: 'Recarga PayPal', price: montoNum }]
+              });
+            }
+
+            setLoading(false);
+            return orderId;
+          } catch (err) {
+            setLoading(false);
+            console.error('❌ Error creando orden:', err);
+            const errorMsg = err.response?.data?.mensaje || err.message || 'Error desconocido';
+            setError(`Error al iniciar pago: ${errorMsg}`);
+            throw err;
+          }
+        },
+        
+        // APROBAR PAGO
+        onApprove: async (data, actions) => {
           try {
             setLoading(true);
+            setSuccess('🔄 Procesando pago...');
+            
+            console.log('🔄 Capturando pago PayPal:', data.orderID);
+            
             const token = localStorage.getItem('token');
             const headers = token
               ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
@@ -91,21 +132,88 @@ export default function Recargas() {
               { headers }
             );
 
-            setSuccess('✅ Pago PayPal completado. Saldo actualizado.');
-            console.log('✅ Captura PayPal:', response.data);
+            console.log('✅ Pago capturado:', response.data);
+            
+            setSuccess(`✅ ¡Pago completado! Saldo actualizado: $${response.data.nuevoSaldo || 'N/A'}`);
+            setMonto('');
+            
+            // Analytics: seguimiento de conversión exitosa
+            if (window.gtag) {
+              window.gtag('event', 'purchase', {
+                transaction_id: data.orderID,
+                currency: 'USD',
+                value: response.data.monto || 0,
+                items: [{ id: data.orderID, name: 'Recarga PayPal', price: response.data.monto }]
+              });
+            }
+            
+            // Recargar página después de 3 segundos para actualizar saldo
+            setTimeout(() => window.location.reload(), 3000);
           } catch (err) {
             console.error('❌ Error capturando PayPal:', err);
-            setError('Error al completar el pago PayPal.');
+            const errorMsg = err.response?.data?.mensaje || err.message || 'Error desconocido';
+            const debugId = err.response?.data?.debug_id || 'N/A';
+            setError(`Error al completar el pago: ${errorMsg} (Debug ID: ${debugId})`);
+            
+            // Analytics: seguimiento de error
+            if (window.gtag) {
+              window.gtag('event', 'exception', {
+                description: `PayPal capture error: ${errorMsg}`,
+                fatal: false
+              });
+            }
           } finally {
             setLoading(false);
           }
         },
+        
+        // ERROR EN PAGO
         onError: (err) => {
           console.error('❌ Error PayPal JS SDK:', err);
-          setError('Error al procesar el pago con PayPal.');
+          const errorMsg = err.message || 'Error desconocido en PayPal';
+          setError(`Error al procesar el pago: ${errorMsg}`);
+          setLoading(false);
+          
+          // Analytics: seguimiento de error
+          if (window.gtag) {
+            window.gtag('event', 'exception', {
+              description: `PayPal SDK error: ${errorMsg}`,
+              fatal: false
+            });
+          }
         },
-        onCancel: () => {
-          setError('Pago cancelado por el usuario.');
+        
+        // CANCELAR PAGO
+        onCancel: (data) => {
+          console.log('⚠️ Pago cancelado por el usuario:', data);
+          setError('Pago cancelado. No se realizó ningún cargo.');
+          setLoading(false);
+          
+          // Analytics: seguimiento de cancelación
+          if (window.gtag) {
+            window.gtag('event', 'remove_from_cart', {
+              currency: 'USD',
+              value: parseFloat(monto) || 0
+            });
+          }
+        },
+        
+        // INICIAR RENDERIZADO
+        onInit: (data, actions) => {
+          console.log('🔵 PayPal botón inicializado');
+        },
+        
+        // AL HACER CLICK
+        onClick: (data, actions) => {
+          console.log('🔵 Usuario hizo click en botón PayPal');
+          
+          const montoNum = parseFloat(monto);
+          if (!montoNum || montoNum <= 0) {
+            setError('Por favor ingresa un monto válido');
+            return actions.reject();
+          }
+          
+          return actions.resolve();
         },
       }).render(paypalButtonRef.current);
     };
@@ -375,8 +483,28 @@ export default function Recargas() {
 
               {/* Botón de PayPal (JS SDK) */}
               <div className="paypal-buttons" aria-disabled={loading}>
+                {loading && (
+                  <div className="loading-overlay">
+                    <div className="spinner"></div>
+                    <p>Procesando pago...</p>
+                  </div>
+                )}
                 <div ref={paypalButtonRef} />
               </div>
+              
+              {/* Indicador de estado */}
+              {loading && (
+                <div className="status-indicator processing">
+                  <span className="status-icon">⏳</span>
+                  <span>Procesando tu pago...</span>
+                </div>
+              )}
+              {success && !loading && (
+                <div className="status-indicator success">
+                  <span className="status-icon">✅</span>
+                  <span>{success}</span>
+                </div>
+              )}
 
               {/* Info de seguridad y métodos */}
               <div className="payment-info">
