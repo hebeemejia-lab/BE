@@ -376,12 +376,18 @@ const crearRecargaPayPal = async (req, res) => {
 const capturarRecargaPayPal = async (req, res) => {
   try {
     const { token, recargaId } = req.body;
-    const id = recargaId || token;
+    let id = recargaId || token;
 
-    console.log('🔍 Capturando PayPal - recargaId:', id, '| Body:', req.body);
+    // Convertir a número si es string
+    if (typeof id === 'string') {
+      id = parseInt(id, 10);
+    }
 
-    if (!id) {
-      return res.status(400).json({ mensaje: 'recargaId o token requerido' });
+    console.log('🔍 Capturando PayPal - recargaId:', id, 'Tipo:', typeof id, '| Body:', req.body);
+
+    if (!id || isNaN(id)) {
+      console.error('❌ ID inválido:', id);
+      return res.status(400).json({ mensaje: 'recargaId o token requerido (debe ser número válido)', recibido: req.body });
     }
 
     const recarga = await Recarga.findByPk(id);
@@ -389,7 +395,7 @@ const capturarRecargaPayPal = async (req, res) => {
 
     if (!recarga) {
       console.error('❌ Recarga no encontrada. ID:', id);
-      return res.status(404).json({ mensaje: 'Recarga no encontrada', id });
+      return res.status(404).json({ mensaje: 'Recarga no encontrada', id, buscada: id });
     }
 
     // Si ya fue capturada exitosamente, no volver a capturar
