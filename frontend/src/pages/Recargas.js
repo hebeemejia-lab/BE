@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './Recargas.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const PAYPAL_CLIENT_ID = process.env.REACT_APP_PAYPAL_CLIENT_ID;
 
 export default function Recargas() {
   const [activeTab, setActiveTab] = useState('tarjeta');
@@ -12,12 +13,118 @@ export default function Recargas() {
   const [success, setSuccess] = useState('');
   const [codigoRecarga, setCodigoRecarga] = useState('');
   const [backendStatus, setBackendStatus] = useState('checking');
+  const paypalButtonRef = useRef(null);
+  const recargaIdRef = useRef(null);
 
   // Verificar estado del backend al cargar
   useEffect(() => {
     verificarBackend();
     verificarRetornoPayPal();
   }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'tarjeta') return;
+    if (!PAYPAL_CLIENT_ID) {
+      setError('Falta configurar PAYPAL_CLIENT_ID en el frontend.');
+      return;
+    }
+
+    const renderButtons = () => {
+      if (!window.paypal || !paypalButtonRef.current) return;
+
+      paypalButtonRef.current.innerHTML = '';
+
+      window.paypal.Buttons({
+        createOrder: async () => {
+          setError('');
+          setSuccess('');
+
+          const montoNum = parseFloat(monto);
+          if (!montoNum || montoNum <= 0 || montoNum < 1) {
+            setError('El monto debe ser mayor a $1 USD');
+            throw new Error('Monto inválido');
+          }
+
+          if (montoNum > 10000) {
+            setError('El monto máximo por transacción es $10,000 USD');
+            throw new Error('Monto excedido');
+          }
+
+          const token = localStorage.getItem('token');
+          if (!token) {
+            setError('Debes estar autenticado para recargar');
+            throw new Error('No autenticado');
+          }
+
+          const response = await axios.post(
+            `${API_URL}/recargas/crear-paypal`,
+            { monto: montoNum },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+
+          const orderId = response.data.orderId;
+          recargaIdRef.current = response.data.recargaId;
+
+          if (!orderId || !recargaIdRef.current) {
+            setError('No se pudo iniciar el pago. Intenta de nuevo.');
+            throw new Error('Orden inválida');
+          }
+
+          return orderId;
+        },
+        onApprove: async () => {
+          try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            const headers = token
+              ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+              : { 'Content-Type': 'application/json' };
+
+            const response = await axios.post(
+              `${API_URL}/recargas/paypal/capturar`,
+              { recargaId: recargaIdRef.current },
+              { headers }
+            );
+
+            setSuccess('✅ Pago PayPal completado. Saldo actualizado.');
+            console.log('✅ Captura PayPal:', response.data);
+          } catch (err) {
+            console.error('❌ Error capturando PayPal:', err);
+            setError('Error al completar el pago PayPal.');
+          } finally {
+            setLoading(false);
+          }
+        },
+        onError: (err) => {
+          console.error('❌ Error PayPal JS SDK:', err);
+          setError('Error al procesar el pago con PayPal.');
+        },
+        onCancel: () => {
+          setError('Pago cancelado por el usuario.');
+        },
+      }).render(paypalButtonRef.current);
+    };
+
+    if (window.paypal) {
+      renderButtons();
+      return;
+    }
+
+    const scriptId = 'paypal-js-sdk';
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture`;
+      script.async = true;
+      script.onload = renderButtons;
+      document.body.appendChild(script);
+    }
+  }, [activeTab, monto]);
 
   const verificarRetornoPayPal = async () => {
     const params = new URLSearchParams(window.location.search);
@@ -237,7 +344,7 @@ export default function Recargas() {
               <p className="card-subtitle">Paga de forma segura con tu cuenta PayPal</p>
             </div>
 
-            <form onSubmit={handlePagoTarjeta} className="payment-form">
+            <form onSubmit={(e) => e.preventDefault()} className="payment-form">
               {/* Input de monto */}
               <div className="form-section">
                 <label htmlFor="monto" className="monto-label">¿Cuánto deseas recargar?</label>
@@ -266,24 +373,10 @@ export default function Recargas() {
                 )}
               </div>
 
-              {/* Botón de pago */}
-              <button
-                type="submit"
-                className="btn-payment"
-                disabled={loading || !monto || parseFloat(monto) <= 0}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner">⏳</span>
-                    <span>Procesando...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>🔐</span>
-                    <span>Proceder a Pago Seguro</span>
-                  </>
-                )}
-              </button>
+              {/* Botón de PayPal (JS SDK) */}
+              <div className="paypal-buttons" aria-disabled={loading}>
+                <div ref={paypalButtonRef} />
+              </div>
 
               {/* Info de seguridad y métodos */}
               <div className="payment-info">
