@@ -41,7 +41,7 @@ export default function Recargas() {
 
         const response = await axios.post(
           `${API_URL}/recargas/paypal/capturar`,
-          { token: recargaId },
+          { recargaId: recargaId },
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
