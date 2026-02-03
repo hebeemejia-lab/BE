@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import './Dashboard.css';
+import './Perfil.css';
 
 export default function Perfil() {
   const { usuario, updatePerfil } = useContext(AuthContext);
