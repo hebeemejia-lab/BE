@@ -44,13 +44,18 @@ const crearOrden = async ({ monto, currency = 'USD', returnUrl, cancelUrl, refer
   const accessToken = await getAccessToken();
   const baseUrl = getBaseUrl();
 
+  // Debug: Ver qué monto llega
+  console.log('🔍 PayPal Service - Monto recibido:', monto, 'Tipo:', typeof monto);
+  const montoNumerico = parseFloat(Number(monto).toFixed(2));
+  console.log('🔍 PayPal Service - Monto procesado:', montoNumerico, 'Tipo:', typeof montoNumerico);
+
   const payload = {
     intent: 'CAPTURE',
     purchase_units: [
       {
         amount: {
           currency_code: currency,
-          value: parseFloat(Number(monto).toFixed(2)),
+          value: montoNumerico,
         },
         description: 'Recarga de saldo Banco Exclusivo',
         custom_id: referencia,
@@ -63,6 +68,8 @@ const crearOrden = async ({ monto, currency = 'USD', returnUrl, cancelUrl, refer
       landing_page: 'LOGIN',  // LOGIN requiere autenticación en PayPal
     },
   };
+
+  console.log('📤 Enviando payload a PayPal:', JSON.stringify(payload, null, 2));
 
   try {
     const response = await axios.post(`${baseUrl}/v2/checkout/orders`, payload, {
