@@ -120,17 +120,39 @@ main::-webkit-scrollbar-thumb:hover {
 
 @media (max-width: 768px) {
   nav {
-    position: static;
+    position: fixed;
     width: 100%;
-    height: auto;
-    z-index: 10;
+    height: 65px;
+    left: 0;
+    z-index: 10000;
   }
   
   main {
     margin-left: 0;
+    margin-top: 65px;
     width: 100%;
+    min-height: calc(100vh - 65px);
     height: auto;
-    padding: 20px;
+    padding: 20px 15px;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  main > div {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .recargas-container,
+  .perfil-container,
+  .dashboard-container,
+  .prestamos-container,
+  .transferencias-container,
+  .transferencias-internacionales-container,
+  .transferencia-bancaria-container,
+  .vincular-container,
+  .admin-panel-container {
+    padding: 0;
   }
 }
 
