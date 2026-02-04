@@ -1,5 +1,7 @@
-/* Estilo para input de verificación de cédula */
-.verificacion-cedula-input {
+/* Estilos para input de verificación de cédula y email */
+.verificacion-cedula-input,
+.verification-email-input,
+.verification-code-input {
   padding: 0.6em 1em;
   border: 2px solid #0077cc;
   border-radius: 6px;
@@ -10,9 +12,35 @@
   outline: none;
   transition: border 0.2s;
 }
-.verificacion-cedula-input:focus {
+
+.verificacion-cedula-input:focus,
+.verification-email-input:focus,
+.verification-code-input:focus {
   border-color: #005fa3;
   background: #f5faff;
+}
+
+.verification-section {
+  padding: 20px;
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  color: #003d99;
+  border: 2px solid #003d99;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+}
+
+.btn-secondary:hover {
+  background: #003d99;
+  color: white;
 }
 
 /* Estilos para información de cuenta principal */

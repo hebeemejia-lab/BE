@@ -5,7 +5,7 @@ import './VincularCuenta.css';
 
 export default function VincularCuenta() {
   const { usuario } = useContext(AuthContext);
-  const [tab, setTab] = useState('vincular'); // vincular | verificar | listado
+  const [tab, setTab] = useState('vincular'); // vincular | listado
   const [formData, setFormData] = useState({
     nombreCuenta: '',
     numeroCuenta: '',
@@ -126,12 +126,6 @@ export default function VincularCuenta() {
             ➕ Vincular Cuenta
           </button>
           <button
-            className={`tab-btn ${tab === 'verificar' ? 'active' : ''}`}
-            onClick={() => setTab('verificar')}
-          >
-            ✓ Verificar
-          </button>
-          <button
             className={`tab-btn ${tab === 'listado' ? 'active' : ''}`}
             onClick={() => setTab('listado')}
           >
@@ -238,71 +232,6 @@ export default function VincularCuenta() {
 
             <button type="submit" disabled={loading} className="btn-submit">
               {loading ? 'Procesando...' : 'Vincular Cuenta'}
-            </button>
-          </form>
-        )}
-
-        {/* Verificar */}
-        {tab === 'verificar' && (
-          <form onSubmit={handleVerificar} className="form-section">
-            <div className="form-group">
-              <label>Seleccionar Cuenta a Verificar</label>
-              <select
-                name="cuentaId"
-                value={verificacion.cuentaId}
-                onChange={handleVerificacionChange}
-                required
-              >
-                <option value="">-- Selecciona una cuenta --</option>
-                {cuentas
-                  .filter((c) => c.estado === 'pendiente')
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombreCuenta} - {c.banco} ({c.numerosCuenta})
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div className="info-box">
-              <h4>📧 Microdeposits Recibidos</h4>
-              <p>Stripe habrá enviado 2 depósitos pequeños a tu cuenta en 1-2 días hábiles.</p>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>Primer Depósito ($)</label>
-                <input
-                  type="number"
-                  name="deposit1"
-                  value={verificacion.deposit1}
-                  onChange={handleVerificacionChange}
-                  placeholder="0.01"
-                  step="0.01"
-                  min="0.01"
-                  max="0.99"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Segundo Depósito ($)</label>
-                <input
-                  type="number"
-                  name="deposit2"
-                  value={verificacion.deposit2}
-                  onChange={handleVerificacionChange}
-                  placeholder="0.01"
-                  step="0.01"
-                  min="0.01"
-                  max="0.99"
-                  required
-                />
-              </div>
-            </div>
-
-            <button type="submit" disabled={loading} className="btn-submit">
-              {loading ? 'Verificando...' : 'Verificar Cuenta'}
             </button>
           </form>
         )}

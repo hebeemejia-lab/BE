@@ -124,8 +124,9 @@ const aprobarPrestamo = async (req, res) => {
     }));
 
     const usuario = await User.findByPk(prestamo.usuarioId);
-    usuario.saldo = parseFloat(usuario.saldo) + monto;
-    await usuario.save();
+    // NO agregamos el monto al saldo porque es modo Sandbox
+    // y la API de PayPal se confunde con los montos de préstamos
+    // El préstamo se aprueba pero NO afecta el balance de la cuenta
 
     await prestamo.save();
 

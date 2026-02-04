@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
     return {
       ...data,
       saldo: Number.isFinite(saldoNormalizado) ? saldoNormalizado : 0,
+      moneda: data.moneda || 'USD',
     };
   };
 

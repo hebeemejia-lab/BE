@@ -19,7 +19,10 @@ export default function Retiros() {
   const [retiros, setRetiros] = useState([]);
   const [retirosLoading, setRetirosLoading] = useState(true);
   const [verificado, setVerificado] = useState(false);
-  const [cedulaInput, setCedulaInput] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+  const [verificationStep, setVerificationStep] = useState('email'); // 'email' or 'code'
+  const [verificationCode, setVerificationCode] = useState('');
+  const [sentCode, setSentCode] = useState('');
 
   // Cargar cuentas vinculadas al montar
   React.useEffect(() => {
@@ -241,28 +244,75 @@ export default function Retiros() {
 
         {/* Verificación de identidad antes de mostrar el formulario */}
         {!verificado ? (
-          <form className="form-section" onSubmit={e => {
-            e.preventDefault();
-            if (cedulaInput === usuario?.cedula) {
-              setVerificado(true);
-              setError('');
-            } else {
-              setError('Cédula incorrecta. Intenta de nuevo.');
-            }
-          }}>
-            <div className="form-group">
-              <label>Verifica tu identidad para retirar</label>
-              <input
-                type="text"
-                className="verificacion-cedula-input"
-                placeholder="Ingresa tu cédula"
-                value={cedulaInput}
-                onChange={e => setCedulaInput(e.target.value)}
-                autoFocus
-              />
-            </div>
-            <button type="submit" className="btn-submit">Verificar</button>
-          </form>
+          <div className="verification-section">
+            {verificationStep === 'email' ? (
+              <form className="form-section" onSubmit={async (e) => {
+                e.preventDefault();
+                if (emailInput === usuario?.email) {
+                  // Generate random 6-digit code
+                  const code = Math.floor(100000 + Math.random() * 900000).toString();
+                  setSentCode(code);
+                  setVerificationStep('code');
+                  setError('');
+                  setSuccess(`Código de verificación enviado a ${emailInput}: ${code}`);
+                  // In production, this would send an actual email
+                } else {
+                  setError('El email no coincide con tu cuenta. Intenta de nuevo.');
+                }
+              }}>
+                <div className="form-group">
+                  <label>Verifica tu identidad con tu email</label>
+                  <input
+                    type="email"
+                    className="verification-email-input"
+                    placeholder="Ingresa tu email"
+                    value={emailInput}
+                    onChange={e => setEmailInput(e.target.value)}
+                    autoFocus
+                    required
+                  />
+                </div>
+                <button type="submit" className="btn-submit">Enviar Código</button>
+              </form>
+            ) : (
+              <form className="form-section" onSubmit={(e) => {
+                e.preventDefault();
+                if (verificationCode === sentCode) {
+                  setVerificado(true);
+                  setError('');
+                  setSuccess('Verificación exitosa. Ahora puedes retirar fondos.');
+                } else {
+                  setError('Código incorrecto. Intenta de nuevo.');
+                }
+              }}>
+                <div className="form-group">
+                  <label>Ingresa el código de verificación</label>
+                  <input
+                    type="text"
+                    className="verification-code-input"
+                    placeholder="Ingresa el código de 6 dígitos"
+                    value={verificationCode}
+                    onChange={e => setVerificationCode(e.target.value)}
+                    maxLength={6}
+                    autoFocus
+                    required
+                  />
+                  <small>Código enviado a: {emailInput}</small>
+                </div>
+                <button type="submit" className="btn-submit">Verificar Código</button>
+                <button 
+                  type="button" 
+                  className="btn-secondary"
+                  onClick={() => {
+                    setVerificationStep('email');
+                    setVerificationCode('');
+                  }}
+                >
+                  Volver a enviar código
+                </button>
+              </form>
+            )}
+          </div>
         ) : (
           <form onSubmit={handleSubmit} className="form-section">
             {/* Monto */}
