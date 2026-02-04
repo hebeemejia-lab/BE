@@ -231,27 +231,35 @@
 @media (max-width: 768px) {
   .navbar {
     width: 100%;
-    height: auto;
-    position: sticky;
+    height: 65px;
+    position: fixed;
     top: 0;
+    left: 0;
+    z-index: 10000;
   }
 
   .navbar-container {
     padding: 15px 20px;
-    height: auto;
+    height: 65px;
+    flex-direction: row;
+    align-items: center;
   }
 
   .navbar-header {
     flex-direction: row;
     justify-content: space-between;
+    align-items: center;
     width: 100%;
     border-bottom: none;
     padding-bottom: 0;
+    gap: 0;
   }
 
   .navbar-logo {
     flex-direction: row;
-    font-size: 20px;
+    font-size: 18px;
+    gap: 8px;
+    order: 2;
   }
 
   .logo-img {
@@ -259,22 +267,23 @@
     height: 35px;
   }
 
-  .hamburger {
-    display: flex;
-    flex-direction: column;
-  }
-
   .logo-text {
-    display: none;
+    display: inline;
   }
 
-  .navbar-logo {
-    font-size: 20px;
+  .hamburger {
+    position: static;
+    order: 1;
+    left: auto;
+  }
+
+  .hamburger.active {
+    left: auto;
   }
 
   .navbar-right {
     position: fixed;
-    top: 60px;
+    top: 65px;
     left: 0;
     right: 0;
     flex-direction: column;
@@ -283,14 +292,14 @@
     gap: 0;
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease;
+    transition: max-height 0.4s ease, padding 0.4s ease;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 1000;
+    z-index: 9999;
     visibility: hidden;
   }
 
   .navbar-right.open {
-    max-height: 500px;
+    max-height: calc(100vh - 65px);
     overflow-y: auto;
     padding: 20px;
     gap: 15px;
@@ -298,17 +307,17 @@
   }
 
   .navbar-overlay {
-    display: block;
+    display: none;
     position: fixed;
-    top: 60px;
+    top: 65px;
     left: 0;
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 999;
+    z-index: 9998;
   }
 
-  .navbar-overlay.show {
+  .navbar-right.open + .navbar-overlay {
     display: block;
   }
 
