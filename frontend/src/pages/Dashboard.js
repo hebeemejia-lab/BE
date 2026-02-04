@@ -11,6 +11,23 @@ export default function Dashboard() {
   const [prestamos, setPrestamos] = useState([]);
   const [loadingDatos, setLoadingDatos] = useState(true);
 
+  const getCurrencySymbol = (currency) => {
+    const symbols = {
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'JPY': '¥',
+      'MXN': '$',
+      'COP': '$',
+      'ARS': '$',
+      'CLP': '$',
+      'PEN': 'S/',
+      'BRL': 'R$',
+      'DOP': 'RD$',
+    };
+    return symbols[currency] || '$';
+  };
+
   const formatMoney = (value) => {
     const numberValue = Number(value);
     if (Number.isFinite(numberValue)) {
@@ -58,14 +75,14 @@ export default function Dashboard() {
             <span className="balance-label">Saldo Disponible</span>
           </div>
           <div className="balance-amount-row">
-            <span className="balance-amount">${formatMoney(usuario?.saldo)}</span>
-            <span className="balance-icon">💰</span>
+            <span className="balance-amount">{getCurrencySymbol(usuario?.moneda)}{formatMoney(usuario?.saldo)}</span>
+            <span className="balance-icon">{getCurrencySymbol(usuario?.moneda)}</span>
           </div>
         </div>
 
         <div className="stats-card">
           <div className="stat">
-            <span className="stat-icon">📊</span>
+            <img src="/imagen/BE (9).png" alt="Estadísticas" className="stat-icon-img" />
             <span className="stat-label">Transferencias</span>
             <span className="stat-value">{transferencias.length}</span>
           </div>

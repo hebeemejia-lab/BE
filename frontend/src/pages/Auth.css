@@ -213,5 +213,8 @@ form {
   .btn-submit {
     font-size: 16px;
     padding: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }

@@ -104,6 +104,12 @@
   color: #cc0000;
 }
 
+.stat-icon-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
 .stat-label {
   color: #666;
   font-size: 11px;

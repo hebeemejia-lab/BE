@@ -6,6 +6,7 @@ import './Navbar.css';
 export default function Navbar() {
   const { usuario, logout } = useContext(AuthContext);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [transactionsOpen, setTransactionsOpen] = useState(false);
 
   const formatMoney = (value) => {
     const numberValue = Number(value);
@@ -59,7 +60,10 @@ export default function Navbar() {
               </div>
               
               <div className="navbar-links">
-                <Link to="/dashboard" className="nav-link" onClick={handleMenuClose}>📊 Dashboard</Link>
+                <Link to="/dashboard" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
+                  <img src="/imagen/BE (9).png" alt="Dashboard" className="nav-icon" />
+                  Dashboard
+                </Link>
                 <Link to="/recargas" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
                   <img src="/imagen/BE (4) (1).png" alt="Recargas" className="nav-icon" />
                   Recargas
@@ -68,20 +72,49 @@ export default function Navbar() {
                   <img src="/imagen/BE (5) (1).png" alt="Retiros" className="nav-icon" />
                   Retiros
                 </Link>
-                <Link to="/vincular-cuenta" className="nav-link" onClick={handleMenuClose}>🏧 Vincular Cuenta</Link>
-                <Link to="/transferencias" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
-                  <img src="/imagen/BE (6) (1).png" alt="Transferencias" className="nav-icon" />
-                  Transferencias
+                <Link to="/vincular-cuenta" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
+                  <img src="/imagen/BE (11).png" alt="Vincular Cuenta" className="nav-icon" />
+                  Vincular Cuenta
                 </Link>
-                <Link to="/transferencias-bancarias" className="nav-link" onClick={handleMenuClose}>🏦 Transf. Bancaria</Link>
-                <Link to="/transferencias-internacionales" className="nav-link" onClick={handleMenuClose}>🌍 Transf. Internacional</Link>
-                <Link to="/prestamos" className="nav-link" onClick={handleMenuClose}>📈 Préstamos</Link>
+                
+                <div className="nav-dropdown">
+                  <button 
+                    className={`nav-link dropdown-toggle ${transactionsOpen ? 'active' : ''}`}
+                    onClick={() => setTransactionsOpen(!transactionsOpen)}
+                  >
+                    💸 Transacciones
+                  </button>
+                  {transactionsOpen && (
+                    <div className="dropdown-menu">
+                      <Link to="/transferencias" className="dropdown-item" onClick={handleMenuClose}>
+                        <img src="/imagen/BE (6) (1).png" alt="Transferencias" className="nav-icon" />
+                        Transferencias
+                      </Link>
+                      <Link to="/transferencias-bancarias" className="dropdown-item" onClick={handleMenuClose}>
+                        <img src="/imagen/BE (14).png" alt="Transf. Bancaria" className="nav-icon" />
+                        Transf. Bancaria
+                      </Link>
+                      <Link to="/transferencias-internacionales" className="dropdown-item" onClick={handleMenuClose}>
+                        <img src="/imagen/Adobe Express - file (12).png" alt="Transf. Internacional" className="nav-icon" />
+                        Transf. Internacional
+                      </Link>
+                    </div>
+                  )}
+                </div>
+                
+                <Link to="/prestamos" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
+                  <img src="/imagen/BE (15).png" alt="Préstamos" className="nav-icon" />
+                  Préstamos
+                </Link>
                 
                 {usuario.rol === 'admin' && (
                   <Link to="/admin" className="nav-link admin-link" onClick={handleMenuClose}>⚙️ Admin</Link>
                 )}
                 
-                <Link to="/perfil" className="nav-link" onClick={handleMenuClose}>👤 Perfil</Link>
+                <Link to="/perfil" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
+                  <img src="/imagen/BE (13).png" alt="Perfil" className="nav-icon" />
+                  Perfil
+                </Link>
                 
                 <button onClick={handleLogout} className="nav-button logout-btn">
                   🚪 Cerrar Sesión
