@@ -9,6 +9,7 @@ const {
   canjearcoCodigo,
   generarCodigos,
   webhookRapyd,
+  webhookPayPal,
 } = require('../controllers/recargaController');
 const verificarToken = require('../middleware/authMiddleware');
 
@@ -35,6 +36,9 @@ router.get('/debug', (req, res) => {
 
 // Webhook de Rapyd (SIN autenticación - viene desde Rapyd)
 router.post('/webhook-rapyd', webhookRapyd);
+
+// Webhook de PayPal (SIN autenticación - viene desde PayPal)
+router.post('/paypal/webhook', webhookPayPal);
 
 // Paypal capture (SIN autenticación - viene desde PayPal, no tiene JWT)
 router.post('/paypal/capturar', require('../controllers/recargaController').capturarRecargaPayPal);

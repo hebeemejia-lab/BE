@@ -892,6 +892,138 @@ module.exports = {
   crearRecargaRapyd,
   crearRecargaPayPal,
   capturarRecargaPayPal,
+// Webhook de PayPal para confirmación de pagos
+const webhookPayPal = async (req, res) => {
+  try {
+    console.log('📨 Webhook PayPal recibido');
+    
+    const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+    if (!webhookId) {
+      console.error('❌ PAYPAL_WEBHOOK_ID no configurado');
+      return res.status(500).json({ error: 'Webhook ID no configurado' });
+    }
+
+    const body = req.body;
+    const eventType = body.event_type;
+    const resource = body.resource;
+
+    console.log('🔔 Evento PayPal:', eventType);
+    console.log('📦 Recurso:', JSON.stringify(resource, null, 2));
+
+    if (!eventType || !resource) {
+      return res.status(400).json({ error: 'Evento o recurso no encontrado' });
+    }
+
+    // Procesar según el tipo de evento
+    switch (eventType) {
+      case 'PAYMENT.CAPTURE.COMPLETED':
+        // Obtener order_id del webhook
+        const orderId = resource.supplementary_data?.related_ids?.order_id;
+        
+        if (!orderId) {
+          console.error('❌ No se encontró order_id en el webhook');
+          return res.status(400).json({ error: 'order_id no encontrado' });
+        }
+
+        // Buscar la recarga por paypalOrderId
+        const recarga = await Recarga.findOne({
+          where: { paypalOrderId: orderId }
+        });
+
+        if (!recarga) {
+          console.error('❌ Recarga no encontrada para orderId:', orderId);
+          return res.status(404).json({ error: 'Recarga no encontrada' });
+        }
+
+        if (recarga.estado === 'exitosa') {
+          console.log('ℹ️ Recarga ya estaba exitosa, ignorando evento duplicado');
+          return res.status(200).json({ mensaje: 'Webhook procesado (duplicado)' });
+        }
+
+        // Actualizar estado a exitosa
+        recarga.estado = 'exitosa';
+        await recarga.save();
+
+        // Actualizar saldo del usuario
+        const usuario = await User.findByPk(recarga.usuarioId);
+        if (usuario) {
+          usuario.saldo += recarga.montoNeto;
+          await usuario.save();
+          console.log('✅ Recarga completada - Usuario:', usuario.email, 'Nuevo saldo:', usuario.saldo);
+        } else {
+          console.error('❌ Usuario no encontrado:', recarga.usuarioId);
+        }
+
+        break;
+
+      case 'PAYMENT.CAPTURE.DENIED':
+        // Obtener order_id del webhook
+        const orderIdDenegada = resource.supplementary_data?.related_ids?.order_id;
+        
+        if (!orderIdDenegada) {
+          console.error('❌ No se encontró order_id en el webhook DENIED');
+          return res.status(400).json({ error: 'order_id no encontrado' });
+        }
+
+        // Buscar y marcar como fallida
+        const recargaDenegada = await Recarga.findOne({
+          where: { paypalOrderId: orderIdDenegada }
+        });
+
+        if (recargaDenegada) {
+          recargaDenegada.estado = 'fallida';
+          recargaDenegada.mensajeError = `Pago denegado: ${resource.status_details?.reason || 'Razón desconocida'}`;
+          await recargaDenegada.save();
+          console.log('❌ Recarga denegada - Razón:', resource.status_details?.reason);
+        }
+
+        break;
+
+      case 'PAYMENT.CAPTURE.REFUNDED':
+        // Procesar reembolso
+        const orderIdReembolso = resource.supplementary_data?.related_ids?.order_id;
+        
+        if (!orderIdReembolso) {
+          console.error('❌ No se encontrado order_id en el webhook REFUNDED');
+          return res.status(400).json({ error: 'order_id no encontrado' });
+        }
+
+        const recargaReembolso = await Recarga.findOne({
+          where: { paypalOrderId: orderIdReembolso }
+        });
+
+        if (recargaReembolso && recargaReembolso.estado === 'exitosa') {
+          // Revertir saldo
+          const usuarioReembolso = await User.findByPk(recargaReembolso.usuarioId);
+          if (usuarioReembolso) {
+            usuarioReembolso.saldo -= recargaReembolso.montoNeto;
+            await usuarioReembolso.save();
+          }
+
+          recargaReembolso.estado = 'reembolsada';
+          recargaReembolso.mensajeError = 'Pago reembolsado por PayPal';
+          await recargaReembolso.save();
+          console.log('🔄 Pago reembolsado');
+        }
+
+        break;
+
+      default:
+        console.log('ℹ️ Evento no procesado:', eventType);
+    }
+
+    // Responder OK a PayPal
+    res.status(200).json({ mensaje: 'Webhook procesado correctamente' });
+
+  } catch (error) {
+    console.error('❌ Error procesando webhook PayPal:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = {
+  crearRecargaStripe,
+  crearRecargaRapyd,
   procesarRecargaTarjeta,
   procesarRecargaExitosa,
   obtenerRecargas,
@@ -899,4 +1031,5 @@ module.exports = {
   generarCodigos,
   crearRecargaTwoCheckout,
   webhookRapyd,
+  webhookPayPal,
 };
