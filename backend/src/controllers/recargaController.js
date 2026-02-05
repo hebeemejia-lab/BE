@@ -489,18 +489,51 @@ const capturarRecargaPayPal = async (req, res) => {
       const errorData = error.response?.data;
       const errorCode = errorData?.name || errorData?.status?.error_code;
       
+      // Extraer issue del error específico
+      const issue = errorData?.details?.[0]?.issue;
+      const description = errorData?.details?.[0]?.description;
+      
+      console.log(`🔍 Error específico: ${issue} - ${description}`);
+      
       recarga.estado = 'fallida';
       recarga.mensajeError = `Error PayPal: ${error.message}`;
       await recarga.save();
       
-      return res.status(400).json({ 
-        mensaje: 'Error capturando pago PayPal', 
+      // Preparar respuesta con detalles estructurados
+      const respuestaError = {
+        mensaje: 'Error capturando pago PayPal',
         error: error.message,
         errorCode: errorCode,
-        detalles: errorData,
         orderId: recarga.paypalOrderId,
-        status: error.response?.status
-      });
+        status: error.response?.status,
+        debug_id: errorData?.debug_id,
+        detalles: {
+          name: errorData?.name,
+          message: errorData?.message,
+          details: errorData?.details || [],
+          links: errorData?.links || []
+        }
+      };
+      
+      // Si es INSTRUMENT_DECLINED, proporcionar mensaje específico
+      if (issue === 'INSTRUMENT_DECLINED') {
+        respuestaError.mensajeUsuario = 'Tu tarjeta fue rechazada. Verifica que tenga fondos suficientes y que no esté bloqueada. Intenta con otra tarjeta o cuenta bancaria.';
+        respuestaError.sugerencias = [
+          'Verifica que tengas fondos suficientes',
+          'Asegúrate de que la tarjeta no esté bloqueada',
+          'Intenta con otra tarjeta o método de pago',
+          'Contacta a tu banco si el problema persiste'
+        ];
+      } else if (errorCode === 'UNPROCESSABLE_ENTITY') {
+        respuestaError.mensajeUsuario = 'Error procesando el pago. Intenta con otro método de pago en PayPal.';
+        respuestaError.sugerencias = [
+          'Intenta con otra tarjeta o cuenta bancaria',
+          'Verifica que el monto sea válido',
+          'Espera unos minutos e intenta de nuevo'
+        ];
+      }
+      
+      return res.status(error.response?.status || 400).json(respuestaError);
     }
     
     const status = capture?.status;
