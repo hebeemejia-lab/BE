@@ -523,6 +523,148 @@ const emailService = {
       return { enviado: false, error: error.message };
     }
   },
+
+  // Enviar verificación de cuenta bancaria con microdeposits
+  enviarVerificacionCuentaBancaria: async (usuario, cuenta, microdeposits) => {
+    const config = getConfig();
+    
+    try {
+      console.log('🏦 Enviando email de verificación de cuenta bancaria...');
+      console.log(`   Usuario: ${usuario.email}`);
+      console.log(`   Cuenta: ${cuenta.banco} - ****${cuenta.numerosCuenta}`);
+      
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .amounts { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; }
+            .amount-item { font-size: 24px; font-weight: bold; color: #667eea; margin: 10px 0; }
+            .instructions { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px; }
+            .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .footer { text-align: center; color: #666; font-size: 12px; margin-top: 30px; }
+            .warning { color: #dc3545; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🏦 Verifica tu Cuenta Bancaria</h1>
+            </div>
+            <div class="content">
+              <p>Hola <strong>${usuario.nombre}</strong>,</p>
+              
+              <p>Has vinculado una nueva cuenta bancaria a Banco Exclusivo:</p>
+              
+              <div class="amounts">
+                <p><strong>Banco:</strong> ${cuenta.banco}</p>
+                <p><strong>Cuenta:</strong> ****${cuenta.numerosCuenta}</p>
+                <p><strong>Titular:</strong> ${cuenta.nombreCuenta}</p>
+              </div>
+              
+              <h3>📋 Verificación con Microdeposits</h3>
+              <p>Hemos enviado <strong>dos pequeños depósitos</strong> a tu cuenta bancaria. Estos aparecerán en 1-3 días hábiles como:</p>
+              
+              <div class="amounts">
+                <div class="amount-item">Depósito 1: $${microdeposits.deposit1.toFixed(2)}</div>
+                <div class="amount-item">Depósito 2: $${microdeposits.deposit2.toFixed(2)}</div>
+              </div>
+              
+              <div class="instructions">
+                <h4>⚠️ IMPORTANTE:</h4>
+                <ul>
+                  <li>Revisa tu estado de cuenta bancario</li>
+                  <li>Busca transacciones de "BANCO EXCLUSIVO" o "MICRODEPOSIT"</li>
+                  <li>Anota los montos <strong>exactos</strong> (centavos incluidos)</li>
+                  <li>Ingresa los montos en tu perfil de Banco Exclusivo</li>
+                </ul>
+              </div>
+              
+              <center>
+                <a href="${config.frontendUrl}/perfil/cuentas" class="button">
+                  ✅ Verificar Cuenta Ahora
+                </a>
+              </center>
+              
+              <p class="warning">⏰ Los microdeposits expiran en 7 días</p>
+              
+              <p>Si no realizaste esta acción, ignora este email o contacta a soporte.</p>
+              
+              <div class="footer">
+                <p>© ${new Date().getFullYear()} Banco Exclusivo - Todos los derechos reservados</p>
+                <p>Este es un email automático, por favor no respondas.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Intentar con SendGrid primero
+      if (config.sendgridApiKey) {
+        const resultado = await enviarConSendGrid({
+          to: usuario.email,
+          subject: '🏦 Verifica tu cuenta bancaria - Microdeposits enviados',
+          html,
+        });
+
+        if (resultado.enviado) {
+          console.log(`✅ Email de verificación bancaria enviado con SendGrid`);
+          return resultado;
+        }
+        console.warn(`⚠️ SendGrid falló, intentando alternativas...`);
+      }
+
+      // Fallback SMTP
+      console.log('📧 Intentando con SMTP...');
+      const transporter = crearTransporter();
+      if (transporter) {
+        try {
+          await transporter.sendMail({
+            from: config.smtpFrom,
+            to: usuario.email,
+            subject: '🏦 Verifica tu cuenta bancaria - Microdeposits enviados',
+            html,
+          });
+
+          console.log(`✅ Email de verificación bancaria enviado con SMTP`);
+          return { enviado: true, provider: 'smtp' };
+        } catch (smtpError) {
+          console.error(`⚠️ SMTP falló: ${smtpError.message}`);
+        }
+      }
+
+      // Fallback Resend
+      if (config.resendApiKey) {
+        console.log('📧 Intentando con Resend...');
+        const resultadoResend = await enviarConResend({
+          to: usuario.email,
+          subject: '🏦 Verifica tu cuenta bancaria - Microdeposits enviados',
+          html,
+        });
+
+        if (resultadoResend.enviado) {
+          console.log(`✅ Email de verificación bancaria enviado con Resend`);
+          return resultadoResend;
+        }
+        console.warn(`⚠️ Resend también falló: ${resultadoResend.error}`);
+      }
+
+      console.warn('⚠️ Ningún servicio de email configurado, mostrando en consola');
+      console.log(`💰 Microdeposits: $${microdeposits.deposit1.toFixed(2)} y $${microdeposits.deposit2.toFixed(2)}`);
+      return { enviado: false, motivo: 'Email service no configurado', microdeposits };
+      
+    } catch (error) {
+      console.error('❌ Error enviando email de verificación bancaria:', error);
+      return { enviado: false, error: error.message };
+    }
+  },
 };
 
 module.exports = emailService;

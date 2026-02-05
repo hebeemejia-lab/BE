@@ -2,6 +2,7 @@ const BankAccount = require('../models/BankAccount');
 const User = require('../models/User');
 const Recarga = require('../models/Recarga');
 const stripeService = require('../services/stripeService');
+const emailService = require('../services/emailService');
 
 // Vincular cuenta bancaria
 const vincularCuenta = async (req, res) => {
@@ -42,11 +43,27 @@ const vincularCuenta = async (req, res) => {
         stripeBankAccountId: null,
         estado: 'pendiente', // Pendiente de verificación manual
       });
+      
+      // Generar microdeposits simulados para verificación
+      const microdeposits = {
+        deposit1: parseFloat((Math.random() * 0.99).toFixed(2)),
+        deposit2: parseFloat((Math.random() * 0.99).toFixed(2)),
+      };
+      
+      // Guardar microdeposits en la cuenta
+      cuentaLocal.deposit1 = microdeposits.deposit1;
+      cuentaLocal.deposit2 = microdeposits.deposit2;
+      await cuentaLocal.save();
+      
+      // Enviar email con los microdeposits
+      console.log('📧 Enviando email de verificación bancaria...');
+      await emailService.enviarVerificacionCuentaBancaria(usuario, cuentaLocal, microdeposits);
+      
       return res.json({
-        mensaje: 'Cuenta bancaria vinculada',
+        mensaje: 'Cuenta bancaria vinculada. Revisa tu email para verificar.',
         cuentaId: cuentaLocal.id,
         estado: 'pendiente_verificacion',
-        proximoPaso: 'Verificación manual o por SWIFT',
+        proximoPaso: 'Revisa tu email y confirma los microdeposits',
       });
     }
 
@@ -90,11 +107,26 @@ const vincularCuenta = async (req, res) => {
       estado: 'pendiente', // Pendiente de verificación
     });
 
+    // Generar microdeposits para verificación
+    const microdeposits = {
+      deposit1: parseFloat((Math.random() * 0.99).toFixed(2)),
+      deposit2: parseFloat((Math.random() * 0.99).toFixed(2)),
+    };
+    
+    // Guardar microdeposits
+    cuentaLocal.deposit1 = microdeposits.deposit1;
+    cuentaLocal.deposit2 = microdeposits.deposit2;
+    await cuentaLocal.save();
+    
+    // Enviar email con microdeposits
+    console.log('📧 Enviando email de verificación bancaria (Stripe)...');
+    await emailService.enviarVerificacionCuentaBancaria(usuario, cuentaLocal, microdeposits);
+
     res.json({
-      mensaje: 'Cuenta bancaria vinculada',
+      mensaje: 'Cuenta bancaria vinculada. Revisa tu email para verificar.',
       cuentaId: cuentaLocal.id,
       estado: 'pendiente_verificacion',
-      proximoPaso: 'Esperando microdeposits para verificación',
+      proximoPaso: 'Revisa tu email y confirma los microdeposits',
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
