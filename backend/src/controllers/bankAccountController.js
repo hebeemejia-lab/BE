@@ -1,8 +1,6 @@
 const BankAccount = require('../models/BankAccount');
 const User = require('../models/User');
 const Recarga = require('../models/Recarga');
-const stripeService = require('../services/stripeService');
-const emailService = require('../services/emailService');
 
 // Vincular cuenta bancaria
 const vincularCuenta = async (req, res) => {
@@ -10,7 +8,7 @@ const vincularCuenta = async (req, res) => {
     const { nombreCuenta, numeroCuenta, banco, tipoCuenta, ruteo } = req.body;
     const usuarioId = req.usuario.id;
 
-    if (!nombreCuenta || !numeroCuenta || !banco || !ruteo) {
+    if (!nombreCuenta || !numeroCuenta || !banco) {
       return res.status(400).json({ mensaje: 'Datos incompletos' });
     }
 
@@ -19,90 +17,30 @@ const vincularCuenta = async (req, res) => {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     }
 
-    // Bancos de República Dominicana (no Stripe, solo guardar en BD)
-    const bancosRD = [
-      'Banreservas',
-      'Banco Popular',
-      'BHD León',
-      'Scotiabank',
-      'Banco Caribe',
-      'Banco Santa Cruz',
-      'Banco López de Haro',
-    ];
-
-    if (bancosRD.includes(banco)) {
-      // Guardar cuenta local con verificación automática
-      const cuentaLocal = await BankAccount.create({
-        usuarioId,
-        bankAccountToken: null,
-        nombreCuenta,
-        numerosCuenta: numeroCuenta.slice(-4),
-        banco,
-        tipoCuenta: tipoCuenta || 'ahorros',
-        stripeCustomerId: null,
-        stripeBankAccountId: null,
-        estado: 'verificada', // Verificación automática
-      });
-      
-      console.log(`✅ Cuenta bancaria vinculada y verificada: ${banco} - ****${numeroCuenta.slice(-4)}`);
-      
-      return res.json({
-        mensaje: 'Cuenta bancaria vinculada y verificada exitosamente',
-        cuentaId: cuentaLocal.id,
-        estado: 'verificada',
-        banco: cuentaLocal.banco,
-        ultimosDigitos: cuentaLocal.numerosCuenta,
-      });
-    }
-
-    // Bancos internacionales (Stripe, routing number US)
-    // Crear o obtener cliente en Stripe
-    let stripeCustomerId = usuario.stripeCustomerId;
-    if (!stripeCustomerId) {
-      const cliente = await stripeService.crearCliente(usuario);
-      stripeCustomerId = cliente.id;
-      usuario.stripeCustomerId = stripeCustomerId;
-      await usuario.save();
-    }
-
-    // Crear token de cuenta bancaria
-    const token = await stripeService.crearTokenBanco(
-      numeroCuenta,
-      ruteo,
-      nombreCuenta
-    );
-
-    if (!token) {
-      return res.status(400).json({ mensaje: 'Error creando token de cuenta' });
-    }
-
-    // Crear cuenta bancaria en Stripe
-    const bankAccount = await stripeService.crearCuentaBancaria(
-      stripeCustomerId,
-      { token: token.id }
-    );
-
-    // Guardar en BD con verificación automática
+    // Guardar cuenta bancaria (PayPal Payouts solo necesita info básica)
     const cuentaLocal = await BankAccount.create({
       usuarioId,
-      bankAccountToken: token.id,
+      bankAccountToken: null,
       nombreCuenta,
       numerosCuenta: numeroCuenta.slice(-4),
       banco,
       tipoCuenta: tipoCuenta || 'ahorros',
-      stripeCustomerId,
-      stripeBankAccountId: bankAccount.id,
+      stripeCustomerId: null,
+      stripeBankAccountId: null,
       estado: 'verificada', // Verificación automática
     });
-
-    console.log(`✅ Cuenta bancaria internacional vinculada y verificada: ${banco}`);
-
-    res.json({
-      mensaje: 'Cuenta bancaria vinculada y verificada exitosamente',
+    
+    console.log(`✅ Cuenta bancaria vinculada: ${banco} - ****${numeroCuenta.slice(-4)}`);
+    console.log(`   Usuario: ${usuario.email} - Retiros via PayPal Payouts`);
+    
+    return res.json({
+      mensaje: 'Cuenta bancaria vinculada exitosamente',
       cuentaId: cuentaLocal.id,
       estado: 'verificada',
       banco: cuentaLocal.banco,
       ultimosDigitos: cuentaLocal.numerosCuenta,
+      metodoRetiro: 'PayPal Payouts',
+      nota: 'Los retiros se enviarán a tu email de PayPal',
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
