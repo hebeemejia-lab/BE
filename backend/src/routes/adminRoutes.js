@@ -18,6 +18,8 @@ router.get('/dashboard', adminController.obtenerDashboard);
 // 👥 Usuarios
 router.get('/usuarios', adminController.listarUsuarios);
 router.post('/usuarios', adminController.crearUsuarioAdmin);
+router.put('/usuarios/:id', adminController.actualizarUsuarioAdmin);
+router.delete('/usuarios/:id', adminController.eliminarUsuarioAdmin);
 
 // 💰 Préstamos
 router.get('/prestamos', adminController.listarPrestamos);

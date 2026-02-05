@@ -550,6 +550,8 @@ const ClientesView = ({ usuarios, cargando, onCrearUsuario }) => {
     telefono: '',
     direccion: ''
   });
+  const [editando, setEditando] = useState(null);
+  const [formEditar, setFormEditar] = useState({});
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -565,12 +567,58 @@ const ClientesView = ({ usuarios, cargando, onCrearUsuario }) => {
     });
   };
 
+  const handleEditar = (usuario) => {
+    setEditando(usuario.id);
+    setFormEditar({
+      nombre: usuario.nombre,
+      apellido: usuario.apellido,
+      email: usuario.email,
+      cedula: usuario.cedula,
+      telefono: usuario.telefono,
+      direccion: usuario.direccion,
+      saldo: usuario.saldo,
+      emailVerificado: usuario.emailVerificado
+    });
+  };
+
+  const handleActualizar = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await api.put(`/admin/usuarios/${id}`, formEditar, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.exito) {
+        alert(response.data.mensaje);
+        setEditando(null);
+        window.location.reload();
+      }
+    } catch (error) {
+      alert(error.response?.data?.mensaje || 'Error al actualizar usuario');
+    }
+  };
+
+  const handleEliminar = async (id) => {
+    if (!window.confirm('¿Estás seguro de eliminar este usuario?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await api.delete(`/admin/usuarios/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.exito) {
+        alert(response.data.mensaje);
+        window.location.reload();
+      }
+    } catch (error) {
+      alert(error.response?.data?.mensaje || 'Error al eliminar usuario');
+    }
+  };
+
   return (
     <div className="clientes-view">
-      <h1>👤 Clientes</h1>
+      <h1>👤 Gestión de Clientes</h1>
 
       <div className="cliente-crear">
-        <h3>Crear cliente</h3>
+        <h3>Crear nuevo cliente</h3>
         <form className="cliente-form" onSubmit={handleSubmit}>
           <input
             type="text"
@@ -634,15 +682,133 @@ const ClientesView = ({ usuarios, cargando, onCrearUsuario }) => {
           {usuarios.length === 0 ? (
             <p>No hay clientes registrados</p>
           ) : (
-            usuarios.map((u) => (
-              <div key={u.id} className="cliente-item">
-                <div>
-                  <strong>{u.nombre} {u.apellido}</strong>
-                  <div className="cliente-email">{u.email}</div>
-                </div>
-                <span className="cliente-id">#{u.id}</span>
-              </div>
-            ))
+            <div className="clientes-tabla">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Cédula</th>
+                    <th>Teléfono</th>
+                    <th>Saldo</th>
+                    <th>Verificado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usuarios.map((u) => (
+                    <tr key={u.id}>
+                      {editando === u.id ? (
+                        <>
+                          <td>#{u.id}</td>
+                          <td>
+                            <input
+                              type="text"
+                              value={formEditar.nombre}
+                              onChange={(e) => setFormEditar({ ...formEditar, nombre: e.target.value })}
+                              className="input-editar"
+                            />
+                            <input
+                              type="text"
+                              value={formEditar.apellido}
+                              onChange={(e) => setFormEditar({ ...formEditar, apellido: e.target.value })}
+                              className="input-editar"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="email"
+                              value={formEditar.email}
+                              onChange={(e) => setFormEditar({ ...formEditar, email: e.target.value })}
+                              className="input-editar"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              value={formEditar.cedula}
+                              onChange={(e) => setFormEditar({ ...formEditar, cedula: e.target.value })}
+                              className="input-editar"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              value={formEditar.telefono}
+                              onChange={(e) => setFormEditar({ ...formEditar, telefono: e.target.value })}
+                              className="input-editar"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={formEditar.saldo}
+                              onChange={(e) => setFormEditar({ ...formEditar, saldo: e.target.value })}
+                              className="input-editar"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={formEditar.emailVerificado}
+                              onChange={(e) => setFormEditar({ ...formEditar, emailVerificado: e.target.checked })}
+                            />
+                          </td>
+                          <td>
+                            <button
+                              onClick={() => handleActualizar(u.id)}
+                              className="btn-guardar"
+                              title="Guardar"
+                            >
+                              ✓
+                            </button>
+                            <button
+                              onClick={() => setEditando(null)}
+                              className="btn-cancelar"
+                              title="Cancelar"
+                            >
+                              ✕
+                            </button>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td>#{u.id}</td>
+                          <td><strong>{u.nombre} {u.apellido}</strong></td>
+                          <td>{u.email}</td>
+                          <td>{u.cedula}</td>
+                          <td>{u.telefono}</td>
+                          <td>${parseFloat(u.saldo || 0).toFixed(2)}</td>
+                          <td>
+                            <span className={u.emailVerificado ? 'badge-verificado' : 'badge-pendiente'}>
+                              {u.emailVerificado ? '✓ Verificado' : '⏳ Pendiente'}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              onClick={() => handleEditar(u)}
+                              className="btn-editar"
+                              title="Editar"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => handleEliminar(u.id)}
+                              className="btn-eliminar"
+                              title="Eliminar"
+                            >
+                              🗑️
+                            </button>
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
