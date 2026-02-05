@@ -154,6 +154,137 @@ exports.crearUsuarioAdmin = async (req, res) => {
   }
 };
 
+// Actualizar usuario desde admin
+exports.actualizarUsuarioAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombre, apellido, email, cedula, telefono, direccion, saldo, emailVerificado } = req.body;
+
+    const usuario = await User.findByPk(id);
+    if (!usuario) {
+      return res.status(404).json({
+        exito: false,
+        mensaje: 'Usuario no encontrado'
+      });
+    }
+
+    // Verificar email duplicado si se cambió
+    if (email && email !== usuario.email) {
+      const emailNormalizado = email.toLowerCase().trim();
+      const emailExistente = await User.findOne({ 
+        where: { 
+          email: emailNormalizado,
+          id: { [require('sequelize').Op.ne]: id }
+        } 
+      });
+      if (emailExistente) {
+        return res.status(400).json({ exito: false, mensaje: 'El email ya está registrado' });
+      }
+      usuario.email = emailNormalizado;
+    }
+
+    // Verificar cédula duplicada si se cambió
+    if (cedula && cedula !== usuario.cedula) {
+      const cedulaExistente = await User.findOne({ 
+        where: { 
+          cedula,
+          id: { [require('sequelize').Op.ne]: id }
+        } 
+      });
+      if (cedulaExistente) {
+        return res.status(400).json({ exito: false, mensaje: 'La cédula ya está registrada' });
+      }
+      usuario.cedula = cedula;
+    }
+
+    // Actualizar campos
+    if (nombre !== undefined) usuario.nombre = nombre;
+    if (apellido !== undefined) usuario.apellido = apellido;
+    if (telefono !== undefined) usuario.telefono = telefono;
+    if (direccion !== undefined) usuario.direccion = direccion;
+    if (saldo !== undefined) usuario.saldo = parseFloat(saldo);
+    if (emailVerificado !== undefined) usuario.emailVerificado = emailVerificado;
+
+    await usuario.save();
+
+    res.json({
+      exito: true,
+      mensaje: '✅ Usuario actualizado correctamente',
+      usuario: {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        apellido: usuario.apellido,
+        email: usuario.email,
+        cedula: usuario.cedula,
+        telefono: usuario.telefono,
+        direccion: usuario.direccion,
+        saldo: usuario.saldo,
+        emailVerificado: usuario.emailVerificado
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error actualizando usuario:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al actualizar usuario',
+      error: error.message
+    });
+  }
+};
+
+// Eliminar usuario desde admin
+exports.eliminarUsuarioAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const usuario = await User.findByPk(id);
+    if (!usuario) {
+      return res.status(404).json({
+        exito: false,
+        mensaje: 'Usuario no encontrado'
+      });
+    }
+
+    // Verificar que no sea admin
+    if (usuario.rol === 'admin') {
+      return res.status(403).json({
+        exito: false,
+        mensaje: 'No se puede eliminar un usuario administrador'
+      });
+    }
+
+    // Verificar préstamos activos
+    const Loan = require('../models/Loan');
+    const prestamosActivos = await Loan.count({
+      where: {
+        usuarioId: id,
+        estado: ['pendiente', 'aprobado']
+      }
+    });
+
+    if (prestamosActivos > 0) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: `No se puede eliminar. El usuario tiene ${prestamosActivos} préstamo(s) activo(s)`
+      });
+    }
+
+    await usuario.destroy();
+
+    res.json({
+      exito: true,
+      mensaje: '✅ Usuario eliminado correctamente'
+    });
+  } catch (error) {
+    console.error('❌ Error eliminando usuario:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al eliminar usuario',
+      error: error.message
+    });
+  }
+};
+
 // Listar todos los préstamos con información del cliente
 exports.listarPrestamos = async (req, res) => {
   try {
