@@ -6,7 +6,13 @@ const rapydService = require('../services/rapydService');
 const paypalService = require('../services/paypalService');
 const { calcularComisionRecarga, calcularMontoNeto } = require('../config/comisiones');
 
-console.log('✅ RecargaController loaded - v2.1 with Rapyd support');
+// Configuración de límites desde variables de entorno
+const SISTEMA_MONTO_MINIMO = parseFloat(process.env.SISTEMA_MONTO_MINIMO || '1.00');
+const PAYPAL_MONTO_MAXIMO = parseFloat(process.env.PAYPAL_MONTO_MAXIMO || '10000.00');
+
+console.log('✅ RecargaController loaded - v2.2 with configurable amount limits');
+console.log('   Monto mínimo del sistema: $' + SISTEMA_MONTO_MINIMO.toFixed(2));
+console.log('   Monto máximo: $' + PAYPAL_MONTO_MAXIMO.toFixed(2));
 
 // Crear sesión de recarga con Stripe
 const crearRecargaStripe = async (req, res) => {
@@ -294,10 +300,17 @@ const crearRecargaPayPal = async (req, res) => {
       });
     }
 
-    if (montoNumerico < 1) {
+    if (montoNumerico < SISTEMA_MONTO_MINIMO) {
       return res.status(400).json({ 
-        mensaje: 'Monto mínimo es $1 USD',
-        error: `El monto ${montoNumerico} es menor al mínimo permitido de $1 USD`
+        mensaje: `Monto mínimo es $${SISTEMA_MONTO_MINIMO.toFixed(2)} USD`,
+        error: `El monto $${montoNumerico.toFixed(2)} es menor al mínimo permitido de $${SISTEMA_MONTO_MINIMO.toFixed(2)} USD`
+      });
+    }
+    
+    if (montoNumerico > PAYPAL_MONTO_MAXIMO) {
+      return res.status(400).json({ 
+        mensaje: `Monto máximo es $${PAYPAL_MONTO_MAXIMO.toFixed(2)} USD`,
+        error: `El monto $${montoNumerico.toFixed(2)} excede el máximo permitido de $${PAYPAL_MONTO_MAXIMO.toFixed(2)} USD`
       });
     }
 
