@@ -20,6 +20,7 @@ const transferenciaInternacionalRoutes = require('./routes/transferenciaInternac
 const faqRoutes = require('./routes/faqRoutes');
 const faqFeedbackRoutes = require('./routes/faqFeedbackRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const inversionesRoutes = require('./routes/inversionesRoutes');
 
 const app = express();
 
@@ -77,13 +78,14 @@ app.use('/cuentas-bancarias', bankAccountRoutes);
 app.use('/faq', faqRoutes);
 app.use('/faq-feedback', faqFeedbackRoutes);
 app.use('/admin', adminRoutes);
+app.use('/inversiones', inversionesRoutes);
 
 // Ruta de prueba
 app.get('/health', (req, res) => {
   res.json({ 
     mensaje: '✓ Banco Exclusivo Backend - Servidor en línea',
-    version: '2.2',
-    features: ['auth', 'transferencias', 'transferencias-internacionales', 'recargas-rapyd', 'prestamos', 'retiros']
+    version: '2.3',
+    features: ['auth', 'transferencias', 'transferencias-internacionales', 'recargas-rapyd', 'prestamos', 'retiros', 'inversiones']
   });
 });
 
