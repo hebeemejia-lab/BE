@@ -1019,6 +1019,8 @@ const webhookPayPal = async (req, res) => {
 module.exports = {
   crearRecargaStripe,
   crearRecargaRapyd,
+  crearRecargaPayPal,
+  capturarRecargaPayPal,
   procesarRecargaTarjeta,
   procesarRecargaExitosa,
   obtenerRecargas,
