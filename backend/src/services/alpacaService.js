@@ -1,12 +1,14 @@
 const axios = require('axios');
 
 // Alpaca Trading API Service
-// Paper Trading (simulado con precios reales) para integración con saldo BE
+// ⚠️ LIVE TRADING - DINERO REAL
+// Este servicio ejecuta órdenes REALES en el mercado de valores
 
 const getConfig = () => ({
   apiKey: process.env.ALPACA_API_KEY,
   secretKey: process.env.ALPACA_SECRET_KEY,
-  baseUrl: process.env.ALPACA_BASE_URL || 'https://paper-api.alpaca.markets',
+  baseUrl: process.env.ALPACA_BASE_URL || 'https://api.alpaca.markets',
+  mode: process.env.ALPACA_MODE || 'live',
 });
 
 // Headers de autenticación
@@ -225,6 +227,73 @@ const obtenerHistorial = async (symbol, timeframe = '1Day', limit = 100) => {
   }
 };
 
+// ⚠️ LIVE TRADING - Transferir fondos de BE a Alpaca
+// ADVERTENCIA: Esto mueve dinero REAL del saldo BE a la cuenta de trading Alpaca
+const transferirFondosAAlpaca = async (usuarioId, monto) => {
+  const config = getConfig();
+  
+  if (config.mode !== 'live') {
+    throw new Error('Transferencias de fondos solo disponibles en modo LIVE');
+  }
+  
+  try {
+    console.log(`💰 TRANSFERENCIA REAL: $${monto} → Alpaca para usuario ${usuarioId}`);
+    console.log('⚠️  ADVERTENCIA: Esto moverá dinero REAL');
+    
+    // En producción, esto requeriría:
+    // 1. Crear ACH relationship con banco del usuario
+    // 2. Iniciar transferencia ACH
+    // 3. Esperar 3-5 días hábiles para clearing
+    
+    // Por ahora, documentamos el proceso
+    return {
+      success: false,
+      mensaje: 'Transferencias ACH requieren configuración adicional',
+      pasos: [
+        '1. Vincular cuenta bancaria USA con Alpaca',
+        '2. Verificar cuenta (microdeposits)',
+        '3. Iniciar ACH transfer',
+        '4. Esperar 3-5 días para clearing',
+      ],
+      nota: 'Contacta soporte para habilitar funding automático',
+    };
+  } catch (error) {
+    console.error('❌ Error transfiriendo fondos:', error.message);
+    throw error;
+  }
+};
+
+// Retirar fondos de Alpaca de vuelta a BE
+const retirarFondosDeAlpaca = async (usuarioId, monto) => {
+  const config = getConfig();
+  
+  if (config.mode !== 'live') {
+    throw new Error('Retiros solo disponibles en modo LIVE');
+  }
+  
+  try {
+    console.log(`💵 RETIRO REAL: $${monto} de Alpaca → BE para usuario ${usuarioId}`);
+    
+    // Obtener saldo disponible en Alpaca
+    const cuenta = await obtenerEstadoCuenta();
+    
+    if (!cuenta || cuenta.efectivo < monto) {
+      throw new Error(`Saldo insuficiente en Alpaca. Disponible: $${cuenta?.efectivo || 0}`);
+    }
+    
+    // En producción, esto requeriría iniciar ACH withdrawal
+    return {
+      success: false,
+      mensaje: 'Retiros ACH requieren configuración adicional',
+      saldoAlpaca: cuenta.efectivo,
+      nota: 'Contacta soporte para procesar retiro',
+    };
+  } catch (error) {
+    console.error('❌ Error retirando fondos:', error.message);
+    throw error;
+  }
+};
+
 module.exports = {
   obtenerCotizacion,
   obtenerCotizaciones,
@@ -233,4 +302,6 @@ module.exports = {
   validarAccion,
   obtenerEstadoCuenta,
   obtenerHistorial,
+  transferirFondosAAlpaca,
+  retirarFondosDeAlpaca,
 };

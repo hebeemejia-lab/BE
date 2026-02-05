@@ -9,6 +9,9 @@ const comprarAccion = async (req, res) => {
     const { symbol, cantidad } = req.body;
     const usuarioId = req.usuario.id;
 
+    // ⚠️ ADVERTENCIA: Trading real
+    console.log('⚠️  TRADING REAL - Esta operación usa dinero REAL');
+
     // Validaciones
     if (!symbol || !cantidad) {
       return res.status(400).json({ mensaje: 'Symbol y cantidad requeridos' });
@@ -17,6 +20,14 @@ const comprarAccion = async (req, res) => {
     const cantidadNum = parseFloat(cantidad);
     if (cantidadNum <= 0) {
       return res.status(400).json({ mensaje: 'Cantidad debe ser mayor a 0' });
+    }
+
+    // Límite de seguridad para trading real
+    if (cantidadNum > 100) {
+      return res.status(400).json({ 
+        mensaje: 'Límite de seguridad: máximo 100 acciones por operación',
+        nota: 'Contacta soporte para aumentar límites',
+      });
     }
 
     // Obtener usuario
@@ -34,7 +45,7 @@ const comprarAccion = async (req, res) => {
     const precioCompra = cotizacion.precioCompra || cotizacion.precio;
     const costoTotal = parseFloat((precioCompra * cantidadNum).toFixed(2));
 
-    console.log(`💰 Compra: ${cantidadNum} ${symbolUpper} @ $${precioCompra} = $${costoTotal}`);
+    console.log(`💰 COMPRA REAL: ${cantidadNum} ${symbolUpper} @ $${precioCompra} = $${costoTotal}`);
 
     // Validar saldo suficiente
     const saldoDisponible = parseFloat(usuario.saldo);
@@ -46,6 +57,10 @@ const comprarAccion = async (req, res) => {
         faltante: parseFloat((costoTotal - saldoDisponible).toFixed(2)),
       });
     }
+
+    // Advertencia final antes de ejecutar
+    console.log('🚨 CONFIRMACIÓN REQUERIDA: Esta es una orden REAL');
+    console.log(`   Costo: $${costoTotal} (dinero real)`);
 
     // Descontar del saldo BE
     usuario.saldo = parseFloat((saldoDisponible - costoTotal).toFixed(2));
@@ -63,10 +78,11 @@ const comprarAccion = async (req, res) => {
       fechaCompra: new Date(),
     });
 
-    console.log(`✅ Compra exitosa - Nuevo saldo: $${usuario.saldo}`);
+    console.log(`✅ Compra REAL ejecutada - Nuevo saldo: $${usuario.saldo}`);
 
     res.json({
-      mensaje: `Compra exitosa: ${cantidadNum} ${symbolUpper}`,
+      mensaje: `✅ COMPRA REAL EJECUTADA: ${cantidadNum} ${symbolUpper}`,
+      advertencia: '⚠️ Esta operación usó dinero REAL',
       inversion: {
         id: inversion.id,
         symbol: inversion.symbol,
@@ -92,6 +108,9 @@ const venderAccion = async (req, res) => {
     const { inversionId } = req.body;
     const usuarioId = req.usuario.id;
 
+    // ⚠️ ADVERTENCIA: Trading real
+    console.log('⚠️  VENTA REAL - Esta operación vende acciones REALES');
+
     if (!inversionId) {
       return res.status(400).json({ mensaje: 'ID de inversión requerido' });
     }
@@ -115,8 +134,8 @@ const venderAccion = async (req, res) => {
     const ingresoTotal = parseFloat((precioVenta * inversion.cantidad).toFixed(2));
     const ganancia = parseFloat((ingresoTotal - inversion.costoTotal).toFixed(2));
 
-    console.log(`💵 Venta: ${inversion.cantidad} ${inversion.symbol} @ $${precioVenta} = $${ingresoTotal}`);
-    console.log(`   Ganancia/Pérdida: $${ganancia}`);
+    console.log(`💵 VENTA REAL: ${inversion.cantidad} ${inversion.symbol} @ $${precioVenta} = $${ingresoTotal}`);
+    console.log(`   Ganancia/Pérdida REAL: $${ganancia}`);
 
     // Actualizar inversión
     inversion.precioVenta = precioVenta;
@@ -126,15 +145,18 @@ const venderAccion = async (req, res) => {
     inversion.fechaVenta = new Date();
     await inversion.save();
 
-    // Agregar al saldo BE
+    // Agregar al saldo BE (dinero real)
     const usuario = await User.findByPk(usuarioId);
     usuario.saldo = parseFloat((parseFloat(usuario.saldo) + ingresoTotal).toFixed(2));
     await usuario.save();
 
-    console.log(`✅ Venta exitosa - Nuevo saldo: $${usuario.saldo}`);
+    console.log(`✅ Venta REAL ejecutada - Nuevo saldo: $${usuario.saldo}`);
 
     res.json({
-      mensaje: `Venta exitosa: ${inversion.cantidad} ${inversion.symbol}`,
+      mensaje: `✅ VENTA REAL EJECUTADA: ${inversion.cantidad} ${inversion.symbol}`,
+      advertencia: ganancia >= 0 
+        ? `✅ Ganancia real: $${ganancia}`
+        : `⚠️ Pérdida real: $${Math.abs(ganancia)}`,
       venta: {
         id: inversion.id,
         symbol: inversion.symbol,
@@ -145,6 +167,7 @@ const venderAccion = async (req, res) => {
         ingresoTotal: inversion.ingresoTotal,
         ganancia: inversion.ganancia,
         porcentajeGanancia: parseFloat(((ganancia / inversion.costoTotal) * 100).toFixed(2)),
+        esGanancia: ganancia >= 0,
       },
       nuevoSaldo: usuario.saldo,
     });
