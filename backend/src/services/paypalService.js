@@ -1,5 +1,9 @@
 const axios = require('axios');
 
+// Configuración de límites de monto desde variables de entorno
+const PAYPAL_MONTO_MINIMO = parseFloat(process.env.PAYPAL_MONTO_MINIMO_OFICIAL || '0.01');
+const PAYPAL_MONTO_MAXIMO = parseFloat(process.env.PAYPAL_MONTO_MAXIMO || '10000.00');
+
 const getBaseUrl = () => {
   const mode = (process.env.PAYPAL_MODE || '').toLowerCase();
   if (process.env.PAYPAL_BASE_URL) {
@@ -65,9 +69,14 @@ const crearOrden = async ({ monto, currency = 'USD', returnUrl, cancelUrl, refer
     throw new Error(`PayPal: El monto debe ser mayor a 0. Monto recibido: ${montoNumerico}`);
   }
   
-  // Validar monto mínimo para PayPal (0.01 USD)
-  if (montoNumerico < 0.01) {
-    throw new Error(`PayPal: El monto mínimo es $0.01 USD. Monto recibido: ${montoNumerico}`);
+  // Validar monto mínimo para PayPal (configurable)
+  if (montoNumerico < PAYPAL_MONTO_MINIMO) {
+    throw new Error(`PayPal: El monto mínimo es $${PAYPAL_MONTO_MINIMO.toFixed(2)} USD. Monto recibido: ${montoNumerico}`);
+  }
+  
+  // Validar monto máximo para PayPal (configurable)
+  if (montoNumerico > PAYPAL_MONTO_MAXIMO) {
+    throw new Error(`PayPal: El monto máximo es $${PAYPAL_MONTO_MAXIMO.toFixed(2)} USD. Monto recibido: ${montoNumerico}`);
   }
   
   // Convertir a string con formato correcto (2 decimales)
