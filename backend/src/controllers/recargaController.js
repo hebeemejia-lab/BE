@@ -887,11 +887,6 @@ const webhookRapyd = async (req, res) => {
   }
 };
 
-module.exports = {
-  crearRecargaStripe,
-  crearRecargaRapyd,
-  crearRecargaPayPal,
-  capturarRecargaPayPal,
 // Webhook de PayPal para confirmación de pagos
 const webhookPayPal = async (req, res) => {
   try {
