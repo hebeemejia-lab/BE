@@ -42,11 +42,15 @@ const crearTransporter = () => {
 const enviarConSendGrid = async ({ to, subject, html }) => {
   const config = getConfig();
   
-  console.log('🔍 DEBUG SendGrid:');
-  console.log(`   config.sendgridApiKey: ${config.sendgridApiKey ? '✅ VALUE EXISTS' : '❌ NULL/UNDEFINED'}`);
-  console.log(`   process.env.SENDGRID_API_KEY: ${process.env.SENDGRID_API_KEY ? '✅ VALUE EXISTS' : '❌ NULL/UNDEFINED'}`);
+  // Limpiar la API key de espacios y saltos de línea
+  const apiKey = config.sendgridApiKey?.trim();
   
-  if (!config.sendgridApiKey) {
+  console.log('🔍 DEBUG SendGrid:');
+  console.log(`   API Key configurada: ${apiKey ? '✅ SI' : '❌ NO'}`);
+  console.log(`   API Key length: ${apiKey?.length || 0}`);
+  console.log(`   Destinatario: ${to}`);
+  
+  if (!apiKey) {
     console.error('❌ SendGrid API Key no está configurado');
     return { enviado: false, error: 'SENDGRID_API_KEY no configurado' };
   }
@@ -54,41 +58,48 @@ const enviarConSendGrid = async ({ to, subject, html }) => {
   try {
     console.log(`📤 Intentando enviar con SendGrid a: ${Array.isArray(to) ? to.join(', ') : to}`);
     
+    const payload = {
+      personalizations: [
+        {
+          to: Array.isArray(to) ? to.map(email => ({ email })) : [{ email: to }],
+          subject,
+        },
+      ],
+      from: {
+        email: config.sendgridFrom,
+        name: 'Banco Exclusivo',
+      },
+      content: [
+        {
+          type: 'text/html',
+          value: html,
+        },
+      ],
+    };
+    
+    console.log('📦 Payload SendGrid:', JSON.stringify(payload, null, 2));
+    
     const response = await axios.post(
       'https://api.sendgrid.com/v3/mail/send',
-      {
-        personalizations: [
-          {
-            to: Array.isArray(to) ? to.map(email => ({ email })) : [{ email: to }],
-            subject,
-          },
-        ],
-        from: {
-          email: config.sendgridFrom,
-          name: 'Banco Exclusivo',
-        },
-        content: [
-          {
-            type: 'text/html',
-            value: html,
-          },
-        ],
-      },
+      payload,
       {
         headers: {
-          Authorization: `Bearer ${config.sendgridApiKey}`,
+          Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         timeout: 15000,
       }
     );
 
-    console.log(`✅ Email enviado exitosamente con SendGrid (ID: ${response.headers['x-message-id']})`);
+    console.log(`✅ Email enviado exitosamente con SendGrid (Status: ${response.status})`);
     return { enviado: true, provider: 'sendgrid', id: response.headers['x-message-id'] };
   } catch (error) {
-    console.error('❌ Error en SendGrid:', error.response?.status, error.response?.data || error.message);
+    console.error('❌ Error en SendGrid:');
+    console.error('   Status:', error.response?.status);
+    console.error('   Data:', JSON.stringify(error.response?.data, null, 2));
+    console.error('   Message:', error.message);
     const mensajeError = error.response?.data?.errors?.[0]?.message || error.message || 'Error desconocido en SendGrid';
-    return { enviado: false, error: mensajeError, provider: 'sendgrid' };
+    return { enviado: false, error: mensajeError, provider: 'sendgrid', detalles: error.response?.data };
   }
 };
 

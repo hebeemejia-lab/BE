@@ -36,7 +36,18 @@ export default function Register() {
     try {
       const response = await register(formData);
       if (response?.requiereVerificacion) {
-        setSuccess('Registro exitoso. Revisa tu correo para verificar tu cuenta.');
+        if (response.emailEnviado) {
+          setSuccess('Registro exitoso. Revisa tu correo para verificar tu cuenta.');
+        } else {
+          setSuccess('Registro exitoso, pero no pudimos enviar el email de verificación.');
+          setError(`Problema con el email: ${response.errorEmail || 'Error desconocido'}. Contacta a soporte.`);
+          
+          // Si hay verifyUrl en desarrollo, mostrarla
+          if (response.verifyUrl) {
+            console.log('🔗 Link de verificación:', response.verifyUrl);
+            setSuccess(`Registro exitoso. Link de verificación (solo desarrollo): ${response.verifyUrl}`);
+          }
+        }
       } else {
         navigate('/dashboard');
       }
