@@ -11,6 +11,11 @@ const {
   webhookRapyd,
   webhookPayPal,
 } = require('../controllers/recargaController');
+
+console.log('✅ Imports del controller:');
+console.log('   webhookRapyd:', typeof webhookRapyd);
+console.log('   webhookPayPal:', typeof webhookPayPal);
+
 const verificarToken = require('../middleware/authMiddleware');
 
 console.log('🔄 Recarga routes loaded with crearRecargaRapyd:', typeof crearRecargaRapyd);
