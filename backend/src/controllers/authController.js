@@ -74,20 +74,44 @@ const register = async (req, res) => {
 
     console.log('✅ Usuario creado:', nuevoUsuario.id);
 
-    await emailService.enviarVerificacionEmail(nuevoUsuario, verificationToken);
+    // Intentar enviar email de verificación
+    const resultadoEmail = await emailService.enviarVerificacionEmail(nuevoUsuario, verificationToken);
+    
+    console.log('📧 Resultado envío email:', resultadoEmail);
 
-    res.status(201).json({
-      mensaje: 'Usuario registrado. Revisa tu correo para verificar tu cuenta.',
-      requiereVerificacion: true,
-      usuario: {
-        id: nuevoUsuario.id,
-        nombre: nuevoUsuario.nombre,
-        apellido: nuevoUsuario.apellido,
-        email: nuevoUsuario.email,
-        saldo: parseFloat(nuevoUsuario.saldo),
-        emailVerificado: false,
-      },
-    });
+    // Responder según si el email se envió o no
+    if (resultadoEmail.enviado) {
+      res.status(201).json({
+        mensaje: 'Usuario registrado. Revisa tu correo para verificar tu cuenta.',
+        requiereVerificacion: true,
+        emailEnviado: true,
+        usuario: {
+          id: nuevoUsuario.id,
+          nombre: nuevoUsuario.nombre,
+          apellido: nuevoUsuario.apellido,
+          email: nuevoUsuario.email,
+          saldo: parseFloat(nuevoUsuario.saldo),
+          emailVerificado: false,
+        },
+      });
+    } else {
+      console.warn('⚠️ Email no enviado, pero usuario creado');
+      res.status(201).json({
+        mensaje: 'Usuario registrado. Sin embargo, hubo un problema al enviar el email de verificación. Puedes reenviar la verificación desde tu perfil.',
+        requiereVerificacion: true,
+        emailEnviado: false,
+        errorEmail: resultadoEmail.error || 'Error al enviar email',
+        verifyUrl: resultadoEmail.verifyUrl, // Para debugging en desarrollo
+        usuario: {
+          id: nuevoUsuario.id,
+          nombre: nuevoUsuario.nombre,
+          apellido: nuevoUsuario.apellido,
+          email: nuevoUsuario.email,
+          saldo: parseFloat(nuevoUsuario.saldo),
+          emailVerificado: false,
+        },
+      });
+    }
   } catch (error) {
     console.error('❌ Error en registro:', error.message);
     console.error('📋 Stack:', error.stack);
