@@ -73,6 +73,21 @@ const crearOrden = async ({ monto, currency = 'USD', returnUrl, cancelUrl, refer
   // Convertir a string con formato correcto (2 decimales)
   const montoString = montoNumerico.toFixed(2);
   console.log('🔍 PayPal Service - Monto como string:', montoString);
+  
+  // Validación CRÍTICA: El string no puede ser "0.00" o "NaN"
+  if (montoString === '0.00') {
+    throw new Error('🚨 CRÍTICO: Monto es 0. No se puede procesar en PayPal. Este es el error INSTRUMENT_DECLINED que ves.');
+  }
+  
+  if (montoString === 'NaN') {
+    throw new Error('🚨 CRÍTICO: Monto es NaN (Not a Number). No es un número válido.');
+  }
+  
+  // Validación: verificar que el parseFloat del string sea correcto
+  const verificacion = parseFloat(montoString);
+  if (!Number.isFinite(verificacion) || verificacion <= 0) {
+    throw new Error(`🚨 CRÍTICO: Monto no válido para PayPal: "${montoString}" (parseFloat = ${verificacion})`);
+  }
 
   const payload = {
     intent: 'CAPTURE',

@@ -318,8 +318,18 @@ const crearRecargaPayPal = async (req, res) => {
     const comision = calcularComisionRecarga();
     const montoNeto = calcularMontoNeto(montoNumerico, comision);
 
+    console.log('💰 Cálculo de monto:');
+    console.log('   Monto solicitado: $' + montoNumerico.toFixed(2));
+    console.log('   Comisión PayPal: $' + comision.toFixed(2));
+    console.log('   Monto neto a acreditar: $' + montoNeto.toFixed(2));
+
     if (montoNeto <= 0) {
-      return res.status(400).json({ mensaje: 'Monto insuficiente para cubrir la comisión' });
+      console.error('❌ MONTO NETO INVÁLIDO - Rechazando operación');
+      console.error('   Monto: ' + montoNumerico + ', Comisión: ' + comision + ', Neto: ' + montoNeto);
+      return res.status(400).json({ 
+        mensaje: 'Monto insuficiente para cubrir la comisión',
+        detalle: `Monto: $${montoNumerico.toFixed(2)}, Comisión: $${comision.toFixed(2)}, Sería acreditado: $${montoNeto.toFixed(2)}`
+      });
     }
 
     // Crear recarga pendiente en BD
