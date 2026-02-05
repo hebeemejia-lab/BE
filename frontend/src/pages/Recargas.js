@@ -51,12 +51,30 @@ export default function Recargas() {
             setSuccess('');
             setLoading(true);
 
+            console.log('🔍 Frontend - Monto ingresado:', monto, 'Tipo:', typeof monto);
+
             const montoNum = parseFloat(monto);
+            console.log('🔍 Frontend - Monto parseado:', montoNum, 'Tipo:', typeof montoNum);
             
-            // Validaciones de monto
-            if (!montoNum || montoNum <= 0 || montoNum < 1) {
-              setError('El monto debe ser mayor a $1 USD');
+            // Validaciones estrictas de monto
+            if (!monto || monto === '' || monto === null || monto === undefined) {
+              setError('Debes ingresar un monto');
+              throw new Error('Monto vacío');
+            }
+
+            if (isNaN(montoNum) || !isFinite(montoNum)) {
+              setError('El monto ingresado no es válido');
               throw new Error('Monto inválido');
+            }
+
+            if (montoNum <= 0) {
+              setError('El monto debe ser mayor a $0');
+              throw new Error('Monto debe ser positivo');
+            }
+            
+            if (montoNum < 1) {
+              setError('El monto mínimo es $1 USD');
+              throw new Error('Monto menor al mínimo');
             }
 
             if (montoNum > 10000) {
@@ -71,6 +89,7 @@ export default function Recargas() {
             }
 
             console.log('🔄 Creando orden PayPal para $', montoNum);
+            console.log('📤 Enviando al backend:', { monto: montoNum });
 
             const response = await axios.post(
               `${API_URL}/recargas/crear-paypal`,
@@ -82,6 +101,8 @@ export default function Recargas() {
                 },
               }
             );
+
+            console.log('✅ Respuesta del backend:', response.data);
 
             const orderId = response.data.orderId;
             recargaIdRef.current = response.data.recargaId;
@@ -107,7 +128,8 @@ export default function Recargas() {
           } catch (err) {
             setLoading(false);
             console.error('❌ Error creando orden:', err);
-            const errorMsg = err.response?.data?.mensaje || err.message || 'Error desconocido';
+            console.error('📋 Detalles de error:', err.response?.data);
+            const errorMsg = err.response?.data?.mensaje || err.response?.data?.error || err.message || 'Error desconocido';
             setError(`Error al iniciar pago: ${errorMsg}`);
             throw err;
           }

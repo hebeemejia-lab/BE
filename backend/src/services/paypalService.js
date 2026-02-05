@@ -46,8 +46,33 @@ const crearOrden = async ({ monto, currency = 'USD', returnUrl, cancelUrl, refer
 
   // Debug: Ver qué monto llega
   console.log('🔍 PayPal Service - Monto recibido:', monto, 'Tipo:', typeof monto);
+  
+  // Validar que el monto existe y es válido
+  if (monto === undefined || monto === null || monto === '') {
+    throw new Error('PayPal: Monto no proporcionado o es null/undefined');
+  }
+  
   const montoNumerico = parseFloat(Number(monto).toFixed(2));
   console.log('🔍 PayPal Service - Monto procesado:', montoNumerico, 'Tipo:', typeof montoNumerico);
+  
+  // Validar que el monto es un número válido
+  if (isNaN(montoNumerico) || !isFinite(montoNumerico)) {
+    throw new Error(`PayPal: Monto inválido después de conversión: ${monto} -> ${montoNumerico}`);
+  }
+  
+  // Validar monto mínimo
+  if (montoNumerico <= 0) {
+    throw new Error(`PayPal: El monto debe ser mayor a 0. Monto recibido: ${montoNumerico}`);
+  }
+  
+  // Validar monto mínimo para PayPal (0.01 USD)
+  if (montoNumerico < 0.01) {
+    throw new Error(`PayPal: El monto mínimo es $0.01 USD. Monto recibido: ${montoNumerico}`);
+  }
+  
+  // Convertir a string con formato correcto (2 decimales)
+  const montoString = montoNumerico.toFixed(2);
+  console.log('🔍 PayPal Service - Monto como string:', montoString);
 
   const payload = {
     intent: 'CAPTURE',
@@ -55,7 +80,7 @@ const crearOrden = async ({ monto, currency = 'USD', returnUrl, cancelUrl, refer
       {
         amount: {
           currency_code: currency,
-          value: montoNumerico,
+          value: montoString, // PayPal requiere string, no número
         },
         description: 'Recarga de saldo Banco Exclusivo',
         custom_id: referencia,

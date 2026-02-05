@@ -266,8 +266,39 @@ const crearRecargaPayPal = async (req, res) => {
     const usuarioId = req.usuario.id;
     const usuario = await User.findByPk(usuarioId);
 
-    if (!monto || monto <= 0) {
-      return res.status(400).json({ mensaje: 'Monto debe ser mayor a 0' });
+    console.log('🔍 Controller - req.body completo:', req.body);
+    console.log('🔍 Controller - Monto recibido:', monto, 'Tipo:', typeof monto);
+
+    // Validación estricta del monto
+    if (monto === undefined || monto === null || monto === '') {
+      return res.status(400).json({ 
+        mensaje: 'Monto es requerido',
+        error: 'El campo monto no fue proporcionado o está vacío'
+      });
+    }
+
+    const montoNumerico = parseFloat(monto);
+    console.log('🔍 Controller - Monto parseado:', montoNumerico, 'Tipo:', typeof montoNumerico);
+
+    if (isNaN(montoNumerico) || !isFinite(montoNumerico)) {
+      return res.status(400).json({ 
+        mensaje: 'Monto inválido',
+        error: `El monto "${monto}" no es un número válido`
+      });
+    }
+
+    if (montoNumerico <= 0) {
+      return res.status(400).json({ 
+        mensaje: 'Monto debe ser mayor a 0',
+        error: `El monto ${montoNumerico} no es válido. Debe ser mayor a 0`
+      });
+    }
+
+    if (montoNumerico < 1) {
+      return res.status(400).json({ 
+        mensaje: 'Monto mínimo es $1 USD',
+        error: `El monto ${montoNumerico} es menor al mínimo permitido de $1 USD`
+      });
     }
 
     if (!usuario) {
@@ -283,10 +314,6 @@ const crearRecargaPayPal = async (req, res) => {
         ayuda: 'Contacta al administrador del servidor'
       });
     }
-
-    console.log('🔍 Controller - Monto del req.body:', monto, 'Tipo:', typeof monto);
-    const montoNumerico = parseFloat(monto);
-    console.log('🔍 Controller - Monto parseado:', montoNumerico, 'Tipo:', typeof montoNumerico);
     
     const comision = calcularComisionRecarga();
     const montoNeto = calcularMontoNeto(montoNumerico, comision);
