@@ -185,21 +185,40 @@ export default function Recargas() {
             const errorMsg = err.response?.data?.mensaje || err.message || 'Error desconocido';
             const detalles = err.response?.data?.detalles;
             const debugId = err.response?.data?.debug_id || 'N/A';
+            const issue = detalles?.details?.[0]?.issue;
+            const mensajeUsuarioBackend = err.response?.data?.mensajeUsuario;
+            const sugerencias = err.response?.data?.sugerencias || [];
             
-            // Mejorar mensaje si es INSTRUMENT_DECLINED
-            let mensajeUsuario = errorMsg;
-            if (detalles?.details?.[0]?.issue === 'INSTRUMENT_DECLINED') {
-              mensajeUsuario = '❌ Tu tarjeta fue rechazada. Verifica:\n• Que tenga fondos suficientes\n• Que no esté bloqueada\n• Intenta con otra tarjeta o cuenta bancaria';
-            } else if (detalles?.name === 'UNPROCESSABLE_ENTITY') {
-              mensajeUsuario = '❌ Error procesando el pago. Intenta con otro método de pago en PayPal';
+            // Usar mensaje del backend si está disponible, sino construir uno
+            let mensajeUsuario = mensajeUsuarioBackend || errorMsg;
+            
+            // Si no hay mensaje del backend, construir basado en el error
+            if (!mensajeUsuarioBackend) {
+              if (issue === 'INSTRUMENT_DECLINED') {
+                mensajeUsuario = '❌ Tu tarjeta fue rechazada.\n\nVerifica:\n• Que tenga fondos suficientes\n• Que no esté bloqueada\n• Intenta con otra tarjeta o cuenta bancaria';
+              } else if (detalles?.name === 'UNPROCESSABLE_ENTITY') {
+                mensajeUsuario = '❌ Error procesando el pago.\n\nIntenta:\n• Con otro método de pago en PayPal\n• En unos minutos\n• Contacta a tu banco';
+              }
             }
+            
+            // Agregar sugerencias si las hay
+            if (sugerencias && sugerencias.length > 0) {
+              mensajeUsuario += '\n\n💡 Sugerencias:\n• ' + sugerencias.join('\n• ');
+            }
+            
             setError(mensajeUsuario);
             
+            // Log detallado para debugging
+            console.log('🔍 Detalles del error:');
+            console.log('   Issue:', issue);
+            console.log('   Error Code:', detalles?.name);
+            console.log('   Debug ID:', debugId);
+            console.log('   Mensaje usuario:', mensajeUsuario);
 
             // Analytics: seguimiento de error
             if (window.gtag) {
               window.gtag('event', 'exception', {
-                description: `PayPal capture error: ${errorMsg}`,
+                description: `PayPal capture error: ${issue || detalles?.name || errorMsg}`,
                 fatal: false
               });
             }
