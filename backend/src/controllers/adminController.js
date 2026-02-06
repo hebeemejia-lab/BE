@@ -360,7 +360,7 @@ exports.listarPrestamos = async (req, res) => {
 // Crear préstamo desde admin (con cuotas)
 exports.crearPrestamoAdmin = async (req, res) => {
   try {
-    const { usuarioEmail, usuarioId, monto, plazo, tasaInteres, fechaPrimerVencimiento } = req.body;
+    const { usuarioEmail, usuarioId, monto, plazo, tasaInteres, fechaPrimerVencimiento, sandbox } = req.body;
 
     if ((!usuarioEmail && !usuarioId) || !monto || !plazo) {
       return res.status(400).json({
@@ -402,7 +402,7 @@ exports.crearPrestamoAdmin = async (req, res) => {
       cuentaBancaria: process.env.BANCO_CUENTA,
       emailAprobacion: process.env.ADMIN_EMAIL,
       fechaAprobacion: new Date(),
-      numeroReferencia: `PREST-ADMIN-${Date.now().toString().slice(-8)}`
+      numeroReferencia: `${sandbox ? 'SANDBOX' : 'PREST-ADMIN'}-${Date.now().toString().slice(-8)}`
     });
 
     const tasaMensual = tasaNumero > 0 ? (tasaNumero / 12 / 100) : 0;
@@ -433,13 +433,16 @@ exports.crearPrestamoAdmin = async (req, res) => {
       cuotas.push(cuota);
     }
 
-    usuario.saldo = parseFloat(usuario.saldo || 0) + montoNumero;
-    await usuario.save();
+    if (!sandbox) {
+      usuario.saldo = parseFloat(usuario.saldo || 0) + montoNumero;
+      await usuario.save();
+    }
 
     res.json({
       exito: true,
       mensaje: '✅ Préstamo creado con cuotas',
       prestamo: prestamo.toJSON(),
+      sandbox: !!sandbox,
       cuotas: cuotas.map(c => c.toJSON())
     });
   } catch (error) {

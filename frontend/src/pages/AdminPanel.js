@@ -150,7 +150,11 @@ const AdminPanel = () => {
   const crearPrestamoAdmin = async (data) => {
     try {
       setCargando(true);
-      const response = await api.post('/admin/prestamos', data);
+      const payload = {
+        ...data,
+        sandbox: sandboxMode,
+      };
+      const response = await api.post('/admin/prestamos', payload);
       alert(response.data.mensaje || 'Préstamo creado');
       await cargarPrestamos();
     } catch (error) {
@@ -466,9 +470,9 @@ const AdminPanel = () => {
         </div>
         <div className="sandbox-toggle">
           <div className="sandbox-label">
-            <span>Modo Sandbox</span>
+            <span>Modo desarrollo</span>
             <span className={sandboxMode ? 'sandbox-badge on' : 'sandbox-badge off'}>
-              {sandboxMode ? 'ON' : 'OFF'}
+              {sandboxMode ? 'DEV' : 'LIVE'}
             </span>
           </div>
           <button
@@ -478,7 +482,7 @@ const AdminPanel = () => {
             aria-pressed={sandboxMode}
           >
             <span className="switch-dot"></span>
-            <span className="switch-text">{sandboxMode ? 'Pruebas' : 'Produccion'}</span>
+            <span className="switch-text">{sandboxMode ? 'Sandbox Stripe' : 'Produccion'}</span>
           </button>
         </div>
         <nav className="admin-nav">
@@ -552,6 +556,7 @@ const AdminPanel = () => {
             onBuscarPrestamo={buscarPrestamoPorId}
             onRecargarPrestamos={cargarPrestamos}
             usuariosAdmin={usuariosAdmin}
+            sandboxMode={sandboxMode}
             onImprimirPrestamo={(prestamo, formato) => {
               if (formato === 'pdf') {
                 imprimirPrestamoPDF(prestamo);
@@ -1107,7 +1112,7 @@ const RetirosEfectivoView = ({ sandboxMode }) => {
 };
 
 // Componente Préstamos
-const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPrestamo, onImprimirPrestamo, usuariosAdmin, onBuscarPrestamo, onRecargarPrestamos }) => {
+const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPrestamo, onImprimirPrestamo, usuariosAdmin, onBuscarPrestamo, onRecargarPrestamos, sandboxMode }) => {
   const [prestamoExpandido, setPrestamoExpandido] = useState(null);
   const [nuevoPrestamo, setNuevoPrestamo] = useState({
     usuarioId: '',
@@ -1143,6 +1148,11 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
   return (
     <div className="prestamos-view">
       <h1>💰 Gestión de Préstamos</h1>
+      {sandboxMode && (
+        <div className="sandbox-note">
+          Modo desarrollo activo: los prestamos se crean en sandbox y no afectan saldo real.
+        </div>
+      )}
 
       <div className="prestamo-busqueda">
         <div className="busqueda-info">
