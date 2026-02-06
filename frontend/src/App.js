@@ -21,6 +21,7 @@ import Retiros from './pages/Retiros';
 import VincularCuenta from './pages/VincularCuenta';
 import Prestamos from './pages/Prestamos';
 import AdminPanel from './pages/AdminPanel';
+import PoliticaPrivacidad from './pages/PoliticaPrivacidad';
 
 // Estilos
 import './styles/global.css';
@@ -119,6 +120,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
           
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

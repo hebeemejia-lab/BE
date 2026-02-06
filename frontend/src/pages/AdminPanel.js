@@ -10,10 +10,15 @@ const AdminPanel = () => {
   const [cargando, setCargando] = useState(false);
   const [prestamoSeleccionado, setPrestamoSeleccionado] = useState(null);
   const [usuariosCargando, setUsuariosCargando] = useState(false);
+  const [sandboxMode, setSandboxMode] = useState(() => localStorage.getItem('adminSandboxMode') === 'true');
 
   useEffect(() => {
     cargarDashboard();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('adminSandboxMode', sandboxMode ? 'true' : 'false');
+  }, [sandboxMode]);
 
   const cargarDashboard = async () => {
     try {
@@ -47,16 +52,65 @@ const AdminPanel = () => {
   };
 
   const cargarUsuarios = async () => {
+    await cargarUsuariosParaVista('clientes');
+  };
+
+  const cargarUsuariosParaVista = async (vista) => {
     try {
       setUsuariosCargando(true);
       const response = await api.get('/admin/usuarios');
       setUsuariosAdmin(response.data.usuarios || []);
-      setVistaActual('clientes');
+      setVistaActual(vista);
     } catch (error) {
       console.error('Error cargando usuarios:', error);
       alert('Error al cargar usuarios');
     } finally {
       setUsuariosCargando(false);
+    }
+  };
+
+  const normalizarPrestamo = (prestamo) => {
+    const cuotas = prestamo.cuotas || [];
+    const totalCuotas = cuotas.length;
+    const cuotasPagadas = cuotas.filter((c) => c.pagado).length;
+    const progresoNumero = totalCuotas > 0 ? (cuotasPagadas / totalCuotas) * 100 : 0;
+    return {
+      ...prestamo,
+      totalCuotas,
+      cuotasPagadas,
+      cuotasPendientes: totalCuotas - cuotasPagadas,
+      progreso: `${progresoNumero.toFixed(1)}%`,
+      progresoNumero: parseFloat(progresoNumero.toFixed(1)),
+    };
+  };
+
+  const buscarPrestamoPorId = async (prestamoId) => {
+    if (!prestamoId) return;
+    try {
+      setCargando(true);
+      const response = await api.get(`/admin/prestamos/${prestamoId}`);
+      const prestamo = response.data.prestamo ? normalizarPrestamo(response.data.prestamo) : null;
+      setPrestamos(prestamo ? [prestamo] : []);
+      setVistaActual('prestamos');
+    } catch (error) {
+      console.error('Error buscando préstamo:', error);
+      alert('No se encontró el préstamo con ese ID');
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const ajustarSaldoUsuario = async (usuarioId, nuevoSaldo, mensajeExito) => {
+    try {
+      const response = await api.put(`/admin/usuarios/${usuarioId}`, {
+        saldo: nuevoSaldo,
+      });
+      if (response.data.exito) {
+        alert(mensajeExito || response.data.mensaje);
+        await cargarUsuariosParaVista(vistaActual);
+      }
+    } catch (error) {
+      alert(error.response?.data?.mensaje || 'Error al actualizar saldo');
     }
   };
 
@@ -410,12 +464,41 @@ const AdminPanel = () => {
         <div className="admin-logo">
           <h2>🏦 Admin Panel</h2>
         </div>
+        <div className="sandbox-toggle">
+          <div className="sandbox-label">
+            <span>Modo Sandbox</span>
+            <span className={sandboxMode ? 'sandbox-badge on' : 'sandbox-badge off'}>
+              {sandboxMode ? 'ON' : 'OFF'}
+            </span>
+          </div>
+          <button
+            type="button"
+            className={sandboxMode ? 'sandbox-switch active' : 'sandbox-switch'}
+            onClick={() => setSandboxMode(!sandboxMode)}
+            aria-pressed={sandboxMode}
+          >
+            <span className="switch-dot"></span>
+            <span className="switch-text">{sandboxMode ? 'Pruebas' : 'Produccion'}</span>
+          </button>
+        </div>
         <nav className="admin-nav">
           <button 
             className={vistaActual === 'dashboard' ? 'active' : ''}
             onClick={() => setVistaActual('dashboard')}
           >
             📊 Dashboard
+          </button>
+          <button
+            className={vistaActual === 'depositos' ? 'active' : ''}
+            onClick={() => cargarUsuariosParaVista('depositos')}
+          >
+            💵 Depositos en efectivo
+          </button>
+          <button
+            className={vistaActual === 'retiros-efectivo' ? 'active' : ''}
+            onClick={() => setVistaActual('retiros-efectivo')}
+          >
+            🧾 Retiros en efectivo
           </button>
           <button 
             className={vistaActual === 'prestamos' ? 'active' : ''}
@@ -447,6 +530,18 @@ const AdminPanel = () => {
           <DashboardView dashboard={dashboard} />
         )}
 
+        {vistaActual === 'depositos' && (
+          <DepositosEfectivoView
+            usuarios={usuariosAdmin}
+            cargando={usuariosCargando}
+            onActualizarSaldo={ajustarSaldoUsuario}
+          />
+        )}
+
+        {vistaActual === 'retiros-efectivo' && (
+          <RetirosEfectivoView sandboxMode={sandboxMode} />
+        )}
+
         {/* Préstamos */}
         {vistaActual === 'prestamos' && (
           <PrestamosView 
@@ -454,6 +549,8 @@ const AdminPanel = () => {
             onRegistrarPago={registrarPago}
             onImprimirRecibo={imprimirRecibo}
             onCrearPrestamo={crearPrestamoAdmin}
+            onBuscarPrestamo={buscarPrestamoPorId}
+            onRecargarPrestamos={cargarPrestamos}
             usuariosAdmin={usuariosAdmin}
             onImprimirPrestamo={(prestamo, formato) => {
               if (formato === 'pdf') {
@@ -816,8 +913,201 @@ const ClientesView = ({ usuarios, cargando, onCrearUsuario }) => {
   );
 };
 
+const DepositosEfectivoView = ({ usuarios, cargando, onActualizarSaldo }) => {
+  const [form, setForm] = useState({
+    usuarioId: '',
+    monto: '',
+    notas: ''
+  });
+
+  const usuarioSeleccionado = usuarios.find((u) => String(u.id) === String(form.usuarioId));
+  const saldoActual = usuarioSeleccionado ? parseFloat(usuarioSeleccionado.saldo || 0) : 0;
+  const montoNumero = parseFloat(form.monto || 0);
+  const saldoNuevo = saldoActual + (Number.isFinite(montoNumero) ? montoNumero : 0);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.usuarioId) {
+      alert('Selecciona un usuario');
+      return;
+    }
+    if (!Number.isFinite(montoNumero) || montoNumero <= 0) {
+      alert('Monto invalido');
+      return;
+    }
+    await onActualizarSaldo(form.usuarioId, saldoNuevo, 'Deposito en efectivo aplicado');
+    setForm({ usuarioId: '', monto: '', notas: '' });
+  };
+
+  return (
+    <div className="depositos-view">
+      <h1>💵 Gestion de Depositos en Efectivo</h1>
+      <p className="view-subtitle">Registra depositos manuales y actualiza el saldo del cliente.</p>
+
+      <form className="movimiento-form" onSubmit={handleSubmit}>
+        <select
+          value={form.usuarioId}
+          onChange={(e) => setForm({ ...form, usuarioId: e.target.value })}
+          required
+        >
+          <option value="">Selecciona usuario</option>
+          {usuarios.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.nombre} {u.apellido} - {u.email}
+            </option>
+          ))}
+        </select>
+        <input
+          type="number"
+          step="0.01"
+          placeholder="Monto a depositar"
+          value={form.monto}
+          onChange={(e) => setForm({ ...form, monto: e.target.value })}
+          required
+        />
+        <input
+          type="text"
+          placeholder="Notas internas (opcional)"
+          value={form.notas}
+          onChange={(e) => setForm({ ...form, notas: e.target.value })}
+        />
+        <div className="movimiento-resumen">
+          <span>Saldo actual: <strong>${saldoActual.toFixed(2)}</strong></span>
+          <span>Saldo nuevo: <strong>${saldoNuevo.toFixed(2)}</strong></span>
+        </div>
+        <button type="submit" className="btn-crear" disabled={cargando}>
+          {cargando ? 'Procesando...' : 'Registrar deposito'}
+        </button>
+      </form>
+    </div>
+  );
+};
+
+const RetirosEfectivoView = ({ sandboxMode }) => {
+  const [solicitudes, setSolicitudes] = useState([]);
+  const [filtro, setFiltro] = useState('pendiente');
+  const [cargando, setCargando] = useState(false);
+
+  useEffect(() => {
+    const cargarSolicitudes = async () => {
+      try {
+        setCargando(true);
+        const response = await api.get(`/admin/solicitudes-retiro?estado=${filtro}`);
+        setSolicitudes(response.data.solicitudes || []);
+      } catch (error) {
+        console.error('Error cargando solicitudes de retiro:', error);
+        alert('No se pudieron cargar los retiros');
+      } finally {
+        setCargando(false);
+      }
+    };
+
+    cargarSolicitudes();
+  }, [filtro]);
+
+  const aprobarSolicitud = async (solicitudId) => {
+    if (!window.confirm('Aprobar este retiro?')) return;
+    try {
+      await api.post(`/admin/solicitudes-retiro/${solicitudId}/aprobar`, {
+        notasAdmin: sandboxMode ? 'Sandbox activado' : ''
+      });
+      setSolicitudes((prev) => prev.filter((s) => s.id !== solicitudId));
+    } catch (error) {
+      alert(error.response?.data?.mensaje || 'Error aprobando retiro');
+    }
+  };
+
+  const rechazarSolicitud = async (solicitudId) => {
+    const razon = prompt('Razon del rechazo');
+    if (!razon) return;
+    try {
+      await api.post(`/admin/solicitudes-retiro/${solicitudId}/rechazar`, {
+        razonRechazo: razon
+      });
+      setSolicitudes((prev) => prev.filter((s) => s.id !== solicitudId));
+    } catch (error) {
+      alert(error.response?.data?.mensaje || 'Error rechazando retiro');
+    }
+  };
+
+  return (
+    <div className="retiros-view">
+      <h1>🧾 Gestion de Retiros en Efectivo</h1>
+      <p className="view-subtitle">Administra solicitudes manuales y registra aprobaciones.</p>
+      {sandboxMode && (
+        <div className="sandbox-note">
+          Sandbox activo: usa este panel para pruebas sin tocar configuracion real.
+        </div>
+      )}
+
+      <div className="retiros-filtros">
+        {['pendiente', 'aprobada', 'rechazada', 'procesada'].map((estado) => (
+          <button
+            key={estado}
+            type="button"
+            className={filtro === estado ? 'active' : ''}
+            onClick={() => setFiltro(estado)}
+          >
+            {estado}
+          </button>
+        ))}
+      </div>
+
+      {cargando ? (
+        <div className="admin-loading">Cargando...</div>
+      ) : (
+        <div className="retiros-tabla">
+          <table>
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Monto</th>
+                <th>Banco</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {solicitudes.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="tabla-vacia">No hay solicitudes</td>
+                </tr>
+              ) : (
+                solicitudes.map((sol) => (
+                  <tr key={sol.id}>
+                    <td>{sol.nombreUsuario || sol.usuarioEmail || 'Usuario'}</td>
+                    <td>${parseFloat(sol.monto || 0).toFixed(2)}</td>
+                    <td>{sol.banco || 'N/A'}</td>
+                    <td><span className={`estado-badge ${sol.estado}`}>{sol.estado}</span></td>
+                    <td>{new Date(sol.createdAt).toLocaleDateString()}</td>
+                    <td className="acciones">
+                      {sol.estado === 'pendiente' ? (
+                        <>
+                          <button type="button" className="btn-aprobar" onClick={() => aprobarSolicitud(sol.id)}>
+                            Aprobar
+                          </button>
+                          <button type="button" className="btn-rechazar" onClick={() => rechazarSolicitud(sol.id)}>
+                            Rechazar
+                          </button>
+                        </>
+                      ) : (
+                        <span className="estado-final">{sol.estado}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Componente Préstamos
-const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPrestamo, onImprimirPrestamo, usuariosAdmin }) => {
+const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPrestamo, onImprimirPrestamo, usuariosAdmin, onBuscarPrestamo, onRecargarPrestamos }) => {
   const [prestamoExpandido, setPrestamoExpandido] = useState(null);
   const [nuevoPrestamo, setNuevoPrestamo] = useState({
     usuarioId: '',
@@ -827,6 +1117,8 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
     fechaPrimerVencimiento: ''
   });
   const [creandoPrestamo, setCreandoPrestamo] = useState(false);
+  const [busquedaId, setBusquedaId] = useState('');
+  const [buscando, setBuscando] = useState(false);
 
   const handleCrearPrestamo = async (e) => {
     e.preventDefault();
@@ -851,6 +1143,43 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
   return (
     <div className="prestamos-view">
       <h1>💰 Gestión de Préstamos</h1>
+
+      <div className="prestamo-busqueda">
+        <div className="busqueda-info">
+          <h3>Rastreo por ID</h3>
+          <p>Busca un préstamo específico para revisar deuda y registrar pagos.</p>
+        </div>
+        <form
+          className="busqueda-form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!busquedaId) return;
+            setBuscando(true);
+            await onBuscarPrestamo(busquedaId.trim());
+            setBuscando(false);
+          }}
+        >
+          <input
+            type="number"
+            placeholder="ID del préstamo"
+            value={busquedaId}
+            onChange={(e) => setBusquedaId(e.target.value)}
+          />
+          <button type="submit" className="btn-crear" disabled={buscando}>
+            {buscando ? 'Buscando...' : '🔍 Buscar'}
+          </button>
+          <button
+            type="button"
+            className="btn-secundario"
+            onClick={() => {
+              setBusquedaId('');
+              onRecargarPrestamos();
+            }}
+          >
+            Ver todos
+          </button>
+        </form>
+      </div>
 
       <div className="prestamo-crear">
         <h3>Crear nuevo préstamo</h3>
@@ -947,7 +1276,7 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
             {prestamo.User?.nombre} {prestamo.User?.apellido}
             <span className="prestamo-id">#{prestamo.id}</span>
           </h3>
-          <p>{prestamo.User?.correo}</p>
+          <p>{prestamo.User?.email || prestamo.User?.correo}</p>
         </div>
         <div className="prestamo-monto">
           <span className="monto">${parseFloat(prestamo.montoAprobado || prestamo.montoSolicitado).toFixed(2)}</span>
