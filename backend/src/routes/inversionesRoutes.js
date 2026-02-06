@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { verificarToken } = require('../middleware/authMiddleware');
+const verificarToken = require('../middleware/authMiddleware');
 const {
   comprarAccion,
   venderAccion,
