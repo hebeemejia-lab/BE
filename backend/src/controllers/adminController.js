@@ -70,7 +70,18 @@ exports.obtenerDashboard = async (req, res) => {
 exports.listarUsuarios = async (req, res) => {
   try {
     const usuarios = await User.findAll({
-      attributes: ['id', 'nombre', 'apellido', 'email'],
+      attributes: [
+        'id',
+        'nombre',
+        'apellido',
+        'email',
+        'cedula',
+        'telefono',
+        'direccion',
+        'saldo',
+        'emailVerificado',
+        'rol'
+      ],
       order: [['createdAt', 'DESC']]
     });
 

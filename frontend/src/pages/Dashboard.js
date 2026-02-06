@@ -62,11 +62,49 @@ export default function Dashboard() {
     cargarDatos();
   }, []);
 
+  const prestamosActivos = prestamos.filter((prestamo) => {
+    const estado = (prestamo.estado || '').toLowerCase();
+    return estado && estado !== 'pagado' && estado !== 'rechazado';
+  });
+
+  const deudaTotal = prestamosActivos.reduce((sum, prestamo) => {
+    const monto = Number(prestamo.montoAprobado ?? prestamo.montoSolicitado ?? prestamo.monto ?? 0);
+    return sum + (Number.isFinite(monto) ? monto : 0);
+  }, 0);
+
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
         <h1>Bienvenido, <span className="user-nombre">{usuario?.nombre}</span> <span className="user-apellido">{usuario?.apellido}</span>!</h1>
         <p>Aquí está el resumen de tu cuenta</p>
+      </div>
+
+      <div className="account-overview">
+        <div className="overview-card">
+          <div className="overview-label">Saldo de la cuenta</div>
+          <div className="overview-amount">
+            {getCurrencySymbol(usuario?.moneda)}{formatMoney(usuario?.saldo)}
+          </div>
+          <div className="overview-meta">Disponible para transacciones</div>
+        </div>
+        <div className="overview-card debt">
+          <div className="overview-label">Saldo negativo de préstamos</div>
+          <div className="overview-amount">
+            -{getCurrencySymbol(usuario?.moneda)}{formatMoney(deudaTotal)}
+          </div>
+          <div className="debt-list">
+            {prestamosActivos.length > 0 ? (
+              prestamosActivos.map((prestamo) => (
+                <div key={prestamo.id || prestamo._id} className="debt-item">
+                  <span className="debt-id">ID #{prestamo.id || prestamo._id}</span>
+                  <span className="debt-amount">{getCurrencySymbol(usuario?.moneda)}{formatMoney(prestamo.montoAprobado ?? prestamo.montoSolicitado ?? prestamo.monto)}</span>
+                </div>
+              ))
+            ) : (
+              <span className="debt-empty">Sin préstamos activos</span>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="dashboard-grid">

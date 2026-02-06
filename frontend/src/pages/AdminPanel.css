@@ -1,16 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 .admin-panel {
   display: flex;
   min-height: 100vh;
   background: #f5f7fa;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 /* Sidebar */
 .admin-sidebar {
   width: 260px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0f1b3d 0%, #1e3a8a 60%, #b21d2b 120%);
   color: white;
   padding: 20px;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 12px rgba(7, 11, 26, 0.25);
 }
 
 .admin-logo {
@@ -49,7 +52,7 @@
 
 .admin-nav button.active {
   background: white;
-  color: #667eea;
+  color: #0f1b3d;
   font-weight: bold;
 }
 
@@ -64,7 +67,7 @@
   text-align: center;
   padding: 50px;
   font-size: 20px;
-  color: #667eea;
+  color: #1e3a8a;
 }
 
 /* Dashboard */
@@ -103,7 +106,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0f1b3d 0%, #b21d2b 100%);
   border-radius: 12px;
 }
 
@@ -167,18 +170,19 @@
 }
 
 .btn-crear {
-  background: #2563eb;
+  background: #b21d2b;
   color: white;
   border: none;
   padding: 10px 16px;
   border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
-  transition: background 0.3s;
+  transition: background 0.3s, transform 0.3s;
 }
 
 .btn-crear:hover {
-  background: #1d4ed8;
+  background: #8f1722;
+  transform: translateY(-1px);
 }
 
 .prestamo-card {
@@ -208,7 +212,7 @@
 }
 
 .prestamo-id {
-  color: #667eea;
+  color: #1e3a8a;
   font-size: 14px;
   margin-left: 10px;
   font-weight: normal;
@@ -332,7 +336,7 @@
 .cuota-monto {
   font-size: 18px;
   font-weight: bold;
-  color: #667eea;
+  color: #1e3a8a;
   min-width: 100px;
 }
 
@@ -349,7 +353,7 @@
 }
 
 .btn-pagar {
-  background: #667eea;
+  background: #1e3a8a;
   color: white;
   border: none;
   padding: 10px 20px;
@@ -361,7 +365,7 @@
 }
 
 .btn-pagar:hover {
-  background: #5568d3;
+  background: #162b64;
 }
 
 .btn-imprimir {
@@ -465,6 +469,255 @@
   margin-bottom: 20px;
 }
 
+/* Sandbox toggle */
+.sandbox-toggle {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sandbox-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #f8fafc;
+}
+
+.sandbox-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.sandbox-badge.on {
+  background: #10b981;
+  color: #0f172a;
+}
+
+.sandbox-badge.off {
+  background: #f97316;
+  color: #0f172a;
+}
+
+.sandbox-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  color: #f8fafc;
+  cursor: pointer;
+}
+
+.sandbox-switch.active {
+  background: rgba(178, 29, 43, 0.8);
+}
+
+.switch-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #f8fafc;
+}
+
+.switch-text {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Busqueda de prestamos */
+.prestamo-busqueda {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.busqueda-info h3 {
+  margin: 0 0 6px 0;
+  color: #2d3748;
+}
+
+.busqueda-info p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.busqueda-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.busqueda-form input {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  min-width: 180px;
+}
+
+.btn-secundario {
+  background: #0f1b3d;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-secundario:hover {
+  background: #0b142c;
+}
+
+/* Depositos y retiros */
+.depositos-view,
+.retiros-view {
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.view-subtitle {
+  color: #64748b;
+  margin-bottom: 20px;
+}
+
+.sandbox-note {
+  background: #fff7ed;
+  color: #9a3412;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #fed7aa;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.movimiento-form {
+  display: grid;
+  gap: 12px;
+  max-width: 560px;
+}
+
+.movimiento-form select,
+.movimiento-form input {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.movimiento-resumen {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.retiros-filtros {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.retiros-filtros button {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.retiros-filtros button.active {
+  background: #0f1b3d;
+  color: white;
+  border-color: #0f1b3d;
+}
+
+.retiros-tabla table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.retiros-tabla th,
+.retiros-tabla td {
+  padding: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.tabla-vacia {
+  text-align: center;
+  color: #94a3b8;
+}
+
+.estado-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: #e2e8f0;
+}
+
+.estado-badge.pendiente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.estado-badge.aprobada,
+.estado-badge.procesada {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.estado-badge.rechazada {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.acciones .btn-aprobar,
+.acciones .btn-rechazar {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.acciones .btn-aprobar {
+  background: #10b981;
+  color: white;
+}
+
+.acciones .btn-rechazar {
+  background: #ef4444;
+  color: white;
+}
+
 /* Clientes */
 .clientes-view h1 {
   color: #2d3748;
@@ -517,7 +770,7 @@
 }
 
 .clientes-tabla thead {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0f1b3d 0%, #b21d2b 100%);
   color: white;
 }
 
@@ -618,7 +871,7 @@
 }
 
 .cliente-id {
-  color: #667eea;
+  color: #1e3a8a;
   font-weight: bold;
 }
 

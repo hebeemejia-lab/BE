@@ -518,10 +518,35 @@ const capturarRecargaPayPal = async (req, res) => {
       
       console.log(`🔍 Error específico: ${issue} - ${description}`);
       
+      const redirectLink = errorData?.links?.find((link) => link.rel === 'redirect')?.href
+        || errorData?.links?.find((link) => link.rel === 'payer-action')?.href;
+
+      // Si es INSTRUMENT_DECLINED, permitir reintento sin marcar como fallida
+      if (issue === 'INSTRUMENT_DECLINED') {
+        recarga.estado = 'pendiente';
+        recarga.mensajeError = `PayPal instrument declined: ${description || 'Instrument declined'}`;
+        await recarga.save();
+
+        return res.status(409).json({
+          mensaje: 'Instrumento de pago rechazado',
+          mensajeUsuario: 'Tu tarjeta fue rechazada. Elige otro metodo de pago en PayPal e intenta de nuevo.',
+          sugerencias: [
+            'Verifica que tengas fondos suficientes',
+            'Asegurate de que la tarjeta no este bloqueada',
+            'Intenta con otra tarjeta o cuenta bancaria'
+          ],
+          orderId: recarga.paypalOrderId,
+          recargaId: recarga.id,
+          action: 'REDIRECT',
+          redirectUrl: redirectLink || null,
+          debug_id: errorData?.debug_id
+        });
+      }
+
       recarga.estado = 'fallida';
       recarga.mensajeError = `Error PayPal: ${error.message}`;
       await recarga.save();
-      
+
       // Preparar respuesta con detalles estructurados
       const respuestaError = {
         mensaje: 'Error capturando pago PayPal',
@@ -537,25 +562,16 @@ const capturarRecargaPayPal = async (req, res) => {
           links: errorData?.links || []
         }
       };
-      
-      // Si es INSTRUMENT_DECLINED, proporcionar mensaje específico
-      if (issue === 'INSTRUMENT_DECLINED') {
-        respuestaError.mensajeUsuario = 'Tu tarjeta fue rechazada. Verifica que tenga fondos suficientes y que no esté bloqueada. Intenta con otra tarjeta o cuenta bancaria.';
-        respuestaError.sugerencias = [
-          'Verifica que tengas fondos suficientes',
-          'Asegúrate de que la tarjeta no esté bloqueada',
-          'Intenta con otra tarjeta o método de pago',
-          'Contacta a tu banco si el problema persiste'
-        ];
-      } else if (errorCode === 'UNPROCESSABLE_ENTITY') {
-        respuestaError.mensajeUsuario = 'Error procesando el pago. Intenta con otro método de pago en PayPal.';
+
+      if (errorCode === 'UNPROCESSABLE_ENTITY') {
+        respuestaError.mensajeUsuario = 'Error procesando el pago. Intenta con otro metodo de pago en PayPal.';
         respuestaError.sugerencias = [
           'Intenta con otra tarjeta o cuenta bancaria',
-          'Verifica que el monto sea válido',
+          'Verifica que el monto sea valido',
           'Espera unos minutos e intenta de nuevo'
         ];
       }
-      
+
       return res.status(error.response?.status || 400).json(respuestaError);
     }
     

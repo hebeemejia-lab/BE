@@ -115,6 +115,10 @@ export default function Navbar() {
                   <img src="/imagen/BE (13).png" alt="Perfil" className="nav-icon" />
                   Perfil
                 </Link>
+
+                <Link to="/politica-privacidad" className="nav-link" onClick={handleMenuClose}>
+                  🔐 Politicas de Seguridad
+                </Link>
                 
                 <button onClick={handleLogout} className="nav-button logout-btn">
                   🚪 Cerrar Sesión
@@ -128,6 +132,9 @@ export default function Navbar() {
             <Link to="/login" className="nav-link">Iniciar Sesión</Link>
             <Link to="/register" className="nav-button register-btn">
               Registrarse
+            </Link>
+            <Link to="/politica-privacidad" className="nav-link priv-link">
+              Politicas de Seguridad
             </Link>
           </div>
         )}

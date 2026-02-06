@@ -1,0 +1,108 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Space+Grotesk:wght@400;600;700&display=swap');
+
+.policy-page {
+  min-height: 100vh;
+  padding: 40px 20px 60px;
+  background: radial-gradient(circle at top, rgba(178, 29, 43, 0.15), transparent 55%),
+    linear-gradient(180deg, #0b1226 0%, #0f1b3d 45%, #f8fafc 100%);
+  color: #0f172a;
+}
+
+.policy-hero {
+  max-width: 900px;
+  margin: 0 auto 30px;
+  background: #f8fafc;
+  border-radius: 24px;
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+}
+
+.policy-hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.policy-kicker {
+  display: inline-block;
+  font-family: 'Space Grotesk', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 12px;
+  color: #b21d2b;
+  margin-bottom: 8px;
+}
+
+.policy-hero h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 36px;
+  margin: 0 0 10px;
+  color: #0f1b3d;
+}
+
+.policy-hero p {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  color: #334155;
+  margin: 0;
+}
+
+.policy-hero-accent {
+  position: absolute;
+  right: -40px;
+  top: -40px;
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle, rgba(178, 29, 43, 0.5), transparent 70%);
+  border-radius: 50%;
+}
+
+.policy-section {
+  max-width: 900px;
+  margin: 0 auto 18px;
+  background: white;
+  border-radius: 18px;
+  padding: 22px 26px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.policy-section h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
+  color: #0f1b3d;
+  margin: 0 0 12px;
+}
+
+.policy-section ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #334155;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.policy-footer {
+  max-width: 900px;
+  margin: 30px auto 0;
+  color: #f8fafc;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .policy-hero {
+    padding: 24px;
+  }
+
+  .policy-hero h1 {
+    font-size: 28px;
+  }
+
+  .policy-section {
+    padding: 18px;
+  }
+}
