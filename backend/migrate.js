@@ -58,7 +58,6 @@ async function migrar() {
     console.log('');
     console.log('🎉 Migración completada exitosamente');
     console.log('📧 Email admin: admin@bancoexclusivo.lat');
-    console.log('🔑 Contraseña: 2406');
     console.log('');
 
     process.exit(0);

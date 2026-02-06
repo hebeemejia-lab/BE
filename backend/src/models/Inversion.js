@@ -11,7 +11,7 @@ const Inversion = sequelize.define('Inversion', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'usuarios',
+      model: 'Users',
       key: 'id',
     },
   },
