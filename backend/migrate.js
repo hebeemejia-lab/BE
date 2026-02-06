@@ -12,8 +12,14 @@ async function migrar() {
     console.log('✅ Conectado a la base de datos');
 
     // Sincronizar modelos (ALTER TABLE para agregar columna rol)
-    await sequelize.sync({ alter: true });
-    console.log('✅ Tablas sincronizadas (columna rol agregada si no existía)');
+    const allowAlter = process.env.DB_SYNC_ALTER === 'true';
+    if (process.env.NODE_ENV === 'production' && !allowAlter) {
+      await sequelize.sync();
+      console.log('✅ Tablas sincronizadas (sin alter)');
+    } else {
+      await sequelize.sync({ alter: true });
+      console.log('✅ Tablas sincronizadas (columna rol agregada si no existía)');
+    }
 
     // Verificar si existe el usuario admin
     let admin = await User.findOne({ 

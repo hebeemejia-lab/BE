@@ -55,8 +55,14 @@ const connectDB = async () => {
   try {
     await sequelize.authenticate();
     console.log(`✅ Base de datos conectada exitosamente`);
-    await sequelize.sync({ alter: true });
-    console.log('✅ Modelos sincronizados con la base de datos');
+    const allowAlter = process.env.DB_SYNC_ALTER === 'true';
+    if (process.env.NODE_ENV === 'production' && !allowAlter) {
+      await sequelize.sync();
+      console.log('✅ Modelos sincronizados (sin alter)');
+    } else {
+      await sequelize.sync({ alter: true });
+      console.log('✅ Modelos sincronizados con la base de datos');
+    }
   } catch (error) {
     console.error('❌ Error conectando a la base de datos:', error.message);
     process.exit(1);
