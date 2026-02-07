@@ -18,8 +18,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "serve": "node server.js",
-    "prod": "npm run build && npm run serve",
+    "serve": "npm run build && node server.js",
+    "prod": "npm run build && node server.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
