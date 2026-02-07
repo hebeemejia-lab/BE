@@ -76,6 +76,8 @@ export default function Dashboard() {
   }, 0);
 
   const saldoDisponible = (Number(usuario?.saldo) || 0) + saldoPrestamos;
+  const simboloDop = getCurrencySymbol('DOP');
+  const simboloUsd = getCurrencySymbol('USD');
 
   return (
     <div className="dashboard-container">
@@ -88,21 +90,21 @@ export default function Dashboard() {
         <div className="overview-card highlight">
           <div className="overview-label">Depositos + prestamos</div>
           <div className="overview-amount">
-            {getCurrencySymbol(usuario?.moneda)}{formatMoney(saldoDisponible)}
+            {simboloDop}{formatMoney(saldoDisponible)}
           </div>
           <div className="overview-meta">Disponible para uso interno</div>
         </div>
         <div className="overview-card debt">
           <div className="overview-label">Prestamos en negativo</div>
           <div className="overview-amount">
-            -{getCurrencySymbol(usuario?.moneda)}{formatMoney(saldoPrestamos)}
+            -{simboloDop}{formatMoney(saldoPrestamos)}
           </div>
           <div className="debt-list">
             {prestamosActivos.length > 0 ? (
               prestamosActivos.map((prestamo) => (
                 <div key={prestamo.id || prestamo._id} className="debt-item">
                   <span className="debt-id">ID #{prestamo.id || prestamo._id}</span>
-                  <span className="debt-amount">{getCurrencySymbol(usuario?.moneda)}{formatMoney(prestamo.montoAprobado ?? prestamo.montoSolicitado ?? prestamo.monto)}</span>
+                  <span className="debt-amount">{simboloDop}{formatMoney(prestamo.montoAprobado ?? prestamo.montoSolicitado ?? prestamo.monto)}</span>
                 </div>
               ))
             ) : (
@@ -113,23 +115,13 @@ export default function Dashboard() {
         <div className="overview-card">
           <div className="overview-label">Recargas PayPal</div>
           <div className="overview-amount">
-            {getCurrencySymbol(usuario?.moneda)}{formatMoney(paypalTotal)}
+            {simboloUsd}{formatMoney(paypalTotal)}
           </div>
           <div className="overview-meta">Saldo recargado via PayPal</div>
         </div>
       </div>
 
       <div className="dashboard-grid">
-        <div className="balance-card">
-          <div className="balance-content">
-            <span className="balance-label">Saldo Disponible</span>
-          </div>
-          <div className="balance-amount-row">
-            <span className="balance-amount">{getCurrencySymbol(usuario?.moneda)}{formatMoney(usuario?.saldo)}</span>
-            <span className="balance-icon">{getCurrencySymbol(usuario?.moneda)}</span>
-          </div>
-        </div>
-
         <div className="stats-card">
           <div className="stat">
             <img src="/imagen/BE (9).png" alt="Estadísticas" className="stat-icon-img" />
