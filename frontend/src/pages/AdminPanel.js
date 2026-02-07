@@ -35,6 +35,8 @@ const AdminPanel = () => {
   const [prestamoSeleccionado, setPrestamoSeleccionado] = useState(null);
   const [usuariosCargando, setUsuariosCargando] = useState(false);
   const [sandboxMode, setSandboxMode] = useState(() => localStorage.getItem('adminSandboxMode') === 'true');
+  const [estadoDesde, setEstadoDesde] = useState('');
+  const [estadoHasta, setEstadoHasta] = useState('');
 
   useEffect(() => {
     cargarDashboard();
