@@ -768,6 +768,10 @@ const AdminPanel = () => {
               }
             }}
             onGenerarEstado={generarEstadoMercantilPdf}
+            estadoDesde={estadoDesde}
+            estadoHasta={estadoHasta}
+            onCambiarDesde={setEstadoDesde}
+            onCambiarHasta={setEstadoHasta}
           />
         )}
 
@@ -824,7 +828,7 @@ const AdminPanel = () => {
 };
 
 // Componente Dashboard
-const DashboardView = ({ dashboard, onNavigate, onGenerarEstado }) => (
+const DashboardView = ({ dashboard, onNavigate, onGenerarEstado, estadoDesde, estadoHasta, onCambiarDesde, onCambiarHasta }) => (
   <div className="dashboard-view">
     <h1>📊 Dashboard</h1>
     
@@ -910,6 +914,24 @@ const DashboardView = ({ dashboard, onNavigate, onGenerarEstado }) => (
       <div className="gestion-card">
         <h3>📄 Estado mercantil</h3>
         <p>Genera un PDF con todos los movimientos registrados.</p>
+        <div className="estado-filtros">
+          <label>
+            Desde
+            <input
+              type="date"
+              value={estadoDesde}
+              onChange={(e) => onCambiarDesde(e.target.value)}
+            />
+          </label>
+          <label>
+            Hasta
+            <input
+              type="date"
+              value={estadoHasta}
+              onChange={(e) => onCambiarHasta(e.target.value)}
+            />
+          </label>
+        </div>
         <button type="button" onClick={onGenerarEstado}>
           Generar PDF
         </button>
