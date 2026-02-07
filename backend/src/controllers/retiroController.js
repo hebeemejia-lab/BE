@@ -257,6 +257,35 @@ const aprobarSolicitudRetiroManual = async (req, res) => {
       });
     }
 
+    const usuario = await User.findByPk(solicitud.usuarioId);
+    if (!usuario) {
+      return res.status(404).json({
+        exito: false,
+        mensaje: 'Usuario no encontrado para la solicitud',
+      });
+    }
+
+    const saldoActual = parseFloat(usuario.saldo || 0);
+    const montoSolicitud = parseFloat(solicitud.monto || 0);
+    if (montoSolicitud <= 0) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'Monto de solicitud invalido',
+      });
+    }
+
+    if (montoSolicitud > saldoActual) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'Saldo insuficiente para aprobar el retiro',
+        saldoActual,
+        montoSolicitud,
+      });
+    }
+
+    usuario.saldo = saldoActual - montoSolicitud;
+    await usuario.save();
+
     solicitud.estado = 'procesada';
     solicitud.notasAdmin = notasAdmin || null;
     solicitud.procesadoPor = adminId || null;
@@ -265,8 +294,9 @@ const aprobarSolicitudRetiroManual = async (req, res) => {
 
     return res.json({
       exito: true,
-      mensaje: 'Solicitud aprobada y marcada como procesada',
+      mensaje: 'Solicitud aprobada y saldo descontado',
       solicitud,
+      nuevoSaldo: parseFloat(usuario.saldo),
     });
   } catch (error) {
     console.error('❌ Error aprobando solicitud de retiro:', error);
