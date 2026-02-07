@@ -674,8 +674,8 @@ const DashboardView = ({ dashboard, onNavigate }) => (
         </button>
       </div>
       <div className="gestion-card">
-        <h3>🧾 Retiros en efectivo</h3>
-        <p>Aprueba o rechaza solicitudes manuales.</p>
+        <h3>🧾 Retiros de balance</h3>
+        <p>Aprueba o rechaza solicitudes de retiro de saldo.</p>
         <button type="button" onClick={() => onNavigate?.('retiros-efectivo')}>
           Abrir gestion
         </button>
@@ -1094,8 +1094,8 @@ const RetirosEfectivoView = ({ sandboxMode }) => {
 
   return (
     <div className="retiros-view">
-      <h1>🧾 Gestion de Retiros en Efectivo</h1>
-      <p className="view-subtitle">Administra solicitudes manuales y registra aprobaciones.</p>
+    <h1>🧾 Gestion de Retiros de Balance</h1>
+    <p className="view-subtitle">Aprueba o rechaza retiros de saldo solicitados por clientes.</p>
       {sandboxMode && (
         <div className="sandbox-note">
           Sandbox activo: usa este panel para pruebas sin tocar configuracion real.
