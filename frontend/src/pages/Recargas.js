@@ -182,6 +182,13 @@ export default function Recargas() {
           } catch (err) {
             console.error('❌ Error capturando PayPal:', err);
             console.error('   Respuesta del servidor:', err.response?.data);
+            const redirectUrl = err.response?.data?.redirectUrl;
+            const action = err.response?.data?.action;
+            if (action === 'REDIRECT' && redirectUrl) {
+              setSuccess('🔁 Tu pago fue rechazado. Redirigiendo a PayPal para elegir otro metodo...');
+              window.location.href = redirectUrl;
+              return;
+            }
             const errorMsg = err.response?.data?.mensaje || err.message || 'Error desconocido';
             const detalles = err.response?.data?.detalles;
             const debugId = err.response?.data?.debug_id || 'N/A';
@@ -329,6 +336,13 @@ export default function Recargas() {
         console.log('✅ Captura PayPal:', response.data);
       } catch (err) {
         console.error('❌ Error capturando PayPal:', err);
+        const redirectUrl = err.response?.data?.redirectUrl;
+        const action = err.response?.data?.action;
+        if (action === 'REDIRECT' && redirectUrl) {
+          setSuccess('🔁 Tu pago fue rechazado. Redirigiendo a PayPal para elegir otro metodo...');
+          window.location.href = redirectUrl;
+          return;
+        }
         setError('Error al completar el pago PayPal.');
       } finally {
         setLoading(false);
