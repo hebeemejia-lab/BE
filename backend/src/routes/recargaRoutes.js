@@ -6,6 +6,7 @@ const {
   procesarRecargaTarjeta,
   procesarRecargaExitosa,
   obtenerRecargas,
+  obtenerResumenPayPal,
   canjearcoCodigo,
   generarCodigos,
   webhookRapyd,
@@ -56,6 +57,7 @@ router.post('/crear-2checkout', verificarToken, require('../controllers/recargaC
 router.post('/procesar-tarjeta', verificarToken, procesarRecargaTarjeta);
 router.post('/procesar', verificarToken, procesarRecargaExitosa);
 router.get('/historial', verificarToken, obtenerRecargas);
+router.get('/resumen-paypal', verificarToken, obtenerResumenPayPal);
 router.post('/canjear-codigo', verificarToken, canjearcoCodigo);
 router.post('/generar-codigos', verificarToken, generarCodigos); // Solo admin
 

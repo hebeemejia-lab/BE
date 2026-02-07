@@ -52,6 +52,7 @@ export const recargaAPI = {
   procesarRecargaTarjeta: (datos) => API.post('/recargas/procesar-tarjeta', datos),
   procesarRecargaExitosa: (datos) => API.post('/recargas/procesar', datos),
   obtenerRecargas: () => API.get('/recargas/historial'),
+  obtenerResumenPayPal: () => API.get('/recargas/resumen-paypal'),
   canjearcoCodigo: (datos) => API.post('/recargas/canjear-codigo', datos),
   generarCodigos: (datos) => API.post('/recargas/generar-codigos', datos),
 };
