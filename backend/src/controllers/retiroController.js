@@ -1,6 +1,7 @@
 const Recarga = require('../models/Recarga');
 const BankAccount = require('../models/BankAccount');
 const User = require('../models/User');
+const SolicitudRetiroManual = require('../models/SolicitudRetiroManual');
 const cuentasBancariasConfig = require('../config/cuentasBancariasConfig');
 const paypalPayoutsService = require('../services/paypalPayoutsService');
 const { calcularComisionRetiro, calcularMontoNeto } = require('../config/comisiones');
@@ -8,7 +9,7 @@ const { calcularComisionRetiro, calcularMontoNeto } = require('../config/comisio
 // Procesar retiro automático con PayPal Payouts (DINERO REAL)
 const procesarRetiro = async (req, res) => {
   try {
-    const { monto, moneda, cuentaId } = req.body;
+    const { monto, moneda, cuentaId, metodoRetiro } = req.body;
     const usuarioId = req.usuario.id;
 
     // Validaciones
@@ -74,6 +75,32 @@ const procesarRetiro = async (req, res) => {
     }
 
     const numeroReferencia = `RET-${Date.now()}`;
+
+    if (metodoRetiro === 'transferencia_manual') {
+      const solicitud = await SolicitudRetiroManual.create({
+        usuarioId,
+        monto: montoNumerico,
+        moneda,
+        metodo: 'transferencia_manual',
+        estado: 'pendiente',
+        nombreUsuario: `${usuario.nombre || ''} ${usuario.apellido || ''}`.trim(),
+        emailUsuario: usuario.email,
+        cedulaUsuario: usuario.cedula,
+        banco: cuenta.banco,
+        tipoCuenta: cuenta.tipoCuenta,
+        numeroCuenta: cuenta.numerosCuenta,
+        nombreBeneficiario: cuenta.nombreCuenta,
+        numeroReferencia,
+      });
+
+      return res.json({
+        mensaje: 'Solicitud de retiro manual creada. En espera de aprobacion.',
+        solicitudId: solicitud.id,
+        numeroReferencia,
+        estado: solicitud.estado,
+        monto: montoNumerico,
+      });
+    }
 
     try {
       // Procesar PayPal Payout (DINERO REAL)
@@ -146,6 +173,161 @@ const procesarRetiro = async (req, res) => {
   }
 };
 
+// Obtener solicitudes pendientes de retiro manual (admin)
+const obtenerSolicitudesRetiroManuales = async (req, res) => {
+  try {
+    const { estado } = req.query;
+    const where = estado ? { estado } : undefined;
+    const solicitudes = await SolicitudRetiroManual.findAll({
+      where,
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.json({
+      exito: true,
+      total: solicitudes.length,
+      solicitudes,
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo solicitudes de retiro:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al obtener solicitudes de retiro',
+      error: error.message,
+    });
+  }
+};
+
+// Obtener estado de una solicitud específica (admin)
+const obtenerEstadoSolicitudRetiro = async (req, res) => {
+  try {
+    const { solicitudId } = req.params;
+    const solicitud = await SolicitudRetiroManual.findByPk(solicitudId);
+
+    if (!solicitud) {
+      return res.status(404).json({
+        exito: false,
+        mensaje: 'Solicitud no encontrada',
+      });
+    }
+
+    let estadoPayPal = null;
+    if (solicitud.batchIdPayPal) {
+      try {
+        estadoPayPal = await paypalPayoutsService.obtenerEstadoPayout(solicitud.batchIdPayPal);
+      } catch (error) {
+        estadoPayPal = { error: error.message };
+      }
+    }
+
+    return res.json({
+      exito: true,
+      solicitud,
+      estadoPayPal,
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo estado de retiro:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al obtener estado de retiro',
+      error: error.message,
+    });
+  }
+};
+
+// Aprobar solicitud de retiro manual (admin)
+const aprobarSolicitudRetiroManual = async (req, res) => {
+  try {
+    const { solicitudId } = req.params;
+    const { notasAdmin } = req.body || {};
+    const adminId = req.usuario?.id;
+
+    const solicitud = await SolicitudRetiroManual.findByPk(solicitudId);
+    if (!solicitud) {
+      return res.status(404).json({
+        exito: false,
+        mensaje: 'Solicitud no encontrada',
+      });
+    }
+
+    if (solicitud.estado !== 'pendiente') {
+      return res.status(400).json({
+        exito: false,
+        mensaje: `La solicitud ya fue ${solicitud.estado}`,
+      });
+    }
+
+    solicitud.estado = 'procesada';
+    solicitud.notasAdmin = notasAdmin || null;
+    solicitud.procesadoPor = adminId || null;
+    solicitud.fechaProcesamiento = new Date();
+    await solicitud.save();
+
+    return res.json({
+      exito: true,
+      mensaje: 'Solicitud aprobada y marcada como procesada',
+      solicitud,
+    });
+  } catch (error) {
+    console.error('❌ Error aprobando solicitud de retiro:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al aprobar solicitud',
+      error: error.message,
+    });
+  }
+};
+
+// Rechazar solicitud de retiro manual (admin)
+const rechazarSolicitudRetiroManual = async (req, res) => {
+  try {
+    const { solicitudId } = req.params;
+    const { razonRechazo } = req.body || {};
+    const adminId = req.usuario?.id;
+
+    if (!razonRechazo) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'Debe proporcionar una razon de rechazo',
+      });
+    }
+
+    const solicitud = await SolicitudRetiroManual.findByPk(solicitudId);
+    if (!solicitud) {
+      return res.status(404).json({
+        exito: false,
+        mensaje: 'Solicitud no encontrada',
+      });
+    }
+
+    if (solicitud.estado !== 'pendiente') {
+      return res.status(400).json({
+        exito: false,
+        mensaje: `La solicitud ya fue ${solicitud.estado}`,
+      });
+    }
+
+    solicitud.estado = 'rechazada';
+    solicitud.razonRechazo = razonRechazo;
+    solicitud.procesadoPor = adminId || null;
+    solicitud.fechaProcesamiento = new Date();
+    await solicitud.save();
+
+    return res.json({
+      exito: true,
+      mensaje: 'Solicitud rechazada',
+      solicitud,
+    });
+  } catch (error) {
+    console.error('❌ Error rechazando solicitud de retiro:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al rechazar solicitud',
+      error: error.message,
+    });
+  }
+};
+
 // Obtener historial de retiros
 const obtenerRetiros = async (req, res) => {
   try {
@@ -193,4 +375,8 @@ module.exports = {
   procesarRetiro,
   obtenerRetiros,
   obtenerCuentaPrincipal,
+  obtenerSolicitudesRetiroManuales,
+  obtenerEstadoSolicitudRetiro,
+  aprobarSolicitudRetiroManual,
+  rechazarSolicitudRetiroManual,
 };
