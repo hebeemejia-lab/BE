@@ -772,6 +772,31 @@ const generarCodigos = async (req, res) => {
   }
 };
 
+// Resumen de recargas PayPal del usuario
+const obtenerResumenPayPal = async (req, res) => {
+  try {
+    const usuarioId = req.usuario.id;
+    const totalNeto = await Recarga.sum('montoNeto', {
+      where: {
+        usuarioId,
+        metodo: 'paypal',
+        estado: 'exitosa',
+      },
+    });
+
+    res.json({
+      exito: true,
+      totalPayPal: Number.isFinite(totalNeto) ? totalNeto : 0,
+    });
+  } catch (error) {
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al obtener resumen PayPal',
+      error: error.message,
+    });
+  }
+};
+
 
 // Recarga con 2Checkout Inline
 // const twoCheckoutService = require('../services/twoCheckoutService');
@@ -1040,6 +1065,7 @@ module.exports = {
   procesarRecargaTarjeta,
   procesarRecargaExitosa,
   obtenerRecargas,
+  obtenerResumenPayPal,
   canjearcoCodigo,
   generarCodigos,
   crearRecargaTwoCheckout,

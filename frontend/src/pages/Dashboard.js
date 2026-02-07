@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { transferAPI, loanAPI } from '../services/api';
+import { transferAPI, loanAPI, recargaAPI } from '../services/api';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -9,6 +9,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [transferencias, setTransferencias] = useState([]);
   const [prestamos, setPrestamos] = useState([]);
+  const [paypalTotal, setPaypalTotal] = useState(0);
   const [loadingDatos, setLoadingDatos] = useState(true);
 
   const getCurrencySymbol = (currency) => {
@@ -46,12 +47,14 @@ export default function Dashboard() {
   useEffect(() => {
     const cargarDatos = async () => {
       try {
-        const [transResponse, prestResponse] = await Promise.all([
+        const [transResponse, prestResponse, paypalResponse] = await Promise.all([
           transferAPI.obtenerHistorial(),
           loanAPI.obtenerMios(),
+          recargaAPI.obtenerResumenPayPal(),
         ]);
         setTransferencias(transResponse.data.slice(0, 5));
         setPrestamos(prestResponse.data.slice(0, 5));
+        setPaypalTotal(Number(paypalResponse.data?.totalPayPal || 0));
       } catch (error) {
         console.error('Error cargando datos:', error);
       } finally {
@@ -83,23 +86,16 @@ export default function Dashboard() {
 
       <div className="account-overview">
         <div className="overview-card highlight">
-          <div className="overview-label">Saldo disponible</div>
+          <div className="overview-label">Depositos + prestamos</div>
           <div className="overview-amount">
             {getCurrencySymbol(usuario?.moneda)}{formatMoney(saldoDisponible)}
           </div>
-          <div className="overview-meta">Incluye saldo de prestamos activos</div>
-        </div>
-        <div className="overview-card">
-          <div className="overview-label">Saldo de la cuenta</div>
-          <div className="overview-amount">
-            {getCurrencySymbol(usuario?.moneda)}{formatMoney(usuario?.saldo)}
-          </div>
-          <div className="overview-meta">Solo recargas con dinero real</div>
+          <div className="overview-meta">Disponible para uso interno</div>
         </div>
         <div className="overview-card debt">
-          <div className="overview-label">Saldo de prestamos</div>
+          <div className="overview-label">Prestamos en negativo</div>
           <div className="overview-amount">
-            {getCurrencySymbol(usuario?.moneda)}{formatMoney(saldoPrestamos)}
+            -{getCurrencySymbol(usuario?.moneda)}{formatMoney(saldoPrestamos)}
           </div>
           <div className="debt-list">
             {prestamosActivos.length > 0 ? (
@@ -113,6 +109,13 @@ export default function Dashboard() {
               <span className="debt-empty">Sin prestamos activos</span>
             )}
           </div>
+        </div>
+        <div className="overview-card">
+          <div className="overview-label">Recargas PayPal</div>
+          <div className="overview-amount">
+            {getCurrencySymbol(usuario?.moneda)}{formatMoney(paypalTotal)}
+          </div>
+          <div className="overview-meta">Saldo recargado via PayPal</div>
         </div>
       </div>
 
