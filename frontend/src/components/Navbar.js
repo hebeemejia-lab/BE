@@ -7,6 +7,7 @@ export default function Navbar() {
   const { usuario, logout } = useContext(AuthContext);
   const [menuOpen, setMenuOpen] = useState(false);
   const [transactionsOpen, setTransactionsOpen] = useState(false);
+  const [devMode, setDevMode] = useState(() => localStorage.getItem('adminSandboxMode') === 'true');
 
   const formatMoney = (value) => {
     const numberValue = Number(value);
@@ -23,6 +24,13 @@ export default function Navbar() {
 
   const handleMenuClose = () => {
     setMenuOpen(false);
+  };
+
+  const toggleDevMode = () => {
+    const nextValue = !devMode;
+    setDevMode(nextValue);
+    localStorage.setItem('adminSandboxMode', nextValue ? 'true' : 'false');
+    window.dispatchEvent(new CustomEvent('adminSandboxModeChange', { detail: nextValue }));
   };
 
   return (
@@ -109,6 +117,26 @@ export default function Navbar() {
                 
                 {usuario.rol === 'admin' && (
                   <Link to="/admin" className="nav-link admin-link" onClick={handleMenuClose}>⚙️ Admin</Link>
+                )}
+
+                {usuario.rol === 'admin' && (
+                  <div className="nav-dev-toggle">
+                    <div className="nav-dev-header">
+                      <span>Modo desarrollo</span>
+                      <span className={devMode ? 'nav-dev-badge on' : 'nav-dev-badge off'}>
+                        {devMode ? 'DEV' : 'LIVE'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className={devMode ? 'nav-dev-switch active' : 'nav-dev-switch'}
+                      onClick={toggleDevMode}
+                      aria-pressed={devMode}
+                    >
+                      <span className="nav-dev-dot"></span>
+                      <span className="nav-dev-text">{devMode ? 'Sandbox Stripe' : 'Produccion'}</span>
+                    </button>
+                  </div>
                 )}
                 
                 <Link to="/perfil" className="nav-link nav-link-with-img" onClick={handleMenuClose}>

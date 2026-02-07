@@ -20,6 +20,30 @@ const AdminPanel = () => {
     localStorage.setItem('adminSandboxMode', sandboxMode ? 'true' : 'false');
   }, [sandboxMode]);
 
+  useEffect(() => {
+    const handleSandboxChange = (event) => {
+      if (typeof event.detail === 'boolean') {
+        setSandboxMode(event.detail);
+        return;
+      }
+      setSandboxMode(localStorage.getItem('adminSandboxMode') === 'true');
+    };
+
+    const handleStorage = (event) => {
+      if (event.key === 'adminSandboxMode') {
+        setSandboxMode(event.newValue === 'true');
+      }
+    };
+
+    window.addEventListener('adminSandboxModeChange', handleSandboxChange);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener('adminSandboxModeChange', handleSandboxChange);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
   const cargarDashboard = async () => {
     try {
       setCargando(true);
@@ -468,23 +492,6 @@ const AdminPanel = () => {
         <div className="admin-logo">
           <h2>🏦 Admin Panel</h2>
         </div>
-        <div className="sandbox-toggle">
-          <div className="sandbox-label">
-            <span>Modo desarrollo</span>
-            <span className={sandboxMode ? 'sandbox-badge on' : 'sandbox-badge off'}>
-              {sandboxMode ? 'DEV' : 'LIVE'}
-            </span>
-          </div>
-          <button
-            type="button"
-            className={sandboxMode ? 'sandbox-switch active' : 'sandbox-switch'}
-            onClick={() => setSandboxMode(!sandboxMode)}
-            aria-pressed={sandboxMode}
-          >
-            <span className="switch-dot"></span>
-            <span className="switch-text">{sandboxMode ? 'Sandbox Stripe' : 'Produccion'}</span>
-          </button>
-        </div>
         <nav className="admin-nav">
           <button 
             className={vistaActual === 'dashboard' ? 'active' : ''}
@@ -531,7 +538,26 @@ const AdminPanel = () => {
 
         {/* Dashboard */}
         {vistaActual === 'dashboard' && dashboard && (
-          <DashboardView dashboard={dashboard} />
+          <DashboardView
+            dashboard={dashboard}
+            onNavigate={(destino) => {
+              if (destino === 'prestamos') {
+                cargarPrestamos();
+                return;
+              }
+              if (destino === 'clientes') {
+                cargarUsuarios();
+                return;
+              }
+              if (destino === 'depositos') {
+                cargarUsuariosParaVista('depositos');
+                return;
+              }
+              if (destino === 'retiros-efectivo') {
+                setVistaActual('retiros-efectivo');
+              }
+            }}
+          />
         )}
 
         {vistaActual === 'depositos' && (
@@ -585,7 +611,7 @@ const AdminPanel = () => {
 };
 
 // Componente Dashboard
-const DashboardView = ({ dashboard }) => (
+const DashboardView = ({ dashboard, onNavigate }) => (
   <div className="dashboard-view">
     <h1>📊 Dashboard</h1>
     
@@ -636,6 +662,37 @@ const DashboardView = ({ dashboard }) => (
           <h3>{dashboard.faq.satisfaccion}%</h3>
           <p>Satisfacción FAQ</p>
         </div>
+      </div>
+    </div>
+
+    <div className="gestion-grid">
+      <div className="gestion-card">
+        <h3>💵 Depositos en efectivo</h3>
+        <p>Registra depositos manuales y actualiza saldo.</p>
+        <button type="button" onClick={() => onNavigate?.('depositos')}>
+          Abrir gestion
+        </button>
+      </div>
+      <div className="gestion-card">
+        <h3>🧾 Retiros en efectivo</h3>
+        <p>Aprueba o rechaza solicitudes manuales.</p>
+        <button type="button" onClick={() => onNavigate?.('retiros-efectivo')}>
+          Abrir gestion
+        </button>
+      </div>
+      <div className="gestion-card">
+        <h3>💰 Prestamos</h3>
+        <p>Crear prestamos, rastrear por ID y registrar pagos.</p>
+        <button type="button" onClick={() => onNavigate?.('prestamos')}>
+          Abrir gestion
+        </button>
+      </div>
+      <div className="gestion-card">
+        <h3>👤 Clientes</h3>
+        <p>Editar saldo, datos y crear usuarios.</p>
+        <button type="button" onClick={() => onNavigate?.('clientes')}>
+          Abrir gestion
+        </button>
       </div>
     </div>
   </div>

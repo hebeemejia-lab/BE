@@ -188,6 +188,78 @@
   color: #ffffff;
 }
 
+.nav-dev-toggle {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-dev-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.nav-dev-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.nav-dev-badge.on {
+  background: #fbbf24;
+  color: #1f2937;
+}
+
+.nav-dev-badge.off {
+  background: rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+}
+
+.nav-dev-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.nav-dev-switch.active {
+  background: rgba(251, 191, 36, 0.2);
+}
+
+.nav-dev-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e2e8f0;
+}
+
+.nav-dev-switch.active .nav-dev-dot {
+  background: #fbbf24;
+}
+
+.nav-dev-text {
+  flex: 1;
+  text-align: left;
+}
+
 .nav-button {
   padding: 12px 20px;
   border: none;
