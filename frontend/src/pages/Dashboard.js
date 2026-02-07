@@ -67,10 +67,12 @@ export default function Dashboard() {
     return estado && estado !== 'pagado' && estado !== 'rechazado';
   });
 
-  const deudaTotal = prestamosActivos.reduce((sum, prestamo) => {
+  const saldoPrestamos = prestamosActivos.reduce((sum, prestamo) => {
     const monto = Number(prestamo.montoAprobado ?? prestamo.montoSolicitado ?? prestamo.monto ?? 0);
     return sum + (Number.isFinite(monto) ? monto : 0);
   }, 0);
+
+  const saldoDisponible = (Number(usuario?.saldo) || 0) + saldoPrestamos;
 
   return (
     <div className="dashboard-container">
@@ -80,17 +82,24 @@ export default function Dashboard() {
       </div>
 
       <div className="account-overview">
+        <div className="overview-card highlight">
+          <div className="overview-label">Saldo disponible</div>
+          <div className="overview-amount">
+            {getCurrencySymbol(usuario?.moneda)}{formatMoney(saldoDisponible)}
+          </div>
+          <div className="overview-meta">Incluye saldo de prestamos activos</div>
+        </div>
         <div className="overview-card">
           <div className="overview-label">Saldo de la cuenta</div>
           <div className="overview-amount">
             {getCurrencySymbol(usuario?.moneda)}{formatMoney(usuario?.saldo)}
           </div>
-          <div className="overview-meta">Disponible para transacciones</div>
+          <div className="overview-meta">Solo recargas con dinero real</div>
         </div>
         <div className="overview-card debt">
-          <div className="overview-label">Saldo negativo de préstamos</div>
+          <div className="overview-label">Saldo de prestamos</div>
           <div className="overview-amount">
-            -{getCurrencySymbol(usuario?.moneda)}{formatMoney(deudaTotal)}
+            {getCurrencySymbol(usuario?.moneda)}{formatMoney(saldoPrestamos)}
           </div>
           <div className="debt-list">
             {prestamosActivos.length > 0 ? (
@@ -101,7 +110,7 @@ export default function Dashboard() {
                 </div>
               ))
             ) : (
-              <span className="debt-empty">Sin préstamos activos</span>
+              <span className="debt-empty">Sin prestamos activos</span>
             )}
           </div>
         </div>
