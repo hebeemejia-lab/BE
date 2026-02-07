@@ -512,6 +512,105 @@ const AdminPanel = () => {
     ventana.print();
   };
 
+  const generarEstadoMercantilPdf = async () => {
+    try {
+      setCargando(true);
+      const response = await api.get('/admin/estado-mercantil');
+      const movimientos = response.data.movimientos || [];
+      const logoUrl = `${window.location.origin}/imagen/BE%20(1)%20(1).png`;
+      const formatoMoneda = (valor, moneda) => {
+        const numero = Number(valor) || 0;
+        return new Intl.NumberFormat('es-DO', {
+          style: 'currency',
+          currency: moneda || 'DOP',
+          minimumFractionDigits: 2,
+        }).format(numero);
+      };
+
+      const filas = movimientos.map((m) => {
+        const nombre = m.usuario
+          ? `${m.usuario.nombre || ''} ${m.usuario.apellido || ''}`.trim()
+          : 'N/A';
+        const correo = m.usuario?.email || '';
+        const fecha = m.fecha ? new Date(m.fecha).toLocaleString('es-DO') : '';
+        const monto = formatoMoneda(m.monto, m.moneda);
+        return `
+          <tr>
+            <td>${fecha}</td>
+            <td>${m.tipo || ''}</td>
+            <td>${nombre}<div style="color:#64748b;font-size:11px;">${correo}</div></td>
+            <td style="text-align:right;">${monto}</td>
+            <td style="text-align:center;">${m.moneda || ''}</td>
+            <td>${m.estado || ''}</td>
+            <td>${m.referencia || ''}</td>
+            <td>${m.detalle || ''}</td>
+          </tr>
+        `;
+      }).join('');
+
+      const html = `
+        <html>
+          <head>
+            <title>Estado Mercantil</title>
+            <style>
+              body { font-family: 'Space Grotesk', Arial, sans-serif; color: #0f1b3d; margin: 0; padding: 24px; }
+              .header { display: flex; justify-content: space-between; align-items: center; }
+              .title { margin: 0; font-size: 22px; }
+              .subtitle { color: #64748b; margin: 6px 0 0; font-size: 13px; }
+              .badge { background: #0f1b3d; color: #fff; padding: 6px 10px; border-radius: 999px; font-size: 12px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+              th, td { border-bottom: 1px solid #e2e8f0; padding: 10px; vertical-align: top; }
+              th { text-align: left; background: #f1f5f9; color: #1e293b; }
+              .footer { margin-top: 16px; text-align: center; color: #94a3b8; font-size: 11px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <div>
+                <h1 class="title">Estado Mercantil</h1>
+                <p class="subtitle">Movimientos consolidados del sistema</p>
+              </div>
+              <div style="text-align:right;">
+                <img src="${logoUrl}" alt="Banco Exclusivo" style="width:72px;height:72px;object-fit:contain;" />
+                <div class="badge">${movimientos.length} movimientos</div>
+              </div>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Cliente</th>
+                  <th>Monto</th>
+                  <th>Moneda</th>
+                  <th>Estado</th>
+                  <th>Referencia</th>
+                  <th>Detalle</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filas || '<tr><td colspan="8">Sin movimientos</td></tr>'}
+              </tbody>
+            </table>
+            <div class="footer">Banco Exclusivo - Estado mercantil generado automaticamente</div>
+          </body>
+        </html>
+      `;
+
+      const ventana = window.open('', '_blank');
+      ventana.document.write(html);
+      ventana.document.close();
+      ventana.focus();
+      ventana.print();
+    } catch (error) {
+      console.error('Error generando estado mercantil:', error);
+      alert('Error al generar el PDF de estado mercantil');
+    } finally {
+      setCargando(false);
+    }
+  };
+
   const imprimirFactura88 = (recibo) => {
     const ventana = window.open('', '_blank');
     ventana.document.write(`
@@ -668,6 +767,7 @@ const AdminPanel = () => {
                 setVistaActual('retiros-efectivo');
               }
             }}
+            onGenerarEstado={generarEstadoMercantilPdf}
           />
         )}
 
@@ -724,7 +824,7 @@ const AdminPanel = () => {
 };
 
 // Componente Dashboard
-const DashboardView = ({ dashboard, onNavigate }) => (
+const DashboardView = ({ dashboard, onNavigate, onGenerarEstado }) => (
   <div className="dashboard-view">
     <h1>📊 Dashboard</h1>
     
@@ -805,6 +905,13 @@ const DashboardView = ({ dashboard, onNavigate }) => (
         <p>Editar saldo, datos y crear usuarios.</p>
         <button type="button" onClick={() => onNavigate?.('clientes')}>
           Abrir gestion
+        </button>
+      </div>
+      <div className="gestion-card">
+        <h3>📄 Estado mercantil</h3>
+        <p>Genera un PDF con todos los movimientos registrados.</p>
+        <button type="button" onClick={onGenerarEstado}>
+          Generar PDF
         </button>
       </div>
     </div>

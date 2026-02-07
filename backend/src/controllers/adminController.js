@@ -1,5 +1,10 @@
 // Controlador del Panel de Administración
 const { Loan, User, BankAccount, CuotaPrestamo } = require('../models');
+const Transfer = require('../models/Transfer');
+const TransferenciaBancaria = require('../models/TransferenciaBancaria');
+const TransferenciaInternacional = require('../models/TransferenciaInternacional');
+const Recarga = require('../models/Recarga');
+const SolicitudRetiroManual = require('../models/SolicitudRetiroManual');
 const FAQFeedback = require('../models/FAQFeedback');
 const { Op } = require('sequelize');
 const crypto = require('crypto');
@@ -629,6 +634,199 @@ exports.obtenerReciboPago = async (req, res) => {
       exito: false,
       mensaje: 'Error al generar recibo',
       error: error.message
+    });
+  }
+};
+
+// Estado mercantil: consolidado de movimientos
+exports.obtenerEstadoMercantil = async (req, res) => {
+  try {
+    const { desde, hasta } = req.query;
+    const dateFilter = {};
+    if (desde || hasta) {
+      dateFilter[Op.between] = [
+        desde ? new Date(desde) : new Date('2000-01-01'),
+        hasta ? new Date(hasta) : new Date(),
+      ];
+    }
+
+    const recargas = await Recarga.findAll({
+      where: {
+        ...(dateFilter[Op.between] ? { createdAt: dateFilter } : {}),
+        estado: { [Op.in]: ['exitosa', 'reembolsada'] },
+      },
+      order: [['createdAt', 'DESC']],
+    });
+
+    const retiros = await SolicitudRetiroManual.findAll({
+      where: dateFilter[Op.between] ? { createdAt: dateFilter } : undefined,
+      order: [['createdAt', 'DESC']],
+    });
+
+    const transferencias = await Transfer.findAll({
+      where: dateFilter[Op.between] ? { createdAt: dateFilter } : undefined,
+      order: [['createdAt', 'DESC']],
+    });
+
+    const transferenciasBancarias = await TransferenciaBancaria.findAll({
+      where: dateFilter[Op.between] ? { createdAt: dateFilter } : undefined,
+      order: [['createdAt', 'DESC']],
+    });
+
+    const transferenciasInternacionales = await TransferenciaInternacional.findAll({
+      where: dateFilter[Op.between] ? { createdAt: dateFilter } : undefined,
+      order: [['createdAt', 'DESC']],
+    });
+
+    const prestamos = await Loan.findAll({
+      where: dateFilter[Op.between] ? { createdAt: dateFilter } : undefined,
+      order: [['createdAt', 'DESC']],
+    });
+
+    const cuotas = await CuotaPrestamo.findAll({
+      where: {
+        pagado: true,
+        ...(dateFilter[Op.between]
+          ? { fechaPago: dateFilter }
+          : {}),
+      },
+      order: [['fechaPago', 'DESC']],
+    });
+
+    const prestamoIds = new Set([...prestamos.map((p) => p.id), ...cuotas.map((c) => c.prestamoId)]);
+    const prestamosExtra = await Loan.findAll({
+      where: { id: { [Op.in]: Array.from(prestamoIds) } },
+      order: [['createdAt', 'DESC']],
+    });
+
+    const userIds = new Set();
+    recargas.forEach((r) => userIds.add(r.usuarioId));
+    retiros.forEach((r) => userIds.add(r.usuarioId));
+    transferencias.forEach((t) => {
+      userIds.add(t.remitenteId);
+      userIds.add(t.destinatarioId);
+    });
+    transferenciasBancarias.forEach((t) => userIds.add(t.usuarioId));
+    transferenciasInternacionales.forEach((t) => userIds.add(t.usuarioId));
+    prestamosExtra.forEach((p) => userIds.add(p.usuarioId));
+
+    const usuarios = await User.findAll({
+      where: { id: { [Op.in]: Array.from(userIds) } },
+      attributes: ['id', 'nombre', 'apellido', 'email'],
+    });
+    const usuariosMap = new Map(usuarios.map((u) => [u.id, u]));
+
+    const prestamosMap = new Map(prestamosExtra.map((p) => [p.id, p]));
+
+    const movimientos = [];
+
+    recargas.forEach((r) => {
+      movimientos.push({
+        fecha: r.createdAt,
+        tipo: 'Recarga',
+        usuario: usuariosMap.get(r.usuarioId),
+        monto: r.montoNeto,
+        moneda: r.metodo === 'paypal' ? 'USD' : 'DOP',
+        estado: r.estado,
+        referencia: r.numeroReferencia,
+        detalle: r.descripcion || r.metodo,
+      });
+    });
+
+    retiros.forEach((r) => {
+      movimientos.push({
+        fecha: r.createdAt,
+        tipo: 'Retiro manual',
+        usuario: usuariosMap.get(r.usuarioId),
+        monto: r.monto,
+        moneda: r.moneda || 'DOP',
+        estado: r.estado,
+        referencia: r.numeroReferencia,
+        detalle: r.banco || 'Retiro en efectivo',
+      });
+    });
+
+    transferencias.forEach((t) => {
+      const remitente = usuariosMap.get(t.remitenteId);
+      const destinatario = usuariosMap.get(t.destinatarioId);
+      movimientos.push({
+        fecha: t.createdAt,
+        tipo: 'Transferencia interna',
+        usuario: remitente,
+        monto: t.monto,
+        moneda: 'DOP',
+        estado: t.estado,
+        referencia: t.id,
+        detalle: `A ${destinatario?.nombre || ''} ${destinatario?.apellido || ''}`.trim(),
+      });
+    });
+
+    transferenciasBancarias.forEach((t) => {
+      movimientos.push({
+        fecha: t.createdAt,
+        tipo: 'Transferencia bancaria',
+        usuario: usuariosMap.get(t.usuarioId),
+        monto: t.monto,
+        moneda: 'DOP',
+        estado: t.estado,
+        referencia: t.codigoReferencia,
+        detalle: t.banco,
+      });
+    });
+
+    transferenciasInternacionales.forEach((t) => {
+      movimientos.push({
+        fecha: t.createdAt,
+        tipo: 'Transferencia internacional',
+        usuario: usuariosMap.get(t.usuarioId),
+        monto: t.monto,
+        moneda: t.monedaDestino || 'USD',
+        estado: t.estado,
+        referencia: t.rapydPayoutId || t.id,
+        detalle: `${t.paisDestino} - ${t.nombreBeneficiario}`,
+      });
+    });
+
+    prestamos.forEach((p) => {
+      movimientos.push({
+        fecha: p.createdAt,
+        tipo: 'Prestamo',
+        usuario: usuariosMap.get(p.usuarioId),
+        monto: p.montoAprobado || p.montoSolicitado,
+        moneda: 'DOP',
+        estado: p.estado,
+        referencia: p.numeroReferencia,
+        detalle: `Plazo ${p.plazo} cuotas`,
+      });
+    });
+
+    cuotas.forEach((c) => {
+      const prestamo = prestamosMap.get(c.prestamoId);
+      movimientos.push({
+        fecha: c.fechaPago,
+        tipo: 'Pago de cuota',
+        usuario: prestamo ? usuariosMap.get(prestamo.usuarioId) : null,
+        monto: c.montoCuota,
+        moneda: 'DOP',
+        estado: c.pagado ? 'pagado' : 'pendiente',
+        referencia: c.referenciaPago,
+        detalle: `Prestamo #${c.prestamoId} cuota ${c.numeroCuota}`,
+      });
+    });
+
+    movimientos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+    res.json({
+      exito: true,
+      total: movimientos.length,
+      movimientos,
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo estado mercantil:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al generar estado mercantil',
+      error: error.message,
     });
   }
 };
