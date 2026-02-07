@@ -444,6 +444,15 @@
   transform: translateY(-2px);
 }
 
+.btn-jpg {
+  background: #1e3a8a;
+}
+
+.btn-jpg:hover {
+  background: #15295f;
+  transform: translateY(-2px);
+}
+
 /* Formulario de pago */
 .formulario-pago {
   display: flex;

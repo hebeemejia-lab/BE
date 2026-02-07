@@ -1,6 +1,30 @@
 import React, { useState, useEffect } from 'react';
+import * as htmlToImage from 'html-to-image';
 import api from '../services/api';
 import './AdminPanel.css';
+
+const descargarImagenDesdeHtml = async (html, nombreArchivo) => {
+  const wrapper = document.createElement('div');
+  wrapper.style.position = 'fixed';
+  wrapper.style.left = '-10000px';
+  wrapper.style.top = '0';
+  wrapper.innerHTML = html;
+  document.body.appendChild(wrapper);
+  const node = wrapper.firstElementChild;
+
+  try {
+    const dataUrl = await htmlToImage.toJpeg(node, {
+      quality: 0.95,
+      backgroundColor: '#f8fafc',
+    });
+    const link = document.createElement('a');
+    link.download = nombreArchivo;
+    link.href = dataUrl;
+    link.click();
+  } finally {
+    document.body.removeChild(wrapper);
+  }
+};
 
 const AdminPanel = () => {
   const [vistaActual, setVistaActual] = useState('dashboard');
@@ -252,6 +276,46 @@ const AdminPanel = () => {
     ventana.print();
   };
 
+  const descargarPrestamoJpg = async (prestamo) => {
+    const logoUrl = `${window.location.origin}/imagen/BE%20(1)%20(1).png`;
+    const monto = parseFloat(prestamo.montoAprobado || prestamo.montoSolicitado || 0).toFixed(2);
+    const html = `
+      <div style="width: 860px; padding: 32px; font-family: 'Space Grotesk', Arial, sans-serif; background: #f8fafc; color: #0f1b3d;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h2 style="margin: 0; color: #0f1b3d;">Banco Exclusivo</h2>
+            <p style="margin: 4px 0 0; color: #64748b;">Factura de Prestamo</p>
+          </div>
+          <img src="${logoUrl}" alt="Banco Exclusivo" style="width: 72px; height: 72px; object-fit: contain;" />
+        </div>
+        <div style="margin-top: 24px; padding: 18px; border-radius: 16px; background: linear-gradient(140deg, #0f1b3d 0%, #b21d2b 120%); color: #f8fafc;">
+          <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Prestamo ID</div>
+          <div style="font-size: 28px; font-weight: 700;">#${prestamo.id}</div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 20px;">
+          <div style="background: white; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 12px; color: #64748b;">Cliente</div>
+            <div style="font-weight: 600;">${prestamo.User?.nombre || ''} ${prestamo.User?.apellido || ''}</div>
+            <div style="font-size: 13px; color: #475569;">${prestamo.User?.email || ''}</div>
+          </div>
+          <div style="background: white; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 12px; color: #64748b;">Fecha</div>
+            <div style="font-weight: 600;">${new Date(prestamo.createdAt).toLocaleDateString()}</div>
+            <div style="font-size: 13px; color: #475569;">Plazo: ${prestamo.plazo} cuotas</div>
+          </div>
+        </div>
+        <div style="margin-top: 20px; background: white; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
+          <div style="font-size: 12px; color: #64748b;">Monto del prestamo</div>
+          <div style="font-size: 32px; font-weight: 700; color: #0f1b3d;">RD$ ${monto}</div>
+          <div style="font-size: 13px; color: #64748b;">Tasa: ${prestamo.tasaInteres}%</div>
+        </div>
+        <div style="margin-top: 28px; text-align: center; font-size: 12px; color: #94a3b8;">Documento generado por Banco Exclusivo</div>
+      </div>
+    `;
+
+    await descargarImagenDesdeHtml(html, `prestamo-${prestamo.id}.jpg`);
+  };
+
   const imprimirPrestamo88 = (prestamo) => {
     const ventana = window.open('', '_blank');
     const monto = parseFloat(prestamo.montoAprobado || prestamo.montoSolicitado || 0).toFixed(2);
@@ -326,6 +390,53 @@ const AdminPanel = () => {
     } catch (error) {
       console.error('Error generando recibo:', error);
       alert('Error al generar recibo');
+    }
+  };
+
+  const descargarReciboJpg = async (cuotaId) => {
+    try {
+      const response = await api.get(`/admin/cuotas/${cuotaId}/recibo`);
+      const recibo = response.data.recibo;
+      const logoUrl = `${window.location.origin}/imagen/BE%20(1)%20(1).png`;
+      const monto = parseFloat(recibo.cuota.monto).toFixed(2);
+      const html = `
+        <div style="width: 860px; padding: 32px; font-family: 'Space Grotesk', Arial, sans-serif; background: #f8fafc; color: #0f1b3d;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h2 style="margin: 0; color: #0f1b3d;">Banco Exclusivo</h2>
+              <p style="margin: 4px 0 0; color: #64748b;">Recibo de Pago</p>
+            </div>
+            <img src="${logoUrl}" alt="Banco Exclusivo" style="width: 72px; height: 72px; object-fit: contain;" />
+          </div>
+          <div style="margin-top: 20px; padding: 18px; border-radius: 16px; background: linear-gradient(140deg, #0f1b3d 0%, #b21d2b 120%); color: #f8fafc;">
+            <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Recibo</div>
+            <div style="font-size: 24px; font-weight: 700;">${recibo.numeroRecibo}</div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 20px;">
+            <div style="background: white; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <div style="font-size: 12px; color: #64748b;">Cliente</div>
+              <div style="font-weight: 600;">${recibo.cliente.nombre}</div>
+              <div style="font-size: 13px; color: #475569;">${recibo.cliente.correo}</div>
+            </div>
+            <div style="background: white; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <div style="font-size: 12px; color: #64748b;">Prestamo</div>
+              <div style="font-weight: 600;">#${recibo.prestamo.id}</div>
+              <div style="font-size: 13px; color: #475569;">Cuota: ${recibo.cuota.numero}</div>
+            </div>
+          </div>
+          <div style="margin-top: 20px; background: white; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 12px; color: #64748b;">Monto pagado</div>
+            <div style="font-size: 28px; font-weight: 700; color: #0f1b3d;">RD$ ${monto}</div>
+            <div style="font-size: 13px; color: #64748b;">Metodo: ${recibo.cuota.metodoPago}</div>
+          </div>
+          <div style="margin-top: 24px; text-align: center; font-size: 12px; color: #94a3b8;">Gracias por su pago</div>
+        </div>
+      `;
+
+      await descargarImagenDesdeHtml(html, `recibo-${recibo.numeroRecibo}.jpg`);
+    } catch (error) {
+      console.error('Error descargando recibo:', error);
+      alert('Error al generar recibo en imagen');
     }
   };
 
@@ -583,6 +694,8 @@ const AdminPanel = () => {
             onRecargarPrestamos={cargarPrestamos}
             usuariosAdmin={usuariosAdmin}
             sandboxMode={sandboxMode}
+            onDescargarPrestamoJpg={descargarPrestamoJpg}
+            onDescargarReciboJpg={descargarReciboJpg}
             onImprimirPrestamo={(prestamo, formato) => {
               if (formato === 'pdf') {
                 imprimirPrestamoPDF(prestamo);
@@ -1169,7 +1282,7 @@ const RetirosEfectivoView = ({ sandboxMode }) => {
 };
 
 // Componente Préstamos
-const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPrestamo, onImprimirPrestamo, usuariosAdmin, onBuscarPrestamo, onRecargarPrestamos, sandboxMode }) => {
+const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPrestamo, onImprimirPrestamo, usuariosAdmin, onBuscarPrestamo, onRecargarPrestamos, sandboxMode, onDescargarPrestamoJpg, onDescargarReciboJpg }) => {
   const [prestamoExpandido, setPrestamoExpandido] = useState(null);
   const [nuevoPrestamo, setNuevoPrestamo] = useState({
     usuarioId: '',
@@ -1312,6 +1425,8 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
               onRegistrarPago={onRegistrarPago}
               onImprimirRecibo={onImprimirRecibo}
               onImprimirPrestamo={onImprimirPrestamo}
+              onDescargarPrestamoJpg={onDescargarPrestamoJpg}
+              onDescargarReciboJpg={onDescargarReciboJpg}
             />
           ))}
         </div>
@@ -1321,7 +1436,7 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
 };
 
 // Componente Préstamo Card
-const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprimirRecibo, onImprimirPrestamo }) => {
+const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprimirRecibo, onImprimirPrestamo, onDescargarPrestamoJpg, onDescargarReciboJpg }) => {
   const [mostrarFormularioPago, setMostrarFormularioPago] = useState(null);
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [referencia, setReferencia] = useState('');
@@ -1379,6 +1494,15 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
               📄 Factura PDF
             </button>
             <button
+              className="btn-imprimir btn-jpg"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDescargarPrestamoJpg(prestamo);
+              }}
+            >
+              🖼️ Factura JPG
+            </button>
+            <button
               className="btn-imprimir btn-factura88"
               onClick={(e) => {
                 e.stopPropagation();
@@ -1412,6 +1536,13 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
                         title="Imprimir en PDF"
                       >
                         📄 PDF
+                      </button>
+                      <button 
+                        className="btn-imprimir btn-jpg"
+                        onClick={() => onDescargarReciboJpg(cuota.id)}
+                        title="Descargar JPG"
+                      >
+                        🖼️ JPG
                       </button>
                       <button 
                         className="btn-imprimir btn-factura88"
