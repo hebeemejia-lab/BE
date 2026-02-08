@@ -71,29 +71,19 @@
   transition: left 0.3s ease;
 }
 
-.hamburger span {
-  display: block;
+
+.hamburger-icon {
   width: 28px;
-  height: 3px;
-  background-color: #ffffff;
-  border-radius: 3px;
-  transition: all 0.3s ease;
+  height: 28px;
+  object-fit: contain;
 }
 
 .hamburger.active {
   left: 270px;
 }
 
-.hamburger.active span:nth-child(1) {
-  transform: rotate(45deg) translate(8px, 8px);
-}
-
-.hamburger.active span:nth-child(2) {
-  opacity: 0;
-}
-
-.hamburger.active span:nth-child(3) {
-  transform: rotate(-45deg) translate(7px, -7px);
+.hamburger.active .hamburger-icon {
+  transform: scale(1.05);
 }
 
 .navbar-right {
@@ -518,8 +508,9 @@
     font-size: 14px;
   }
 
-  .hamburger span {
+  .hamburger-icon {
     width: 24px;
+    height: 24px;
   }
 
   .navbar-right {
