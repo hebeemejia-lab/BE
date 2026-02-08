@@ -314,6 +314,156 @@
   opacity: 0.6;
 }
 
+.gpay-button {
+  width: 100%;
+  max-width: 420px;
+  margin: 10px auto 20px;
+  padding: 14px 18px;
+  border: none;
+  border-radius: 10px;
+  background: #000;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+.gpay-label {
+  letter-spacing: 0.2px;
+}
+
+.gpay-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 12000;
+}
+
+.gpay-sheet {
+  width: min(420px, 92vw);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25);
+  padding: 18px 20px 16px;
+}
+
+.gpay-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 14px;
+}
+
+.gpay-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.gpay-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: conic-gradient(#4285f4 0 25%, #34a853 25% 50%, #fbbc05 50% 75%, #ea4335 75% 100%);
+}
+
+.gpay-close {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  color: #64748b;
+}
+
+.gpay-sheet-body {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.gpay-merchant {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.gpay-merchant-name {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.gpay-merchant-sub {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.gpay-total {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.gpay-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.95rem;
+  color: #1e293b;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+.gpay-row-stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.gpay-select {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  background: #fff;
+  color: #0f172a;
+}
+
+.gpay-confirm {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 16px;
+  background: #111827;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gpay-footnote {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 10px;
+}
+
 /* Loading Overlay */
 .loading-overlay {
   position: absolute;

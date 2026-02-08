@@ -84,12 +84,35 @@ const crearRecargaRapyd = async (req, res) => {
     const usuarioId = req.usuario.id;
     const usuario = await User.findByPk(usuarioId);
 
-    if (!monto || monto <= 0) {
+    if (monto === undefined || monto === null || monto === '') {
+      return res.status(400).json({ mensaje: 'Monto es requerido' });
+    }
+
+    const montoNumerico = parseFloat(monto);
+    if (isNaN(montoNumerico) || !isFinite(montoNumerico) || montoNumerico <= 0) {
       return res.status(400).json({ mensaje: 'Monto debe ser mayor a 0' });
+    }
+
+    if (montoNumerico < SISTEMA_MONTO_MINIMO) {
+      return res.status(400).json({
+        mensaje: `Monto minimo es $${SISTEMA_MONTO_MINIMO.toFixed(2)} USD`
+      });
+    }
+
+    if (montoNumerico > PAYPAL_MONTO_MAXIMO) {
+      return res.status(400).json({
+        mensaje: `Monto maximo es $${PAYPAL_MONTO_MAXIMO.toFixed(2)} USD`
+      });
     }
 
     if (!usuario) {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+    }
+
+    const comision = calcularComisionRecarga();
+    const montoNeto = calcularMontoNeto(montoNumerico, comision);
+    if (montoNeto <= 0) {
+      return res.status(400).json({ mensaje: 'Monto insuficiente para cubrir la comision' });
     }
 
     // Crear recarga pendiente en BD

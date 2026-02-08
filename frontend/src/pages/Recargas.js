@@ -15,6 +15,9 @@ export default function Recargas() {
   const [backendStatus, setBackendStatus] = useState('checking');
   const paypalButtonRef = useRef(null);
   const recargaIdRef = useRef(null);
+  const [googlePayStep, setGooglePayStep] = useState('start');
+  const [googlePayCard, setGooglePayCard] = useState('visa-4242');
+  const [googlePayAddress, setGooglePayAddress] = useState('home');
 
   // Verificar estado del backend al cargar
   useEffect(() => {
@@ -472,6 +475,71 @@ export default function Recargas() {
     }
   };
 
+  const handlePagoWallet = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      const montoNum = parseFloat(monto);
+      if (!montoNum || montoNum <= 0 || montoNum < 1) {
+        setError('El monto debe ser mayor a $1 USD');
+        return;
+      }
+
+      if (montoNum > 10000) {
+        setError('El monto máximo por transacción es $10,000 USD');
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Debes estar autenticado para recargar');
+        return;
+      }
+
+      const response = await axios.post(
+        `${API_URL}/recargas/crear-rapyd`,
+        { monto: montoNum },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const checkoutUrl = response.data.checkoutUrl;
+      if (!checkoutUrl) {
+        setError('El servidor no proporcionó URL de pago. Intenta de nuevo.');
+        return;
+      }
+
+      setSuccess('✅ Redirigiendo a Wallet...');
+      setTimeout(() => {
+        window.location.href = checkoutUrl;
+      }, 1200);
+    } catch (err) {
+      const mensajeError = err.response?.data?.mensaje || err.response?.data?.error || err.message || 'Error creando pago Wallet';
+      setError(`Error: ${mensajeError}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const iniciarGooglePayMock = () => {
+    setGooglePayStep('sheet');
+  };
+
+  const confirmarGooglePayMock = () => {
+    setGooglePayStep('success');
+  };
+
+  const reiniciarGooglePayMock = () => {
+    setGooglePayStep('start');
+  };
+
   return (
     <div className="recargas-container">
       {/* Header */}
@@ -487,6 +555,18 @@ export default function Recargas() {
           onClick={() => setActiveTab('tarjeta')}
         >
           🅿️ Pagar con PayPal
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'googlepay' ? 'active' : ''}`}
+          onClick={() => setActiveTab('googlepay')}
+        >
+          🟢 Google Pay
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'wallet' ? 'active' : ''}`}
+          onClick={() => setActiveTab('wallet')}
+        >
+          📱 Wallet
         </button>
         <button
           className={`tab-button ${activeTab === 'codigo' ? 'active' : ''}`}
@@ -610,6 +690,189 @@ export default function Recargas() {
                   </ul>
                 </div>
 
+                <div className="info-limits">
+                  <p><strong>Límites de Recarga:</strong></p>
+                  <p>Mínimo: USD $1.00 | Máximo: USD $10,000.00</p>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: Google Pay (Mock) */}
+      {activeTab === 'googlepay' && (
+        <div className="payment-container">
+          <div className="payment-card">
+            <div className="card-title">
+              <h2>Google Pay</h2>
+              <p className="card-subtitle">Flujo de compra para revision</p>
+            </div>
+
+            <form onSubmit={(e) => e.preventDefault()} className="payment-form">
+              <div className="form-section">
+                <label htmlFor="monto-gpay" className="monto-label">¿Cuanto deseas recargar?</label>
+                <div className="monto-input-group">
+                  <span className="currency-prefix">USD $</span>
+                  <input
+                    id="monto-gpay"
+                    type="number"
+                    value={monto}
+                    onChange={(e) => setMonto(e.target.value)}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="1"
+                    max="10000"
+                    required
+                    className="monto-input"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="gpay-button"
+                onClick={iniciarGooglePayMock}
+              >
+                <span className="gpay-label">Google Pay</span>
+              </button>
+
+              {googlePayStep === 'success' && (
+                <div className="status-indicator success">
+                  <span className="status-icon">✅</span>
+                  <span>Pago completado (mock)</span>
+                </div>
+              )}
+            </form>
+          </div>
+
+          {googlePayStep === 'sheet' && (
+            <div className="gpay-overlay" role="dialog" aria-modal="true">
+              <div className="gpay-sheet">
+                <div className="gpay-sheet-header">
+                  <div className="gpay-brand">
+                    <span className="gpay-dot"></span>
+                    <span>Google Pay</span>
+                  </div>
+                  <button type="button" className="gpay-close" onClick={reiniciarGooglePayMock}>
+                    ✕
+                  </button>
+                </div>
+                <div className="gpay-merchant">
+                  <div>
+                    <div className="gpay-merchant-name">Banco Exclusivo</div>
+                    <div className="gpay-merchant-sub">Recarga de saldo</div>
+                  </div>
+                  <div className="gpay-total">USD ${parseFloat(monto || 0).toFixed(2)}</div>
+                </div>
+                <div className="gpay-sheet-body">
+                  <div className="gpay-row gpay-row-stack">
+                    <span>Tarjeta</span>
+                    <select
+                      className="gpay-select"
+                      value={googlePayCard}
+                      onChange={(e) => setGooglePayCard(e.target.value)}
+                    >
+                      <option value="visa-4242">Visa •••• 4242</option>
+                      <option value="master-1111">Mastercard •••• 1111</option>
+                      <option value="amex-0005">Amex •••• 0005</option>
+                    </select>
+                  </div>
+                  <div className="gpay-row gpay-row-stack">
+                    <span>Direccion</span>
+                    <select
+                      className="gpay-select"
+                      value={googlePayAddress}
+                      onChange={(e) => setGooglePayAddress(e.target.value)}
+                    >
+                      <option value="home">Casa - Avenida Central 123</option>
+                      <option value="office">Oficina - Torre Norte, Piso 4</option>
+                    </select>
+                  </div>
+                  <div className="gpay-row">
+                    <span>Entrega</span>
+                    <strong>Instantaneo</strong>
+                  </div>
+                </div>
+                <button type="button" className="gpay-confirm" onClick={confirmarGooglePayMock}>
+                  Confirmar pago
+                </button>
+                <div className="gpay-footnote">No se comparte tu numero real de tarjeta.</div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB: Wallet */}
+      {activeTab === 'wallet' && (
+        <div className="payment-container">
+          <div className="payment-card">
+            <div className="card-title">
+              <h2>Wallet (Tarjetas y bancos)</h2>
+              <p className="card-subtitle">Paga desde tu móvil con tarjeta o banco local</p>
+            </div>
+
+            <form onSubmit={handlePagoWallet} className="payment-form">
+              <div className="form-section">
+                <label htmlFor="monto-wallet" className="monto-label">¿Cuánto deseas recargar?</label>
+                <div className="monto-input-group">
+                  <span className="currency-prefix">USD $</span>
+                  <input
+                    id="monto-wallet"
+                    type="number"
+                    value={monto}
+                    onChange={(e) => setMonto(e.target.value)}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="1"
+                    max="10000"
+                    required
+                    className="monto-input"
+                  />
+                </div>
+                {monto && (
+                  <div className="monto-summary">
+                    <p className="summary-text">
+                      Pagarás: <span className="summary-amount">USD ${parseFloat(monto || 0).toFixed(2)}</span>
+                    </p>
+                    <p className="summary-info">El proveedor mostrará métodos disponibles según tu banco</p>
+                  </div>
+                )}
+              </div>
+
+              <button type="submit" className="btn-payment" disabled={loading}>
+                {loading ? (
+                  <>
+                    <span className="spinner">⏳</span>
+                    <span>Procesando...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>📱</span>
+                    <span>Proceder a Wallet</span>
+                  </>
+                )}
+              </button>
+
+              <div className="payment-info">
+                <div className="info-section">
+                  <h3>✅ Métodos compatibles</h3>
+                  <div className="payment-methods">
+                    <span className="method">💳 Visa / MasterCard</span>
+                    <span className="method">🏦 Bancos locales</span>
+                    <span className="method">📱 Wallet móvil</span>
+                  </div>
+                </div>
+                <div className="info-section">
+                  <h3>⚡ Flujo rápido</h3>
+                  <ul className="process-list">
+                    <li>1️⃣ Ingresa el monto</li>
+                    <li>2️⃣ Elige tarjeta o banco</li>
+                    <li>3️⃣ Confirma desde tu móvil</li>
+                    <li>4️⃣ Listo, saldo disponible</li>
+                  </ul>
+                </div>
                 <div className="info-limits">
                   <p><strong>Límites de Recarga:</strong></p>
                   <p>Mínimo: USD $1.00 | Máximo: USD $10,000.00</p>
