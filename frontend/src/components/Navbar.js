@@ -48,9 +48,11 @@ export default function Navbar() {
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label="Menú"
             >
-              <span></span>
-              <span></span>
-              <span></span>
+              <img
+                src="/imagen/BE (17).png"
+                alt="Menu"
+                className="hamburger-icon"
+              />
             </button>
           )}
         </div>
