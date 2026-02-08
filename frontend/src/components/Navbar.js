@@ -71,7 +71,7 @@ export default function Navbar() {
               
               <div className="navbar-links">
                 <Link to="/dashboard" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
-                  <img src="/imagen/BE (9).png" alt="Dashboard" className="nav-icon" />
+                  <img src="/imagen/BE (17).png" alt="Dashboard" className="nav-icon" />
                   Dashboard
                 </Link>
                 <Link to="/recargas" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
