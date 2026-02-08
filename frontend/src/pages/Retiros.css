@@ -97,13 +97,13 @@
 .retiros-container {
   min-height: 100vh;
   background: transparent;
-  padding: 0;
+  padding: 20px 16px 40px;
   display: flex;
   flex-direction: column;
   gap: 30px;
   align-items: center;
   width: 100%;
-  max-width: 700px;
+  max-width: 1040px;
   margin: 0 auto;
 }
 
@@ -481,6 +481,10 @@
   .historial-card {
     margin: 0;
     border-radius: 0;
+  }
+
+  .retiros-container {
+    padding: 0 0 24px;
   }
 
   .form-section {
