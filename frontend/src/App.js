@@ -113,7 +113,7 @@ function App() {
             }
           />
           <Route
-            path="/admin"
+            path="/admin/*"
             element={
               <ProtectedRoute>
                 <AdminPanel />

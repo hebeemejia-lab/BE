@@ -63,6 +63,72 @@
   overflow-y: auto;
 }
 
+.admin-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: none;
+  background: #0f1b3d;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 6px 12px rgba(15, 23, 42, 0.2);
+}
+
+.admin-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #475569;
+  font-weight: 600;
+}
+
+.admin-breadcrumb-root {
+  color: #0f1b3d;
+}
+
+.admin-breadcrumb-sep {
+  color: #94a3b8;
+}
+
+.admin-breadcrumb-current {
+  color: #1e3a8a;
+}
+
+.admin-back {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  background: #e2e8f0;
+  color: #0f1b3d;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.admin-back:hover {
+  background: #cbd5f5;
+  transform: translateY(-1px);
+}
+
+.admin-sidebar-overlay {
+  display: none;
+  border: none;
+  background: rgba(15, 23, 42, 0.45);
+}
+
 .admin-loading {
   text-align: center;
   padding: 50px;
@@ -251,6 +317,43 @@
 .btn-crear:hover {
   background: #8f1722;
   transform: translateY(-1px);
+}
+
+.clientes-toggle {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 12px;
+}
+
+.clientes-toggle-btn {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  background: #0f1b3d;
+  color: #fff;
+  padding: 12px 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.clientes-toggle-btn:hover {
+  background: #15295f;
+}
+
+.clientes-toggle-icon {
+  font-size: 18px;
+}
+
+.cliente-crear.collapsed .cliente-form {
+  display: none;
+}
+
+.cliente-crear.collapsed h3 {
+  margin-bottom: 0;
 }
 
 .prestamo-card {
@@ -775,6 +878,12 @@
   color: #991b1b;
 }
 
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .acciones .btn-aprobar,
 .acciones .btn-rechazar {
   border: none;
@@ -782,7 +891,6 @@
   padding: 8px 12px;
   cursor: pointer;
   font-weight: 600;
-  margin-right: 6px;
 }
 
 .acciones .btn-aprobar {
@@ -932,6 +1040,38 @@
   font-weight: bold;
 }
 
+.btn-facturar {
+  background: #1e3a8a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-facturar:hover {
+  background: #15295f;
+}
+
+.btn-facturar-jpg {
+  background: #0f766e;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-facturar-jpg:hover {
+  background: #115e59;
+}
+
 .cliente-item {
   background: white;
   border-radius: 10px;
@@ -959,11 +1099,49 @@
   }
 
   .admin-sidebar {
-    width: 100%;
+    position: fixed;
+    top: 65px;
+    left: 0;
+    height: calc(100vh - 65px);
+    width: 260px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 10002;
+  }
+
+  .admin-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .admin-sidebar-overlay {
+    display: block;
+    position: fixed;
+    top: 65px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10001;
   }
 
   .admin-content {
     padding: 20px;
+  }
+
+  .admin-menu-toggle {
+    display: inline-flex;
+  }
+
+  .admin-topbar {
+    position: sticky;
+    top: 0;
+    background: #f5f7fa;
+    padding: 10px 0;
+    z-index: 1000;
+  }
+
+  .admin-back {
+    font-size: 12px;
+    padding: 6px 10px;
   }
 
   .prestamo-header {
@@ -993,5 +1171,24 @@
 
   .cliente-form {
     grid-template-columns: 1fr;
+  }
+
+  .clientes-toggle {
+    display: none;
+  }
+
+  .cliente-crear.collapsed .cliente-form {
+    display: grid;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-sidebar {
+    top: 58px;
+    height: calc(100vh - 58px);
+  }
+
+  .admin-sidebar-overlay {
+    top: 58px;
   }
 }

@@ -250,3 +250,64 @@
     font-size: 28px;
   }
 }
+
+@media (max-width: 480px) {
+  .hero-section {
+    padding: 56px 16px;
+  }
+
+  .hero-title {
+    font-size: 28px;
+  }
+
+  .hero-subtitle {
+    font-size: 16px;
+    margin-bottom: 28px;
+  }
+
+  .hero-features {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .feature-button {
+    padding: 14px;
+    font-size: 14px;
+  }
+
+  .feature-button .button-icon {
+    font-size: 30px;
+  }
+
+  .hero-buttons {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 12px 20px;
+  }
+
+  .features-section,
+  .info-section {
+    padding: 56px 16px;
+  }
+
+  .features-section h2,
+  .info-section h2 {
+    font-size: 24px;
+  }
+
+  .features-grid,
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .feature-card,
+  .info-card {
+    padding: 24px;
+  }
+}
