@@ -24,6 +24,8 @@ export default function Retiros() {
   const [verificationStep, setVerificationStep] = useState('email'); // 'email' or 'code'
   const [verificationCode, setVerificationCode] = useState('');
   const [sentCode, setSentCode] = useState('');
+  const [retiroFormOpen, setRetiroFormOpen] = useState(true);
+  const [historialOpen, setHistorialOpen] = useState(true);
 
   // Cargar cuentas vinculadas al montar
   React.useEffect(() => {
@@ -194,117 +196,129 @@ export default function Retiros() {
           <h3>${parseFloat(usuario?.saldo || 0).toFixed(2)}</h3>
         </div>
 
-        {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>}
+        <div className="retiros-toggle">
+          <button
+            type="button"
+            className={`retiros-toggle-btn ${retiroFormOpen ? 'open' : ''}`}
+            onClick={() => setRetiroFormOpen((prev) => !prev)}
+          >
+            Solicitud de retiro
+            <span className="retiros-toggle-icon">{retiroFormOpen ? '−' : '+'}</span>
+          </button>
+        </div>
 
-        {/* Información de la cuenta bancaria principal */}
-        {cuentaPrincipal && (
-          <div className="cuenta-principal-info">
-            <div className="info-header">
-              <h4>🏦 Cuenta Principal para Retiros</h4>
-            </div>
-            <div className="info-grid">
-              <div className="info-item">
-                <span className="label">Banco:</span>
-                <span className="value">{cuentaPrincipal.banco}</span>
-              </div>
-              <div className="info-item">
-                <span className="label">Titular:</span>
-                <span className="value">{cuentaPrincipal.nombreTitular}</span>
-              </div>
-              <div className="info-item">
-                <span className="label">Tipo de Cuenta:</span>
-                <span className="value">{cuentaPrincipal.tipoCuenta}</span>
-              </div>
-              <div className="info-item">
-                <span className="label">Número de Cuenta:</span>
-                <span className="value">{cuentaPrincipal.numeroCuenta}</span>
-              </div>
-              <div className="info-item">
-                <span className="label">Email:</span>
-                <span className="value">{cuentaPrincipal.email}</span>
-              </div>
-              <div className="info-item">
-                <span className="label">Monedas:</span>
-                <span className="value">{cuentaPrincipal.monedas.join(', ')}</span>
-              </div>
-            </div>
-          </div>
-        )}
+        <div className={`retiros-section ${retiroFormOpen ? 'open' : 'collapsed'}`}>
+          {error && <div className="error-message">{error}</div>}
+          {success && <div className="success-message">{success}</div>}
 
-        {/* Verificación de identidad antes de mostrar el formulario */}
-        {!verificado ? (
-          <div className="verification-section">
-            {verificationStep === 'email' ? (
-              <form className="form-section" onSubmit={async (e) => {
-                e.preventDefault();
-                if (emailInput === usuario?.email) {
-                  // Generate random 6-digit code
-                  const code = Math.floor(100000 + Math.random() * 900000).toString();
-                  setSentCode(code);
-                  setVerificationStep('code');
-                  setError('');
-                  setSuccess(`Código de verificación enviado a ${emailInput}: ${code}`);
-                  // In production, this would send an actual email
-                } else {
-                  setError('El email no coincide con tu cuenta. Intenta de nuevo.');
-                }
-              }}>
-                <div className="form-group">
-                  <label>Verifica tu identidad con tu email</label>
-                  <input
-                    type="email"
-                    className="verification-email-input"
-                    placeholder="Ingresa tu email"
-                    value={emailInput}
-                    onChange={e => setEmailInput(e.target.value)}
-                    autoFocus
-                    required
-                  />
+          {/* Información de la cuenta bancaria principal */}
+          {cuentaPrincipal && (
+            <div className="cuenta-principal-info">
+              <div className="info-header">
+                <h4>🏦 Cuenta Principal para Retiros</h4>
+              </div>
+              <div className="info-grid">
+                <div className="info-item">
+                  <span className="label">Banco:</span>
+                  <span className="value">{cuentaPrincipal.banco}</span>
                 </div>
-                <button type="submit" className="btn-submit">Enviar Código</button>
-              </form>
-            ) : (
-              <form className="form-section" onSubmit={(e) => {
-                e.preventDefault();
-                if (verificationCode === sentCode) {
-                  setVerificado(true);
-                  setError('');
-                  setSuccess('Verificación exitosa. Ahora puedes retirar fondos.');
-                } else {
-                  setError('Código incorrecto. Intenta de nuevo.');
-                }
-              }}>
-                <div className="form-group">
-                  <label>Ingresa el código de verificación</label>
-                  <input
-                    type="text"
-                    className="verification-code-input"
-                    placeholder="Ingresa el código de 6 dígitos"
-                    value={verificationCode}
-                    onChange={e => setVerificationCode(e.target.value)}
-                    maxLength={6}
-                    autoFocus
-                    required
-                  />
-                  <small>Código enviado a: {emailInput}</small>
+                <div className="info-item">
+                  <span className="label">Titular:</span>
+                  <span className="value">{cuentaPrincipal.nombreTitular}</span>
                 </div>
-                <button type="submit" className="btn-submit">Verificar Código</button>
-                <button 
-                  type="button" 
-                  className="btn-secondary"
-                  onClick={() => {
-                    setVerificationStep('email');
-                    setVerificationCode('');
-                  }}
-                >
-                  Volver a enviar código
-                </button>
-              </form>
-            )}
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="form-section">
+                <div className="info-item">
+                  <span className="label">Tipo de Cuenta:</span>
+                  <span className="value">{cuentaPrincipal.tipoCuenta}</span>
+                </div>
+                <div className="info-item">
+                  <span className="label">Número de Cuenta:</span>
+                  <span className="value">{cuentaPrincipal.numeroCuenta}</span>
+                </div>
+                <div className="info-item">
+                  <span className="label">Email:</span>
+                  <span className="value">{cuentaPrincipal.email}</span>
+                </div>
+                <div className="info-item">
+                  <span className="label">Monedas:</span>
+                  <span className="value">{cuentaPrincipal.monedas.join(', ')}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Verificación de identidad antes de mostrar el formulario */}
+          {!verificado ? (
+            <div className="verification-section">
+              {verificationStep === 'email' ? (
+                <form className="form-section" onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (emailInput === usuario?.email) {
+                    // Generate random 6-digit code
+                    const code = Math.floor(100000 + Math.random() * 900000).toString();
+                    setSentCode(code);
+                    setVerificationStep('code');
+                    setError('');
+                    setSuccess(`Código de verificación enviado a ${emailInput}: ${code}`);
+                    // In production, this would send an actual email
+                  } else {
+                    setError('El email no coincide con tu cuenta. Intenta de nuevo.');
+                  }
+                }}>
+                  <div className="form-group">
+                    <label>Verifica tu identidad con tu email</label>
+                    <input
+                      type="email"
+                      className="verification-email-input"
+                      placeholder="Ingresa tu email"
+                      value={emailInput}
+                      onChange={e => setEmailInput(e.target.value)}
+                      autoFocus
+                      required
+                    />
+                  </div>
+                  <button type="submit" className="btn-submit">Enviar Código</button>
+                </form>
+              ) : (
+                <form className="form-section" onSubmit={(e) => {
+                  e.preventDefault();
+                  if (verificationCode === sentCode) {
+                    setVerificado(true);
+                    setError('');
+                    setSuccess('Verificación exitosa. Ahora puedes retirar fondos.');
+                  } else {
+                    setError('Código incorrecto. Intenta de nuevo.');
+                  }
+                }}>
+                  <div className="form-group">
+                    <label>Ingresa el código de verificación</label>
+                    <input
+                      type="text"
+                      className="verification-code-input"
+                      placeholder="Ingresa el código de 6 dígitos"
+                      value={verificationCode}
+                      onChange={e => setVerificationCode(e.target.value)}
+                      maxLength={6}
+                      autoFocus
+                      required
+                    />
+                    <small>Código enviado a: {emailInput}</small>
+                  </div>
+                  <button type="submit" className="btn-submit">Verificar Código</button>
+                  <button 
+                    type="button" 
+                    className="btn-secondary"
+                    onClick={() => {
+                      setVerificationStep('email');
+                      setVerificationCode('');
+                    }}
+                  >
+                    Volver a enviar código
+                  </button>
+                </form>
+              )}
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="form-section">
             {/* Monto */}
             <div className="form-group">
               <label>Monto a retirar</label>
@@ -432,54 +446,67 @@ export default function Retiros() {
               </ul>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading || !formData.monto || !formData.cuentaId}
-              className="btn-submit"
-            >
-              {loading ? 'Procesando...' : `Retirar ${monedaSeleccionada?.simbolo}${parseFloat(formData.monto || 0).toFixed(2)}`}
-            </button>
-          </form>
-        )}
+              <button
+                type="submit"
+                disabled={loading || !formData.monto || !formData.cuentaId}
+                className="btn-submit"
+              >
+                {loading ? 'Procesando...' : `Retirar ${monedaSeleccionada?.simbolo}${parseFloat(formData.monto || 0).toFixed(2)}`}
+              </button>
+            </form>
+          )}
+        </div>
 
       </div>
 
       {/* Historial */}
       <div className="historial-card">
-        <h3>Últimos Retiros</h3>
-        <div className="historial-tabla">
-          {retirosLoading ? (
-            <div className="loading-spinner">Cargando historial...</div>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Monto</th>
-                  <th>Moneda</th>
-                  <th>Cuenta</th>
-                  <th>Estado</th>
-                  <th>Referencia</th>
-                </tr>
-              </thead>
-              <tbody>
-                {retiros.length === 0 ? (
+        <div className="retiros-toggle">
+          <button
+            type="button"
+            className={`retiros-toggle-btn ${historialOpen ? 'open' : ''}`}
+            onClick={() => setHistorialOpen((prev) => !prev)}
+          >
+            Ultimos retiros
+            <span className="retiros-toggle-icon">{historialOpen ? '−' : '+'}</span>
+          </button>
+        </div>
+        <div className={`retiros-section ${historialOpen ? 'open' : 'collapsed'}`}>
+          <h3>Últimos Retiros</h3>
+          <div className="historial-tabla">
+            {retirosLoading ? (
+              <div className="loading-spinner">Cargando historial...</div>
+            ) : (
+              <table>
+                <thead>
                   <tr>
-                    <td colSpan="5">No hay retiros registrados</td>
+                    <th>Monto</th>
+                    <th>Moneda</th>
+                    <th>Cuenta</th>
+                    <th>Estado</th>
+                    <th>Referencia</th>
                   </tr>
-                ) : (
-                  retiros.map((r) => (
-                    <tr key={r.id}>
-                      <td>{r.monto}</td>
-                      <td>{r.descripcion?.split(' - ')[1] || '-'}</td>
-                      <td>{r.numeroTarjeta ? `****${r.numeroTarjeta}` : '-'}</td>
-                      <td>{r.estado}</td>
-                      <td>{r.numeroReferencia}</td>
+                </thead>
+                <tbody>
+                  {retiros.length === 0 ? (
+                    <tr>
+                      <td colSpan="5">No hay retiros registrados</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
+                  ) : (
+                    retiros.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.monto}</td>
+                        <td>{r.descripcion?.split(' - ')[1] || '-'}</td>
+                        <td>{r.numeroTarjeta ? `****${r.numeroTarjeta}` : '-'}</td>
+                        <td>{r.estado}</td>
+                        <td>{r.numeroReferencia}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       </div>
     </div>
