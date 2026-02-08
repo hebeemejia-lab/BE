@@ -9,6 +9,7 @@ export default function Retiros() {
     monto: '',
     moneda: 'USD', // USD, DOP, EUR
     cuentaId: '',
+    metodoRetiro: 'transferencia_manual',
   });
   const [cuentas, setCuentas] = useState([]);
   const [cuentaPrincipal, setCuentaPrincipal] = useState(null);
@@ -114,30 +115,19 @@ export default function Retiros() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/retiros/procesar', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          monto: parseFloat(formData.monto),
-          moneda: formData.moneda,
-          cuentaId: parseInt(formData.cuentaId),
-        }),
+      const { data } = await retiroAPI.procesar({
+        monto: parseFloat(formData.monto),
+        moneda: formData.moneda,
+        cuentaId: parseInt(formData.cuentaId),
+        metodoRetiro: formData.metodoRetiro,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.mensaje || 'Error procesando retiro');
-      }
 
       setSuccess(`✓ Retiro exitoso. -$${formData.monto} ${formData.moneda}. Ref: ${data.numeroReferencia}`);
       setFormData({
         monto: '',
         moneda: 'USD',
         cuentaId: formData.cuentaId,
+        metodoRetiro: formData.metodoRetiro,
       });
 
       // Refrescar historial de retiros y saldo
@@ -371,6 +361,39 @@ export default function Retiros() {
               </div>
             </div>
 
+            {/* Metodo de retiro */}
+            <div className="form-group">
+              <label>Metodo de retiro</label>
+              <div className="moneda-selector">
+                <label className="moneda-option">
+                  <input
+                    type="radio"
+                    name="metodoRetiro"
+                    value="transferencia_manual"
+                    checked={formData.metodoRetiro === 'transferencia_manual'}
+                    onChange={handleChange}
+                  />
+                  <span className="moneda-label">
+                    <strong>Retiro en efectivo</strong>
+                    <small>Se valida y aprueba por el admin</small>
+                  </span>
+                </label>
+                <label className="moneda-option">
+                  <input
+                    type="radio"
+                    name="metodoRetiro"
+                    value="paypal_payout"
+                    checked={formData.metodoRetiro === 'paypal_payout'}
+                    onChange={handleChange}
+                  />
+                  <span className="moneda-label">
+                    <strong>PayPal Payout</strong>
+                    <small>Transferencia automatica</small>
+                  </span>
+                </label>
+              </div>
+            </div>
+
             {/* Cuenta Bancaria */}
             <div className="form-group">
               <label>Cuenta de Destino</label>
@@ -398,8 +421,12 @@ export default function Retiros() {
             <div className="info-box">
               <h4>ℹ️ Información de Retiro</h4>
               <ul>
-                <li>✓ Transferencia a 1-2 días hábiles</li>
-                <li>✓ Sin comisión de retiro</li>
+                <li>
+                  ✓ {formData.metodoRetiro === 'transferencia_manual'
+                    ? 'Se procesa manualmente tras aprobacion'
+                    : 'Transferencia a 1-2 dias habiles'}
+                </li>
+                <li>✓ Sin comision de retiro</li>
                 <li>✓ Monto máximo: ${parseFloat(usuario?.saldo || 0).toFixed(2)}</li>
                 <li>✓ Número de referencia para seguimiento</li>
               </ul>
