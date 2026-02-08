@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { bankAccountAPI, retiroAPI } from '../services/api';
 import './Retiros.css';
@@ -26,6 +26,7 @@ export default function Retiros() {
   const [sentCode, setSentCode] = useState('');
   const [retiroFormOpen, setRetiroFormOpen] = useState(true);
   const [historialOpen, setHistorialOpen] = useState(true);
+  const retiroFormRef = useRef(null);
 
   // Cargar cuentas vinculadas al montar
   React.useEffect(() => {
@@ -37,6 +38,9 @@ export default function Retiros() {
   React.useEffect(() => {
     if (verificado) {
       setRetiroFormOpen(true);
+      requestAnimationFrame(() => {
+        retiroFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
     }
   }, [verificado]);
 
@@ -324,7 +328,7 @@ export default function Retiros() {
               )}
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="form-section">
+            <form onSubmit={handleSubmit} className="form-section" ref={retiroFormRef}>
             {/* Monto */}
             <div className="form-group">
               <label>Monto a retirar</label>
