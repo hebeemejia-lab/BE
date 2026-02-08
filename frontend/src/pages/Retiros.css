@@ -122,6 +122,37 @@
   width: 100%;
 }
 
+.retiros-toggle {
+  padding: 20px 30px 0;
+}
+
+.retiros-toggle-btn {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  background: #0f1b3d;
+  color: #fff;
+  padding: 12px 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.retiros-toggle-btn:hover {
+  background: #15295f;
+}
+
+.retiros-toggle-icon {
+  font-size: 18px;
+}
+
+.retiros-section.collapsed {
+  display: none;
+}
+
 .card-header {
   background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
   color: white;
@@ -493,5 +524,9 @@
 
   .card-header {
     padding: 20px;
+  }
+
+  .retiros-toggle {
+    padding: 16px 20px 0;
   }
 }
