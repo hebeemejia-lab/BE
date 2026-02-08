@@ -24,8 +24,9 @@ const verificarAdmin = async (req, res, next) => {
       });
     }
 
-    // Verificar que sea admin
-    if (usuario.rol !== 'admin') {
+    // Verificar que sea admin o admin_lite
+    const rolesPermitidos = new Set(['admin', 'admin_lite']);
+    if (!rolesPermitidos.has(usuario.rol)) {
       return res.status(403).json({ 
         error: 'Acceso denegado. Se requieren privilegios de administrador.' 
       });

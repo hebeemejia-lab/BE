@@ -116,6 +116,8 @@
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 26, 77, 0.15);
   overflow: visible;
+  display: flex;
+  flex-direction: column;
 }
 
 .retiros-card {

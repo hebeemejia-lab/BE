@@ -117,7 +117,7 @@ export default function Navbar() {
                   Préstamos
                 </Link>
                 
-                {usuario.rol === 'admin' && (
+                {(usuario.rol === 'admin' || usuario.rol === 'admin_lite') && (
                   <Link to="/admin" className="nav-link admin-link" onClick={handleMenuClose}>⚙️ Admin</Link>
                 )}
 

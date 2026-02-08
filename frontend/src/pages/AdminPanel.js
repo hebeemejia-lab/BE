@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import * as htmlToImage from 'html-to-image';
 import api from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 import './AdminPanel.css';
 
 const descargarImagenDesdeHtml = async (html, nombreArchivo) => {
@@ -39,8 +40,10 @@ const AdminPanel = () => {
   const [estadoDesde, setEstadoDesde] = useState('');
   const [estadoHasta, setEstadoHasta] = useState('');
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const { usuario } = useContext(AuthContext);
   const location = useLocation();
   const navigate = useNavigate();
+  const puedeVerEstadoMercantil = usuario?.rol === 'admin';
 
   const rutasAdmin = {
     dashboard: '/admin',
@@ -1134,31 +1137,33 @@ const DashboardView = ({ dashboard, onNavigate, onGenerarEstado, estadoDesde, es
           Abrir gestion
         </button>
       </div>
-      <div className="gestion-card">
-        <h3>📄 Estado mercantil</h3>
-        <p>Genera un PDF con todos los movimientos registrados.</p>
-        <div className="estado-filtros">
-          <label>
-            Desde
-            <input
-              type="date"
-              value={estadoDesde}
-              onChange={(e) => onCambiarDesde(e.target.value)}
-            />
-          </label>
-          <label>
-            Hasta
-            <input
-              type="date"
-              value={estadoHasta}
-              onChange={(e) => onCambiarHasta(e.target.value)}
-            />
-          </label>
+      {puedeVerEstadoMercantil && (
+        <div className="gestion-card">
+          <h3>📄 Estado mercantil</h3>
+          <p>Genera un PDF con todos los movimientos registrados.</p>
+          <div className="estado-filtros">
+            <label>
+              Desde
+              <input
+                type="date"
+                value={estadoDesde}
+                onChange={(e) => onCambiarDesde(e.target.value)}
+              />
+            </label>
+            <label>
+              Hasta
+              <input
+                type="date"
+                value={estadoHasta}
+                onChange={(e) => onCambiarHasta(e.target.value)}
+              />
+            </label>
+          </div>
+          <button type="button" onClick={onGenerarEstado}>
+            Generar PDF
+          </button>
         </div>
-        <button type="button" onClick={onGenerarEstado}>
-          Generar PDF
-        </button>
-      </div>
+      )}
     </div>
   </div>
 );

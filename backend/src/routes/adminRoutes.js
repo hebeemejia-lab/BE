@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const verificarAdmin = require('../middleware/adminMiddleware');
+const verificarAdminFull = require('../middleware/adminFullMiddleware');
 
 // Todas las rutas requieren autenticación de admin
 router.use(verificarAdmin);
@@ -14,7 +15,7 @@ router.get('/test', (req, res) => {
 
 // 📊 Dashboard
 router.get('/dashboard', adminController.obtenerDashboard);
-router.get('/estado-mercantil', adminController.obtenerEstadoMercantil);
+router.get('/estado-mercantil', verificarAdminFull, adminController.obtenerEstadoMercantil);
 
 // 👥 Usuarios
 router.get('/usuarios', adminController.listarUsuarios);
