@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import * as htmlToImage from 'html-to-image';
 import api from '../services/api';
 import './AdminPanel.css';
@@ -37,10 +38,64 @@ const AdminPanel = () => {
   const [sandboxMode, setSandboxMode] = useState(() => localStorage.getItem('adminSandboxMode') === 'true');
   const [estadoDesde, setEstadoDesde] = useState('');
   const [estadoHasta, setEstadoHasta] = useState('');
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const rutasAdmin = {
+    dashboard: '/admin',
+    depositos: '/admin/depositos',
+    retiros: '/admin/retiros-efectivo',
+    prestamos: '/admin/prestamos',
+    clientes: '/admin/clientes',
+    faq: '/admin/faq',
+  };
+
+  const obtenerVistaDesdeRuta = (pathname) => {
+    const base = pathname.replace(/^\/admin\/?/, '');
+    const segmento = base.split('/')[0];
+    if (!segmento || segmento === 'dashboard') return 'dashboard';
+    if (segmento === 'depositos') return 'depositos';
+    if (segmento === 'retiros-efectivo') return 'retiros-efectivo';
+    if (segmento === 'prestamos') return 'prestamos';
+    if (segmento === 'clientes') return 'clientes';
+    if (segmento === 'faq') return 'faq';
+    return 'dashboard';
+  };
+
+  const navegarAdmin = (ruta) => {
+    setAdminMenuOpen(false);
+    navigate(ruta);
+  };
 
   useEffect(() => {
-    cargarDashboard();
-  }, []);
+    const vistaRuta = obtenerVistaDesdeRuta(location.pathname);
+    setAdminMenuOpen(false);
+    if (vistaRuta === 'dashboard') {
+      setVistaActual('dashboard');
+      cargarDashboard();
+      return;
+    }
+    if (vistaRuta === 'depositos') {
+      cargarUsuariosParaVista('depositos');
+      return;
+    }
+    if (vistaRuta === 'retiros-efectivo') {
+      setVistaActual('retiros-efectivo');
+      return;
+    }
+    if (vistaRuta === 'prestamos') {
+      cargarPrestamos();
+      return;
+    }
+    if (vistaRuta === 'clientes') {
+      cargarUsuarios();
+      return;
+    }
+    if (vistaRuta === 'faq') {
+      setVistaActual('faq');
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     localStorage.setItem('adminSandboxMode', sandboxMode ? 'true' : 'false');
@@ -514,6 +569,126 @@ const AdminPanel = () => {
     ventana.print();
   };
 
+  const imprimirFacturaRetiroPDF = (solicitud) => {
+    const ventana = window.open('', '_blank');
+    const nombre = solicitud?.nombreUsuario || solicitud?.usuarioEmail || 'Cliente';
+    const correo = solicitud?.usuarioEmail || '';
+    const fecha = solicitud?.createdAt
+      ? new Date(solicitud.createdAt).toLocaleDateString('es-DO')
+      : new Date().toLocaleDateString('es-DO');
+    const monto = new Intl.NumberFormat('es-DO', {
+      style: 'currency',
+      currency: 'DOP',
+      minimumFractionDigits: 2,
+    }).format(Number(solicitud?.monto || 0));
+
+    ventana.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Factura Retiro - #${solicitud?.id || ''}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .header h1 { color: #001a4d; margin: 0; }
+          .info { margin: 20px 0; }
+          .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+          .total { background: #f0f0f0; padding: 15px; margin-top: 20px; text-align: right; font-size: 18px; font-weight: bold; }
+          .footer { margin-top: 40px; text-align: center; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Banco Exclusivo</h1>
+          <p>Factura de Retiro</p>
+          <p><strong>#${solicitud?.id || ''}</strong></p>
+        </div>
+        <div class="info">
+          <div class="info-row">
+            <span><strong>Cliente:</strong></span>
+            <span>${nombre}</span>
+          </div>
+          <div class="info-row">
+            <span><strong>Correo:</strong></span>
+            <span>${correo}</span>
+          </div>
+          <div class="info-row">
+            <span><strong>Fecha:</strong></span>
+            <span>${fecha}</span>
+          </div>
+          <div class="info-row">
+            <span><strong>Banco:</strong></span>
+            <span>${solicitud?.banco || 'N/A'}</span>
+          </div>
+          <div class="info-row">
+            <span><strong>Estado:</strong></span>
+            <span>${solicitud?.estado || 'pendiente'}</span>
+          </div>
+        </div>
+        <div class="total">
+          Monto del Retiro: ${monto}
+        </div>
+        <div class="footer">
+          <p>Banco Exclusivo - www.bancoexclusivo.lat</p>
+          <p>Documento generado electrónicamente</p>
+        </div>
+      </body>
+      </html>
+    `);
+    ventana.document.close();
+    ventana.print();
+  };
+
+  const descargarFacturaRetiroJpg = async (solicitud) => {
+    const logoUrl = `${window.location.origin}/imagen/BE%20(1)%20(1).png`;
+    const nombre = solicitud?.nombreUsuario || solicitud?.usuarioEmail || 'Cliente';
+    const correo = solicitud?.usuarioEmail || '';
+    const fecha = solicitud?.createdAt
+      ? new Date(solicitud.createdAt).toLocaleDateString('es-DO')
+      : new Date().toLocaleDateString('es-DO');
+    const monto = new Intl.NumberFormat('es-DO', {
+      style: 'currency',
+      currency: 'DOP',
+      minimumFractionDigits: 2,
+    }).format(Number(solicitud?.monto || 0));
+
+    const html = `
+      <div style="width: 860px; padding: 32px; font-family: 'Space Grotesk', Arial, sans-serif; background: #f8fafc; color: #0f1b3d;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h2 style="margin: 0; color: #0f1b3d;">Banco Exclusivo</h2>
+            <p style="margin: 4px 0 0; color: #64748b;">Factura de Retiro</p>
+          </div>
+          <img src="${logoUrl}" alt="Banco Exclusivo" style="width: 72px; height: 72px; object-fit: contain;" />
+        </div>
+        <div style="margin-top: 24px; padding: 18px; border-radius: 16px; background: linear-gradient(140deg, #0f1b3d 0%, #b21d2b 120%); color: #f8fafc;">
+          <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Retiro ID</div>
+          <div style="font-size: 28px; font-weight: 700;">#${solicitud?.id || ''}</div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 20px;">
+          <div style="background: white; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 12px; color: #64748b;">Cliente</div>
+            <div style="font-weight: 600;">${nombre}</div>
+            <div style="font-size: 13px; color: #475569;">${correo}</div>
+          </div>
+          <div style="background: white; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 12px; color: #64748b;">Fecha</div>
+            <div style="font-weight: 600;">${fecha}</div>
+            <div style="font-size: 13px; color: #475569;">Banco: ${solicitud?.banco || 'N/A'}</div>
+          </div>
+        </div>
+        <div style="margin-top: 20px; background: white; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
+          <div style="font-size: 12px; color: #64748b;">Monto del retiro</div>
+          <div style="font-size: 32px; font-weight: 700; color: #0f1b3d;">${monto}</div>
+          <div style="font-size: 13px; color: #64748b;">Estado: ${solicitud?.estado || 'pendiente'}</div>
+        </div>
+        <div style="margin-top: 28px; text-align: center; font-size: 12px; color: #94a3b8;">Documento generado por Banco Exclusivo</div>
+      </div>
+    `;
+
+    await descargarImagenDesdeHtml(html, `retiro-${solicitud?.id || 'solicitud'}.jpg`);
+  };
+
   const generarEstadoMercantilPdf = async () => {
     try {
       setCargando(true);
@@ -697,55 +872,97 @@ const AdminPanel = () => {
     ventana.print();
   };
 
+  const titulosVista = {
+    dashboard: 'Dashboard',
+    depositos: 'Depositos en efectivo',
+    'retiros-efectivo': 'Retiros en efectivo',
+    prestamos: 'Gestion de Prestamos',
+    clientes: 'Gestion de Clientes',
+    faq: 'Feedback FAQ',
+  };
+  const tituloActual = titulosVista[vistaActual] || 'Dashboard';
+
   return (
     <div className="admin-panel">
       {/* Sidebar */}
-      <div className="admin-sidebar">
+      <div className={`admin-sidebar ${adminMenuOpen ? 'open' : ''}`}>
         <div className="admin-logo">
           <h2>🏦 Admin Panel</h2>
         </div>
         <nav className="admin-nav">
           <button 
             className={vistaActual === 'dashboard' ? 'active' : ''}
-            onClick={() => setVistaActual('dashboard')}
+            onClick={() => navegarAdmin(rutasAdmin.dashboard)}
           >
             📊 Dashboard
           </button>
           <button
             className={vistaActual === 'depositos' ? 'active' : ''}
-            onClick={() => cargarUsuariosParaVista('depositos')}
+            onClick={() => navegarAdmin(rutasAdmin.depositos)}
           >
             💵 Depositos en efectivo
           </button>
           <button
             className={vistaActual === 'retiros-efectivo' ? 'active' : ''}
-            onClick={() => setVistaActual('retiros-efectivo')}
+            onClick={() => navegarAdmin(rutasAdmin.retiros)}
           >
             🧾 Retiros en efectivo
           </button>
           <button 
             className={vistaActual === 'prestamos' ? 'active' : ''}
-            onClick={cargarPrestamos}
+            onClick={() => navegarAdmin(rutasAdmin.prestamos)}
           >
             💰 Gestión Préstamos
           </button>
           <button 
             className={vistaActual === 'clientes' ? 'active' : ''}
-            onClick={cargarUsuarios}
+            onClick={() => navegarAdmin(rutasAdmin.clientes)}
           >
             👤 Clientes
           </button>
           <button 
             className={vistaActual === 'faq' ? 'active' : ''}
-            onClick={() => setVistaActual('faq')}
+            onClick={() => navegarAdmin(rutasAdmin.faq)}
           >
             💬 Feedback FAQ
           </button>
         </nav>
       </div>
+      {adminMenuOpen && (
+        <button
+          type="button"
+          className="admin-sidebar-overlay"
+          onClick={() => setAdminMenuOpen(false)}
+          aria-label="Cerrar menu"
+        />
+      )}
 
       {/* Contenido principal */}
       <div className="admin-content">
+        <div className="admin-topbar">
+          <button
+            type="button"
+            className="admin-menu-toggle"
+            onClick={() => setAdminMenuOpen((prev) => !prev)}
+            aria-label="Abrir menu del panel"
+          >
+            ☰
+          </button>
+          <div className="admin-breadcrumb">
+            <span className="admin-breadcrumb-root">Admin</span>
+            <span className="admin-breadcrumb-sep">/</span>
+            <span className="admin-breadcrumb-current">{tituloActual}</span>
+          </div>
+          {vistaActual !== 'dashboard' && (
+            <button
+              type="button"
+              className="admin-back"
+              onClick={() => navegarAdmin(rutasAdmin.dashboard)}
+            >
+              Volver al dashboard
+            </button>
+          )}
+        </div>
         {cargando && <div className="admin-loading">Cargando...</div>}
 
         {/* Dashboard */}
@@ -754,19 +971,19 @@ const AdminPanel = () => {
             dashboard={dashboard}
             onNavigate={(destino) => {
               if (destino === 'prestamos') {
-                cargarPrestamos();
+                navegarAdmin(rutasAdmin.prestamos);
                 return;
               }
               if (destino === 'clientes') {
-                cargarUsuarios();
+                navegarAdmin(rutasAdmin.clientes);
                 return;
               }
               if (destino === 'depositos') {
-                cargarUsuariosParaVista('depositos');
+                navegarAdmin(rutasAdmin.depositos);
                 return;
               }
               if (destino === 'retiros-efectivo') {
-                setVistaActual('retiros-efectivo');
+                navegarAdmin(rutasAdmin.retiros);
               }
             }}
             onGenerarEstado={generarEstadoMercantilPdf}
@@ -786,7 +1003,11 @@ const AdminPanel = () => {
         )}
 
         {vistaActual === 'retiros-efectivo' && (
-          <RetirosEfectivoView sandboxMode={sandboxMode} />
+          <RetirosEfectivoView
+            sandboxMode={sandboxMode}
+            onImprimirFacturaRetiro={imprimirFacturaRetiroPDF}
+            onDescargarFacturaRetiro={descargarFacturaRetiroJpg}
+          />
         )}
 
         {/* Préstamos */}
@@ -953,6 +1174,7 @@ const ClientesView = ({ usuarios, cargando, onCrearUsuario }) => {
     telefono: '',
     direccion: ''
   });
+  const [crearAbierto, setCrearAbierto] = useState(true);
   const [editando, setEditando] = useState(null);
   const [formEditar, setFormEditar] = useState({});
 
@@ -1020,7 +1242,18 @@ const ClientesView = ({ usuarios, cargando, onCrearUsuario }) => {
     <div className="clientes-view">
       <h1>👤 Gestión de Clientes</h1>
 
-      <div className="cliente-crear">
+      <div className="clientes-toggle">
+        <button
+          type="button"
+          className={`clientes-toggle-btn ${crearAbierto ? 'open' : ''}`}
+          onClick={() => setCrearAbierto((prev) => !prev)}
+        >
+          Gestion de usuarios
+          <span className="clientes-toggle-icon">{crearAbierto ? '−' : '+'}</span>
+        </button>
+      </div>
+
+      <div className={`cliente-crear ${crearAbierto ? 'open' : 'collapsed'}`}>
         <h3>Crear nuevo cliente</h3>
         <form className="cliente-form" onSubmit={handleSubmit}>
           <input
@@ -1289,7 +1522,7 @@ const DepositosEfectivoView = ({ usuarios, cargando, onActualizarSaldo }) => {
   );
 };
 
-const RetirosEfectivoView = ({ sandboxMode }) => {
+const RetirosEfectivoView = ({ sandboxMode, onImprimirFacturaRetiro, onDescargarFacturaRetiro }) => {
   const [solicitudes, setSolicitudes] = useState([]);
   const [filtro, setFiltro] = useState('pendiente');
   const [cargando, setCargando] = useState(false);
@@ -1388,6 +1621,20 @@ const RetirosEfectivoView = ({ sandboxMode }) => {
                     <td><span className={`estado-badge ${sol.estado}`}>{sol.estado}</span></td>
                     <td>{new Date(sol.createdAt).toLocaleDateString()}</td>
                     <td className="acciones">
+                      <button
+                        type="button"
+                        className="btn-facturar"
+                        onClick={() => onImprimirFacturaRetiro?.(sol)}
+                      >
+                        Factura PDF
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-facturar-jpg"
+                        onClick={() => onDescargarFacturaRetiro?.(sol)}
+                      >
+                        Factura JPG
+                      </button>
                       {sol.estado === 'pendiente' ? (
                         <>
                           <button type="button" className="btn-aprobar" onClick={() => aprobarSolicitud(sol.id)}>
