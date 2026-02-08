@@ -115,11 +115,12 @@
   background: white;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 26, 77, 0.15);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .retiros-card {
   width: 100%;
+  padding-bottom: 40px;
 }
 
 .retiros-toggle {
@@ -153,6 +154,10 @@
 
 .retiros-section.collapsed {
   display: none;
+}
+
+.retiros-section {
+  padding-bottom: 24px;
 }
 
 .card-header {
@@ -195,6 +200,7 @@
 
 .form-section {
   padding: 30px;
+  padding-bottom: 40px;
 }
 
 .form-group {
