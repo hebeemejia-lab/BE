@@ -8,7 +8,6 @@ export default function TransferenciasInternacionales() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [paises, setPaises] = useState([]);
   const [tasa, setTasa] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -29,21 +28,8 @@ export default function TransferenciasInternacionales() {
   });
 
   useEffect(() => {
-    cargarPaises();
     cargarHistorial();
   }, []);
-
-  const cargarPaises = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/transferencias-internacionales/paises`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setPaises(response.data.paises || []);
-    } catch (err) {
-      console.error('Error cargando países:', err);
-    }
-  };
 
   const cargarHistorial = async () => {
     try {

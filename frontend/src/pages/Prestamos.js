@@ -1,6 +1,5 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { loanAPI } from '../services/api';
-import { AuthContext } from '../context/AuthContext';
 import './Prestamos.css';
 
 export default function Prestamos() {
@@ -10,7 +9,6 @@ export default function Prestamos() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [prestamos, setPrestamos] = useState([]);
-  const { usuario } = useContext(AuthContext);
 
   useEffect(() => {
     cargarPrestamos();
