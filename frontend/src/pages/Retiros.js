@@ -191,11 +191,6 @@ export default function Retiros() {
           <p>Transfiere fondos a tu cuenta bancaria</p>
         </div>
 
-        <div className="saldo-actual">
-          <span>Saldo disponible:</span>
-          <h3>${parseFloat(usuario?.saldo || 0).toFixed(2)}</h3>
-        </div>
-
         <div className="retiros-toggle">
           <button
             type="button"
@@ -205,6 +200,11 @@ export default function Retiros() {
             Solicitud de retiro
             <span className="retiros-toggle-icon">{retiroFormOpen ? '−' : '+'}</span>
           </button>
+        </div>
+
+        <div className="saldo-actual">
+          <span>Saldo disponible:</span>
+          <h3>${parseFloat(usuario?.saldo || 0).toFixed(2)}</h3>
         </div>
 
         <div className={`retiros-section ${retiroFormOpen ? 'open' : 'collapsed'}`}>
