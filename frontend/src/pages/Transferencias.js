@@ -19,7 +19,7 @@ export default function Transferencias() {
     setLoading(true);
 
     try {
-      const response = await transferAPI.realizar({
+      await transferAPI.realizar({
         cedula_destinatario: cedula,
         monto: parseFloat(monto),
         concepto,

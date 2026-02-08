@@ -1,10 +1,8 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import React, { useState, useEffect } from 'react';
 import { bankAccountAPI } from '../services/api';
 import './VincularCuenta.css';
 
 export default function VincularCuenta() {
-  const { usuario } = useContext(AuthContext);
   const [tab, setTab] = useState('vincular'); // vincular | listado
   const [formData, setFormData] = useState({
     nombreCuenta: '',
@@ -12,11 +10,6 @@ export default function VincularCuenta() {
     banco: 'Banreservas',
     tipoCuenta: 'ahorros',
     ruteo: '', // Código bancario (Routing/SWIFT)
-  });
-  const [verificacion, setVerificacion] = useState({
-    cuentaId: '',
-    deposit1: '',
-    deposit2: '',
   });
   const [cuentas, setCuentas] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -46,13 +39,6 @@ export default function VincularCuenta() {
     });
   };
 
-  const handleVerificacionChange = (e) => {
-    const { name, value } = e.target;
-    setVerificacion({
-      ...verificacion,
-      [name]: value,
-    });
-  };
 
   const handleVincular = async (e) => {
     e.preventDefault();
@@ -61,7 +47,7 @@ export default function VincularCuenta() {
     setLoading(true);
 
     try {
-      const response = await bankAccountAPI.vincularCuenta(formData);
+      await bankAccountAPI.vincularCuenta(formData);
       setSuccess('✓ Cuenta vinculada. Esperando microdeposits...');
       setFormData({
         nombreCuenta: '',
@@ -77,23 +63,6 @@ export default function VincularCuenta() {
     }
   };
 
-  const handleVerificar = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    setLoading(true);
-
-    try {
-      const response = await bankAccountAPI.verificarCuenta(verificacion);
-      setSuccess('✓ Cuenta verificada exitosamente');
-      setVerificacion({ cuentaId: '', deposit1: '', deposit2: '' });
-      cargarCuentas();
-    } catch (err) {
-      setError(err.response?.data?.mensaje || 'Error verificando cuenta');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDesvincular = async (cuentaId) => {
     if (window.confirm('¿Desvincular esta cuenta?')) {

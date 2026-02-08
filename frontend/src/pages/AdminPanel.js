@@ -34,7 +34,6 @@ const AdminPanel = () => {
   const [prestamos, setPrestamos] = useState([]);
   const [usuariosAdmin, setUsuariosAdmin] = useState([]);
   const [cargando, setCargando] = useState(false);
-  const [prestamoSeleccionado, setPrestamoSeleccionado] = useState(null);
   const [usuariosCargando, setUsuariosCargando] = useState(false);
   const [sandboxMode, setSandboxMode] = useState(() => localStorage.getItem('adminSandboxMode') === 'true');
   const [estadoDesde, setEstadoDesde] = useState('');
@@ -71,6 +70,7 @@ const AdminPanel = () => {
     navigate(ruta);
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const vistaRuta = obtenerVistaDesdeRuta(location.pathname);
     setAdminMenuOpen(false);
