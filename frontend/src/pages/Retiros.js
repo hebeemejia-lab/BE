@@ -34,6 +34,12 @@ export default function Retiros() {
     cargarCuentaPrincipal();
   }, []);
 
+  React.useEffect(() => {
+    if (verificado) {
+      setRetiroFormOpen(true);
+    }
+  }, [verificado]);
+
   const cargarCuentaPrincipal = async () => {
     try {
       const response = await retiroAPI.obtenerCuentaPrincipal();
