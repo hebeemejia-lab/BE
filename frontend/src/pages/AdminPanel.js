@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import * as htmlToImage from 'html-to-image';
 import api from '../services/api';
@@ -28,6 +28,18 @@ const descargarImagenDesdeHtml = async (html, nombreArchivo) => {
   }
 };
 
+const obtenerVistaDesdeRuta = (pathname) => {
+  const base = pathname.replace(/^\/admin\/?/, '');
+  const segmento = base.split('/')[0];
+  if (!segmento || segmento === 'dashboard') return 'dashboard';
+  if (segmento === 'depositos') return 'depositos';
+  if (segmento === 'retiros-efectivo') return 'retiros-efectivo';
+  if (segmento === 'prestamos') return 'prestamos';
+  if (segmento === 'clientes') return 'clientes';
+  if (segmento === 'faq') return 'faq';
+  return 'dashboard';
+};
+
 const AdminPanel = () => {
   const [vistaActual, setVistaActual] = useState('dashboard');
   const [dashboard, setDashboard] = useState(null);
@@ -53,52 +65,10 @@ const AdminPanel = () => {
     faq: '/admin/faq',
   };
 
-  const obtenerVistaDesdeRuta = (pathname) => {
-    const base = pathname.replace(/^\/admin\/?/, '');
-    const segmento = base.split('/')[0];
-    if (!segmento || segmento === 'dashboard') return 'dashboard';
-    if (segmento === 'depositos') return 'depositos';
-    if (segmento === 'retiros-efectivo') return 'retiros-efectivo';
-    if (segmento === 'prestamos') return 'prestamos';
-    if (segmento === 'clientes') return 'clientes';
-    if (segmento === 'faq') return 'faq';
-    return 'dashboard';
-  };
-
   const navegarAdmin = (ruta) => {
     setAdminMenuOpen(false);
     navigate(ruta);
   };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    const vistaRuta = obtenerVistaDesdeRuta(location.pathname);
-    setAdminMenuOpen(false);
-    if (vistaRuta === 'dashboard') {
-      setVistaActual('dashboard');
-      cargarDashboard();
-      return;
-    }
-    if (vistaRuta === 'depositos') {
-      cargarUsuariosParaVista('depositos');
-      return;
-    }
-    if (vistaRuta === 'retiros-efectivo') {
-      setVistaActual('retiros-efectivo');
-      return;
-    }
-    if (vistaRuta === 'prestamos') {
-      cargarPrestamos();
-      return;
-    }
-    if (vistaRuta === 'clientes') {
-      cargarUsuarios();
-      return;
-    }
-    if (vistaRuta === 'faq') {
-      setVistaActual('faq');
-    }
-  }, [location.pathname]);
 
   useEffect(() => {
     localStorage.setItem('adminSandboxMode', sandboxMode ? 'true' : 'false');
@@ -128,7 +98,7 @@ const AdminPanel = () => {
     };
   }, []);
 
-  const cargarDashboard = async () => {
+  const cargarDashboard = useCallback(async () => {
     try {
       setCargando(true);
       const response = await api.get('/admin/dashboard');
@@ -139,9 +109,9 @@ const AdminPanel = () => {
     } finally {
       setCargando(false);
     }
-  };
+  }, []);
 
-  const cargarPrestamos = async () => {
+  const cargarPrestamos = useCallback(async () => {
     try {
       setCargando(true);
       const [prestamosRes, usuariosRes] = await Promise.all([
@@ -157,13 +127,9 @@ const AdminPanel = () => {
     } finally {
       setCargando(false);
     }
-  };
+  }, []);
 
-  const cargarUsuarios = async () => {
-    await cargarUsuariosParaVista('clientes');
-  };
-
-  const cargarUsuariosParaVista = async (vista) => {
+  const cargarUsuariosParaVista = useCallback(async (vista) => {
     try {
       setUsuariosCargando(true);
       const response = await api.get('/admin/usuarios');
@@ -175,7 +141,40 @@ const AdminPanel = () => {
     } finally {
       setUsuariosCargando(false);
     }
-  };
+  }, []);
+
+  const cargarUsuarios = useCallback(async () => {
+    await cargarUsuariosParaVista('clientes');
+  }, [cargarUsuariosParaVista]);
+
+  useEffect(() => {
+    const vistaRuta = obtenerVistaDesdeRuta(location.pathname);
+    setAdminMenuOpen(false);
+    if (vistaRuta === 'dashboard') {
+      setVistaActual('dashboard');
+      cargarDashboard();
+      return;
+    }
+    if (vistaRuta === 'depositos') {
+      cargarUsuariosParaVista('depositos');
+      return;
+    }
+    if (vistaRuta === 'retiros-efectivo') {
+      setVistaActual('retiros-efectivo');
+      return;
+    }
+    if (vistaRuta === 'prestamos') {
+      cargarPrestamos();
+      return;
+    }
+    if (vistaRuta === 'clientes') {
+      cargarUsuarios();
+      return;
+    }
+    if (vistaRuta === 'faq') {
+      setVistaActual('faq');
+    }
+  }, [location.pathname, cargarDashboard, cargarUsuariosParaVista, cargarPrestamos, cargarUsuarios]);
 
   const normalizarPrestamo = (prestamo) => {
     const cuotas = prestamo.cuotas || [];
@@ -994,6 +993,7 @@ const AdminPanel = () => {
             estadoHasta={estadoHasta}
             onCambiarDesde={setEstadoDesde}
             onCambiarHasta={setEstadoHasta}
+            puedeVerEstadoMercantil={puedeVerEstadoMercantil}
           />
         )}
 
@@ -1054,7 +1054,7 @@ const AdminPanel = () => {
 };
 
 // Componente Dashboard
-const DashboardView = ({ dashboard, onNavigate, onGenerarEstado, estadoDesde, estadoHasta, onCambiarDesde, onCambiarHasta }) => (
+const DashboardView = ({ dashboard, onNavigate, onGenerarEstado, estadoDesde, estadoHasta, onCambiarDesde, onCambiarHasta, puedeVerEstadoMercantil }) => (
   <div className="dashboard-view">
     <h1>📊 Dashboard</h1>
     
