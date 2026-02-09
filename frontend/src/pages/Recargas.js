@@ -474,25 +474,29 @@ export default function Recargas() {
           className={`tab-button ${activeTab === 'tarjeta' ? 'active' : ''}`}
           onClick={() => setActiveTab('tarjeta')}
         >
-          🅿️ Pagar con PayPal
+          <span className="tab-logo paypal-mark" aria-hidden="true">P</span>
+          <span>Pagar con PayPal</span>
         </button>
         <button
           className={`tab-button ${activeTab === 'googlepay' ? 'active' : ''}`}
           onClick={() => setActiveTab('googlepay')}
         >
-          🟢 Google Pay
+          <span className="tab-logo gpay-g" aria-hidden="true">G</span>
+          <span>Google Pay</span>
         </button>
         <button
           className={`tab-button ${activeTab === 'wallet' ? 'active' : ''}`}
           onClick={() => setActiveTab('wallet')}
         >
-          📱 Wallet
+          <span className="tab-logo tab-emoji" aria-hidden="true">📱</span>
+          <span>Wallet</span>
         </button>
         <button
           className={`tab-button ${activeTab === 'codigo' ? 'active' : ''}`}
           onClick={() => setActiveTab('codigo')}
         >
-          🎟️ Usar Código
+          <span className="tab-logo tab-emoji" aria-hidden="true">🎟️</span>
+          <span>Usar Código</span>
         </button>
       </div>
 
