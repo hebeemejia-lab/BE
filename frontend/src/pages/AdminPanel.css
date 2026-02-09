@@ -606,11 +606,11 @@
 }
 
 .btn-factura88 {
-  background: #10b981;
+  background: linear-gradient(135deg, #10b981 0%, #d4af37 100%);
 }
 
 .btn-factura88:hover {
-  background: #059669;
+  background: linear-gradient(135deg, #059669 0%, #b88a1e 100%);
   transform: translateY(-2px);
 }
 
@@ -653,7 +653,7 @@
 }
 
 .btn-confirmar {
-  background: #10b981;
+  background: linear-gradient(135deg, #10b981 0%, #d4af37 100%);
   color: white;
   border: none;
   padding: 8px 20px;
@@ -664,7 +664,7 @@
 }
 
 .btn-confirmar:hover {
-  background: #059669;
+  background: linear-gradient(135deg, #059669 0%, #b88a1e 100%);
 }
 
 .btn-cancelar {
@@ -940,7 +940,7 @@
 }
 
 .acciones .btn-aprobar {
-  background: #10b981;
+  background: linear-gradient(135deg, #10b981 0%, #d4af37 100%);
   color: white;
 }
 
