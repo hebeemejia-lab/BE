@@ -522,6 +522,10 @@ export default function Recargas() {
         <div className="payment-container">
           <div className="payment-card">
             <div className="card-title">
+              <div className="payment-logo paypal-logo" aria-label="PayPal">
+                <span className="paypal-mark">P</span>
+                <span className="paypal-text">PayPal</span>
+              </div>
               <h2>Pago con PayPal</h2>
               <p className="card-subtitle">Paga de forma segura con tu cuenta PayPal</p>
             </div>
@@ -625,6 +629,10 @@ export default function Recargas() {
         <div className="payment-container">
           <div className="payment-card">
             <div className="card-title">
+              <div className="payment-logo gpay-logo" aria-label="Google Pay">
+                <span className="gpay-g">G</span>
+                <span className="gpay-text">Pay</span>
+              </div>
               <h2>Google Pay</h2>
               <p className="card-subtitle">Flujo de compra para revision</p>
             </div>
@@ -654,6 +662,7 @@ export default function Recargas() {
                 className="gpay-button"
                 onClick={iniciarGooglePayMock}
               >
+                <span className="gpay-icon" aria-hidden="true">G</span>
                 <span className="gpay-label">Google Pay</span>
               </button>
 
