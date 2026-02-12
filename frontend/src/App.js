@@ -22,6 +22,10 @@ import VincularCuenta from './pages/VincularCuenta';
 import Prestamos from './pages/Prestamos';
 import AdminPanel from './pages/AdminPanel';
 import PoliticaPrivacidad from './pages/PoliticaPrivacidad';
+import Cursos from './pages/Cursos';
+import ActivosPasivos from './pages/ActivosPasivos';
+import EconomiaEmergente from './pages/EconomiaEmergente';
+import BeneficiosAhorro from './pages/BeneficiosAhorro';
 
 // Estilos
 import './styles/global.css';
@@ -122,6 +126,10 @@ function App() {
           />
 
           <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
+           <Route path="/cursos" element={<Cursos />} />
+           <Route path="/cursos/activos-pasivos" element={<ActivosPasivos />} />
+           <Route path="/cursos/economia-emergente" element={<EconomiaEmergente />} />
+           <Route path="/cursos/beneficios-ahorro" element={<BeneficiosAhorro />} />
           
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

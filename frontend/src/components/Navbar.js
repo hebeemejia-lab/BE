@@ -111,6 +111,29 @@ export default function Navbar() {
                     </div>
                   )}
                 </div>
+
+                {/* Cursos Dropdown */}
+                <div className="nav-dropdown">
+                  <button 
+                    className="nav-link dropdown-toggle"
+                    onClick={() => setMenuOpen(menuOpen === 'cursos' ? false : 'cursos')}
+                  >
+                    🎓 Cursos
+                  </button>
+                  {menuOpen === 'cursos' && (
+                    <div className="dropdown-menu">
+                      <Link to="/cursos/activos-pasivos" className="dropdown-item" onClick={handleMenuClose}>
+                        Activos y Pasivos
+                      </Link>
+                      <Link to="/cursos/economia-emergente" className="dropdown-item" onClick={handleMenuClose}>
+                        Economía Emergente
+                      </Link>
+                      <Link to="/cursos/beneficios-ahorro" className="dropdown-item" onClick={handleMenuClose}>
+                        Beneficios del Ahorro
+                      </Link>
+                    </div>
+                  )}
+                </div>
                 
                 <Link to="/prestamos" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
                   <img src="/imagen/BE (15).png" alt="Préstamos" className="nav-icon" />
