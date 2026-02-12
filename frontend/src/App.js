@@ -26,6 +26,7 @@ import Cursos from './pages/Cursos';
 import ActivosPasivos from './pages/ActivosPasivos';
 import EconomiaEmergente from './pages/EconomiaEmergente';
 import BeneficiosAhorro from './pages/BeneficiosAhorro';
+import Certificado from './pages/Certificado';
 
 // Estilos
 import './styles/global.css';
@@ -130,6 +131,7 @@ function App() {
            <Route path="/cursos/activos-pasivos" element={<ActivosPasivos />} />
            <Route path="/cursos/economia-emergente" element={<EconomiaEmergente />} />
            <Route path="/cursos/beneficios-ahorro" element={<BeneficiosAhorro />} />
+           <Route path="/certificado" element={<Certificado />} />
           
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
