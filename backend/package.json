@@ -10,6 +10,7 @@
     "test:rapyd": "node test-rapyd.js",
     "verify": "node verificar-endpoints.js",
     "verificacion-masiva": "node enviar-verificacion-masiva.js"
+    ,"build": "echo 'No build step required'"
   },
   "keywords": [
     "banking",
