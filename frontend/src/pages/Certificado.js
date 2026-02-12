@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import htmlToImage from 'html-to-image';
+import * as htmlToImage from 'html-to-image';
 
 export default function Certificado() {
   const location = useLocation();
