@@ -7,93 +7,128 @@ import AnimacionBanco from '../components/AnimacionBanco';
 const subtemas = [
   {
     tipo: 'lectura',
-    titulo: 'Introducción a Activos y Pasivos',
+    titulo: 'Introducción: Activos y Pasivos',
     contenido: (
       <>
         <img src="/imagen/Diseño sin título (1) (1).png" alt="Banco Exclusivo" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
-        <p>Bienvenido al curso de Activos y Pasivos de Banco Exclusivo. Aquí aprenderás a identificar, diferenciar y gestionar los activos y pasivos en tus finanzas personales y empresariales.</p>
-        <p>Este conocimiento es fundamental para tomar mejores decisiones financieras y alcanzar tus metas económicas.</p>
+        <p>En el mundo de las finanzas personales y bancarias, comprender la diferencia entre activos y pasivos es fundamental para tomar decisiones inteligentes sobre el dinero. Esta distinción es la base para construir riqueza, evitar deudas innecesarias y lograr estabilidad financiera.</p>
       </>
     )
   },
   {
     tipo: 'lectura',
-    titulo: '¿Qué es un Activo?',
+    titulo: '¿Qué son los Activos?',
     contenido: (
       <>
-        <img src="/imagen/Diseño sin título (1) (1).png" alt="Activos Banco Exclusivo" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
-        <p>Un <b>activo</b> es todo bien, recurso o derecho que posee una persona o empresa y que tiene un valor económico. Ejemplos: dinero en cuentas, propiedades, inversiones, vehículos, etc.</p>
+        <p>Los activos son todos aquellos bienes, derechos o recursos que tienen valor y pueden generar ingresos o aumentar el patrimonio de una persona o empresa. Ejemplos incluyen dinero en cuentas de ahorro, propiedades, inversiones, vehículos, y hasta habilidades profesionales.</p>
         <ul>
-          <li>Generan ingresos o aumentan su valor con el tiempo.</li>
-          <li>Son clave para la salud financiera.</li>
+          <li>Una casa propia es un activo porque puede aumentar de valor y, si se alquila, genera ingresos.</li>
+          <li>Una cuenta de ahorros es un activo porque el dinero depositado puede crecer con intereses.</li>
+        </ul>
+        <p>Consejos prácticos:</p>
+        <ul>
+          <li>Invierte en activos que generen ingresos pasivos, como bienes raíces o fondos de inversión.</li>
+          <li>Mantén un registro actualizado de tus activos para evaluar tu situación financiera.</li>
         </ul>
       </>
     )
   },
   {
-    tipo: 'pregunta',
-    pregunta: {
-      texto: '¿Cuál de los siguientes es un ejemplo de activo?',
-      opciones: ['Préstamo bancario', 'Casa propia', 'Tarjeta de crédito', 'Factura por pagar'],
-      correcta: 1
-    }
-  },
-  {
     tipo: 'lectura',
-    titulo: '¿Qué es un Pasivo?',
+    titulo: '¿Qué son los Pasivos?',
     contenido: (
       <>
-        <img src="/imagen/BE (14).png" alt="Pasivos Banco Exclusivo" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
-        <p>Un <b>pasivo</b> es una obligación o deuda que una persona o empresa debe pagar. Ejemplos: préstamos, hipotecas, tarjetas de crédito, deudas con proveedores, etc.</p>
+        <p>Los pasivos son obligaciones o deudas que una persona o empresa debe pagar. Incluyen préstamos, tarjetas de crédito, hipotecas, y cualquier compromiso financiero que implique un desembolso futuro.</p>
         <ul>
-          <li>Generan egresos o disminuyen el patrimonio.</li>
-          <li>Es importante gestionarlos para evitar problemas financieros.</li>
+          <li>Un préstamo bancario es un pasivo porque representa dinero que se debe devolver con intereses.</li>
+          <li>Una tarjeta de crédito con saldo pendiente es un pasivo.</li>
+        </ul>
+        <p>Consejos prácticos:</p>
+        <ul>
+          <li>Evita acumular pasivos innecesarios, especialmente aquellos con altos intereses.</li>
+          <li>Prioriza el pago de pasivos para reducir el estrés financiero.</li>
         </ul>
       </>
     )
   },
   {
-    tipo: 'pregunta',
-    pregunta: {
-      texto: '¿Qué es un pasivo?',
-      opciones: ['Un bien que genera ingresos', 'Un recurso que aumenta de valor', 'Una obligación o deuda', 'Un tipo de inversión'],
-      correcta: 2
-    }
-  },
-  {
     tipo: 'lectura',
-    titulo: 'Diferencias clave',
+    titulo: 'Diferencias Clave entre Activos y Pasivos',
     contenido: (
       <>
-        <img src="/imagen/BE (17).png" alt="Diferencias Banco Exclusivo" style={{maxWidth: 120, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
-        <ul>
-          <li><b>Activos</b> suman a tu riqueza, <b>pasivos</b> la restan.</li>
-          <li>El objetivo es tener más activos que pasivos.</li>
-        </ul>
-        <p>Ejemplo: Una casa propia es un activo, una hipoteca es un pasivo.</p>
+        <table style={{width:'100%',margin:'16px 0',borderCollapse:'collapse'}}>
+          <thead>
+            <tr style={{background:'#eaf6ff'}}>
+              <th>Activos</th>
+              <th>Pasivos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Generan ingresos o aumentan el patrimonio</td>
+              <td>Generan gastos o disminuyen el patrimonio</td>
+            </tr>
+            <tr>
+              <td>Pueden apreciarse en valor</td>
+              <td>Pueden generar intereses y deudas</td>
+            </tr>
+            <tr>
+              <td>Ejemplo: inversiones, propiedades</td>
+              <td>Ejemplo: préstamos, deudas</td>
+            </tr>
+          </tbody>
+        </table>
       </>
     )
   },
   {
-    tipo: 'pregunta',
-    pregunta: {
-      texto: '¿Cuál es el objetivo financiero recomendado?',
-      opciones: ['Tener más pasivos que activos', 'Tener igual cantidad de ambos', 'Tener más activos que pasivos', 'No tener ninguno'],
-      correcta: 2
-    }
+    tipo: 'lectura',
+    titulo: 'Cómo Identificar Activos y Pasivos en tu Vida',
+    contenido: (
+      <>
+        <p>Haz una lista de tus bienes y deudas. Pregúntate: ¿Esto me genera ingresos o me cuesta dinero? Así podrás clasificarlos correctamente.</p>
+        <ul>
+          <li>Tu auto: Si lo usas para trabajar y genera ingresos, es un activo. Si solo genera gastos, puede ser considerado un pasivo.</li>
+          <li>Educación: Si te permite acceder a mejores empleos, es un activo intangible.</li>
+        </ul>
+      </>
+    )
   },
   {
     tipo: 'lectura',
-    titulo: '¿Cómo mejorar tu balance?',
+    titulo: 'Estrategias para Maximizar Activos y Minimizar Pasivos',
     contenido: (
       <>
-        <img src="/imagen/BE (11).png" alt="Balance Banco Exclusivo" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
         <ul>
-          <li>Invierte en activos que generen ingresos.</li>
-          <li>Reduce tus pasivos y evita deudas innecesarias.</li>
-          <li>Haz un seguimiento mensual de tus activos y pasivos.</li>
+          <li>Invierte en educación, habilidades y bienes que generen valor.</li>
+          <li>Reduce gastos innecesarios y deudas de alto interés.</li>
+          <li>Revisa periódicamente tu balance personal.</li>
         </ul>
-        <p>Banco Exclusivo te ayuda a gestionar tus finanzas con herramientas y asesoría personalizada.</p>
+      </>
+    )
+  },
+  {
+    tipo: 'lectura',
+    titulo: 'Contexto Actual',
+    contenido: (
+      <>
+        <p>En economías emergentes y en tiempos de incertidumbre, la gestión de activos y pasivos es más importante que nunca. La inflación, cambios en tasas de interés y volatilidad de mercados pueden afectar el valor de activos y el costo de pasivos.</p>
+        <ul>
+          <li>Diversifica tus activos para protegerte de riesgos.</li>
+          <li>Negocia mejores condiciones para tus pasivos.</li>
+        </ul>
+      </>
+    )
+  },
+  {
+    tipo: 'lectura',
+    titulo: 'Ejercicios y Reflexión',
+    contenido: (
+      <>
+        <ul>
+          <li>Haz un inventario de tus activos y pasivos.</li>
+          <li>Establece metas para aumentar tus activos y reducir tus pasivos en los próximos 12 meses.</li>
+        </ul>
       </>
     )
   }

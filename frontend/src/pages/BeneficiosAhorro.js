@@ -6,57 +6,100 @@ import AnimacionBanco from '../components/AnimacionBanco';
 
 const subtemas = [
   {
-    titulo: '¿Por qué ahorrar?',
+    tipo: 'lectura',
+    titulo: 'Introducción: Beneficios del Ahorro',
     contenido: (
       <>
-        <img src="/imagen/Diseño sin título (1) (1).png" alt="Ahorro Banco Exclusivo" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
-        <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=600&q=80" alt="Ahorro" style={{maxWidth: 220, borderRadius: 12, marginBottom: 16, marginLeft: 16}} />
-        <p>El <b>ahorro</b> es la base de unas finanzas sanas. Permite enfrentar imprevistos, alcanzar metas y vivir con tranquilidad.</p>
+        <img src="/imagen/Diseño sin título (1) (1).png" alt="Banco Exclusivo" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
+        <p>El ahorro es la base de la estabilidad financiera. Permite enfrentar imprevistos, alcanzar metas y disfrutar de tranquilidad. Aprender a ahorrar y entender sus beneficios es esencial para cualquier persona.</p>
+      </>
+    )
+  },
+  {
+    tipo: 'lectura',
+    titulo: '¿Qué es el Ahorro?',
+    contenido: (
+      <>
+        <p>El ahorro es la parte del ingreso que no se gasta y se reserva para el futuro. Puede ser en cuentas bancarias, inversiones, o incluso en bienes duraderos.</p>
         <ul>
-          <li>Te da seguridad ante emergencias.</li>
-          <li>Facilita la inversión y el crecimiento personal.</li>
+          <li>Guardar una parte del salario cada mes en una cuenta de ahorros.</li>
         </ul>
       </>
     )
   },
   {
-    titulo: 'Ventajas del ahorro',
+    tipo: 'lectura',
+    titulo: 'Beneficios del Ahorro',
     contenido: (
       <>
-        <img src="/imagen/BE (17).png" alt="Ventajas Banco Exclusivo" style={{maxWidth: 120, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
-        <img src="https://images.unsplash.com/photo-1515168833906-d2a3b82b302b?auto=format&fit=crop&w=600&q=80" alt="Ventajas" style={{maxWidth: 220, borderRadius: 12, marginBottom: 16, marginLeft: 16}} />
         <ul>
-          <li>Reduce el estrés financiero.</li>
-          <li>Permite aprovechar oportunidades.</li>
-          <li>Ayuda a evitar deudas innecesarias.</li>
+          <li>Seguridad ante imprevistos.</li>
+          <li>Acceso a oportunidades de inversión.</li>
+          <li>Reducción del estrés financiero.</li>
+          <li>Alcance de metas personales (viajes, educación, vivienda).</li>
+        </ul>
+        <p>Consejos prácticos:</p>
+        <ul>
+          <li>Establece un presupuesto mensual.</li>
+          <li>Automatiza el ahorro para evitar tentaciones de gasto.</li>
         </ul>
       </>
     )
   },
   {
-    titulo: 'Estrategias para ahorrar',
+    tipo: 'lectura',
+    titulo: 'Tipos de Ahorro',
     contenido: (
       <>
-        <img src="/imagen/BE (14).png" alt="Estrategias Banco Exclusivo" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
-        <img src="https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=600&q=80" alt="Estrategias" style={{maxWidth: 220, borderRadius: 12, marginBottom: 16, marginLeft: 16}} />
         <ul>
-          <li>Define metas claras y realistas.</li>
-          <li>Automatiza tu ahorro cada mes.</li>
-          <li>Reduce gastos innecesarios.</li>
+          <li>Ahorro de emergencia: para imprevistos.</li>
+          <li>Ahorro para metas: viajes, estudios, vivienda.</li>
+          <li>Ahorro para inversión: fondos, acciones, bienes raíces.</li>
+        </ul>
+        <p>Un fondo de emergencia debe cubrir al menos 3-6 meses de gastos.</p>
+      </>
+    )
+  },
+  {
+    tipo: 'lectura',
+    titulo: 'Estrategias para Ahorrar',
+    contenido: (
+      <>
+        <ul>
+          <li>Define metas claras y plazos.</li>
+          <li>Usa herramientas digitales para controlar gastos.</li>
+          <li>Elimina gastos innecesarios.</li>
+          <li>Aprovecha productos bancarios con intereses atractivos.</li>
+        </ul>
+        <p>Consejos:</p>
+        <ul>
+          <li>Compara cuentas de ahorro y elige la que mejor se adapte a tus necesidades.</li>
+          <li>Revisa tus gastos periódicamente.</li>
         </ul>
       </>
     )
   },
   {
-    titulo: '¿Cómo empezar hoy?',
+    tipo: 'lectura',
+    titulo: 'Contexto Actual',
     contenido: (
       <>
-        <img src="/imagen/BE (11).png" alt="Empezar Banco Exclusivo" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
-        <img src="https://images.unsplash.com/photo-1465101178521-c1a9136a3b41?auto=format&fit=crop&w=600&q=80" alt="Empezar" style={{maxWidth: 220, borderRadius: 12, marginBottom: 16, marginLeft: 16}} />
+        <p>En 2026, la inflación y la volatilidad económica hacen que el ahorro sea más importante. Los bancos ofrecen productos innovadores como cuentas digitales, microahorros y fondos automatizados.</p>
         <ul>
-          <li>Abre una cuenta de ahorro.</li>
-          <li>Haz un presupuesto mensual.</li>
-          <li>Revisa tus progresos y celebra tus logros.</li>
+          <li>Apps bancarias permiten redondear compras y ahorrar automáticamente.</li>
+        </ul>
+      </>
+    )
+  },
+  {
+    tipo: 'lectura',
+    titulo: 'Ejercicios y Reflexión',
+    contenido: (
+      <>
+        <ul>
+          <li>Calcula cuánto puedes ahorrar cada mes.</li>
+          <li>Establece una meta de ahorro para los próximos 12 meses.</li>
+          <li>Investiga productos bancarios que incentiven el ahorro.</li>
         </ul>
       </>
     )
