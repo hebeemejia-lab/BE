@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import * as htmlToImage from 'html-to-image';
 
@@ -6,8 +6,14 @@ export default function Certificado() {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const nombreCurso = params.get('curso') || 'Curso';
-  const nombreUsuario = localStorage.getItem('nombreUsuario') || 'Nombre del Usuario';
+  const [nombre, setNombre] = React.useState(localStorage.getItem('nombreUsuario') || 'Nombre del Usuario');
   const ref = useRef();
+
+  React.useEffect(() => {
+    if (nombre && nombre !== 'Nombre del Usuario') {
+      localStorage.setItem('nombreUsuario', nombre);
+    }
+  }, [nombre]);
 
   const descargarPNG = () => {
     if (!ref.current) return;
@@ -22,6 +28,18 @@ export default function Certificado() {
 
   return (
     <div className="certificado-container" style={{ textAlign: 'center', padding: 40, background: 'linear-gradient(135deg, #eaf6ff 0%, #f8f8f8 100%)' }}>
+      {!nombre || nombre === 'Nombre del Usuario' ? (
+        <div style={{ marginBottom: 32 }}>
+          <h2>Ingresa tu nombre para el certificado:</h2>
+          <input
+            type="text"
+            value={nombre === 'Nombre del Usuario' ? '' : nombre}
+            onChange={e => setNombre(e.target.value)}
+            placeholder="Nombre del Usuario"
+            style={{ padding: '12px', fontSize: 18, borderRadius: 8, border: '1px solid #1a8cff', width: 320, marginTop: 8 }}
+          />
+        </div>
+      ) : null}
       <div ref={ref} style={{
         display: 'inline-block',
         background: '#fff',
@@ -47,7 +65,7 @@ export default function Certificado() {
         <h1 style={{ color: '#1a8cff', marginBottom: 8, fontWeight: 700, fontSize: 36, letterSpacing: 1, position: 'relative', zIndex: 2 }}>Banco Exclusivo</h1>
         <h2 style={{ color: '#2d3e50', marginBottom: 24, fontWeight: 400, fontSize: 28, position: 'relative', zIndex: 2 }}>Certificado de Finalización</h2>
         <p style={{ fontSize: 20, margin: '32px 0 0 0', color: '#444', position: 'relative', zIndex: 2 }}>Otorgado a</p>
-        <h2 style={{ color: '#1a8cff', margin: 0, fontSize: 28, fontWeight: 600, position: 'relative', zIndex: 2 }}>{nombreUsuario}</h2>
+        <h2 style={{ color: '#1a8cff', margin: 0, fontSize: 28, fontWeight: 600, position: 'relative', zIndex: 2 }}>{nombre}</h2>
         <p style={{ fontSize: 20, margin: '32px 0 0 0', color: '#444', position: 'relative', zIndex: 2 }}>por completar satisfactoriamente el curso</p>
         <h3 style={{ color: '#2d3e50', margin: 0, fontSize: 24, position: 'relative', zIndex: 2 }}>{nombreCurso}</h3>
         <p style={{ margin: '40px 0 0 0', fontSize: 18, color: '#888', position: 'relative', zIndex: 2 }}>Emitido por Banco Exclusivo • {new Date().toLocaleDateString()}</p>
