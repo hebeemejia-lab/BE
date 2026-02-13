@@ -9,26 +9,32 @@ const printStyles = `
     body * {
       visibility: hidden !important;
     }
-    #certificado-print {
+    #certificado-print, #certificado-print * {
+      visibility: visible !important;
+    }
+    .certificado-container {
       visibility: visible !important;
       position: absolute !important;
       left: 0; right: 0; top: 0; margin: auto !important;
-      width: 816px !important;
-      height: 1056px !important;
+      width: 100vw !important;
+      min-height: 100vh !important;
+      background: transparent !important;
       box-shadow: none !important;
-      background: #1a8cff !important;
-      color: #fff !important;
       border: none !important;
       outline: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 0 !important;
+    }
+    #certificado-print {
+      position: relative !important;
+      margin: auto !important;
     }
     #certificado-print * {
       color: #fff !important;
       background: transparent !important;
       text-shadow: none !important;
-    }
-    .certificado-container, .certificado-container * {
-      background: transparent !important;
-      color: #fff !important;
     }
     input, button, .no-print {
       display: none !important;
