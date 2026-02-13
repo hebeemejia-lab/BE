@@ -45,18 +45,17 @@ export default function Certificado() {
 
   return (
     <div className="certificado-container" style={{ textAlign: 'center', padding: 40, background: 'linear-gradient(135deg, #eaf6ff 0%, #f8f8f8 100%)' }}>
-      {!nombre || nombre === 'Nombre del Usuario' ? (
-        <div style={{ marginBottom: 32 }}>
-          <h2>Ingresa tu nombre para el certificado:</h2>
-          <input
-            type="text"
-            value={nombre === 'Nombre del Usuario' ? '' : nombre}
-            onChange={e => setNombre(e.target.value)}
-            placeholder="Nombre del Usuario"
-            style={{ padding: '12px', fontSize: 18, borderRadius: 8, border: '1px solid #1a8cff', width: 320, marginTop: 8 }}
-          />
-        </div>
-      ) : null}
+      <div style={{ marginBottom: 32 }}>
+        <h2>Nombre para el certificado:</h2>
+        <input
+          type="text"
+          value={nombre === 'Nombre del Usuario' ? '' : nombre}
+          onChange={e => setNombre(e.target.value)}
+          placeholder="Nombre del Usuario"
+          style={{ padding: '12px', fontSize: 18, borderRadius: 8, border: '1px solid #1a8cff', width: 320, marginTop: 8 }}
+        />
+        <small style={{ color: '#888', marginTop: 8, display: 'block' }}>Puedes editar el nombre que aparecerá en el certificado.</small>
+      </div>
       <div ref={ref} style={{
         display: 'inline-block',
         background: '#fff',
