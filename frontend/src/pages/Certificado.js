@@ -28,23 +28,28 @@ export default function Certificado() {
         borderRadius: 24,
         background: '#fff',
         padding: 48,
-        minWidth: 540,
-        maxWidth: 800,
+        minWidth: 816, // 8.5 pulgadas * 96 dpi
+        minHeight: 1056, // 11 pulgadas * 96 dpi
+        width: 816,
+        height: 1056,
+        maxWidth: 816,
+        maxHeight: 1056,
         boxShadow: '0 8px 32px rgba(26,140,255,0.10)',
         position: 'relative',
         fontFamily: 'serif',
+        overflow: 'hidden',
       }}>
-        <img src="/imagen/Diseño sin título (1) (1).png" alt="Banco Exclusivo" style={{ width: 120, position: 'absolute', top: 32, left: 32 }} />
-        <img src="/imagen/BE (17).png" alt="Sello" style={{ width: 80, position: 'absolute', bottom: 32, right: 32, opacity: 0.7 }} />
-        <h1 style={{ color: '#1a8cff', marginBottom: 8, fontWeight: 700, fontSize: 36, letterSpacing: 1 }}>Banco Exclusivo</h1>
-        <h2 style={{ color: '#2d3e50', marginBottom: 24, fontWeight: 400, fontSize: 28 }}>Certificado de Finalización</h2>
-        <p style={{ fontSize: 20, margin: '32px 0 0 0', color: '#444' }}>Otorgado a</p>
-        <h2 style={{ color: '#1a8cff', margin: 0, fontSize: 28, fontWeight: 600 }}>{nombreUsuario}</h2>
-        <p style={{ fontSize: 20, margin: '32px 0 0 0', color: '#444' }}>por completar satisfactoriamente el curso</p>
-        <h3 style={{ color: '#2d3e50', margin: 0, fontSize: 24 }}>{nombreCurso}</h3>
-        <p style={{ margin: '40px 0 0 0', fontSize: 18, color: '#888' }}>Emitido por Banco Exclusivo • {new Date().toLocaleDateString()}</p>
-        <div style={{ marginTop: 48, textAlign: 'right', color: '#1a8cff', fontWeight: 500, fontSize: 18 }}>
-          <span>__________________________<br/>Director Académico</span>
+        <img src="/imagen/Diseño sin título (1) (1).png" alt="Banco Exclusivo" style={{ width: 120, position: 'absolute', top: 32, left: 32, zIndex: 1 }} />
+        <img src="/imagen/BE (17).png" alt="Sello" style={{ width: 80, position: 'absolute', bottom: 32, right: 32, opacity: 0.7, zIndex: 1 }} />
+        <h1 style={{ color: '#1a8cff', marginBottom: 8, fontWeight: 700, fontSize: 36, letterSpacing: 1, position: 'relative', zIndex: 2 }}>Banco Exclusivo</h1>
+        <h2 style={{ color: '#2d3e50', marginBottom: 24, fontWeight: 400, fontSize: 28, position: 'relative', zIndex: 2 }}>Certificado de Finalización</h2>
+        <p style={{ fontSize: 20, margin: '32px 0 0 0', color: '#444', position: 'relative', zIndex: 2 }}>Otorgado a</p>
+        <h2 style={{ color: '#1a8cff', margin: 0, fontSize: 28, fontWeight: 600, position: 'relative', zIndex: 2 }}>{nombreUsuario}</h2>
+        <p style={{ fontSize: 20, margin: '32px 0 0 0', color: '#444', position: 'relative', zIndex: 2 }}>por completar satisfactoriamente el curso</p>
+        <h3 style={{ color: '#2d3e50', margin: 0, fontSize: 24, position: 'relative', zIndex: 2 }}>{nombreCurso}</h3>
+        <p style={{ margin: '40px 0 0 0', fontSize: 18, color: '#888', position: 'relative', zIndex: 2 }}>Emitido por Banco Exclusivo • {new Date().toLocaleDateString()}</p>
+        <div style={{ marginTop: 48, textAlign: 'right', color: '#1a8cff', fontWeight: 500, fontSize: 18, position: 'relative', zIndex: 2 }}>
+          <span>__________________________<br/>Heber Mejire Jacobe (Heber Renuel)<br/>Director Académico</span>
         </div>
       </div>
       <div style={{ marginTop: 32 }}>
