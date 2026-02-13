@@ -3,6 +3,39 @@ import { AuthContext } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 import * as htmlToImage from 'html-to-image';
 
+// Estilos globales para impresión y centrado
+const printStyles = `
+  @media print {
+    body * {
+      visibility: hidden !important;
+    }
+    #certificado-print {
+      visibility: visible !important;
+      position: absolute !important;
+      left: 0; right: 0; top: 0; margin: auto !important;
+      width: 816px !important;
+      height: 1056px !important;
+      box-shadow: none !important;
+      background: #1a8cff !important;
+      color: #fff !important;
+      border: none !important;
+      outline: none !important;
+    }
+    #certificado-print * {
+      color: #fff !important;
+      background: transparent !important;
+      text-shadow: none !important;
+    }
+    .certificado-container, .certificado-container * {
+      background: transparent !important;
+      color: #fff !important;
+    }
+    input, button, .no-print {
+      display: none !important;
+    }
+  }
+`;
+
 
 export default function Certificado() {
   const location = useLocation();
@@ -44,55 +77,59 @@ export default function Certificado() {
   };
 
   return (
-    <div className="certificado-container" style={{ textAlign: 'center', padding: 40, background: 'linear-gradient(135deg, #eaf6ff 0%, #f8f8f8 100%)' }}>
-      <div style={{ marginBottom: 32 }}>
-        <h2>Nombre para el certificado:</h2>
-        <input
-          type="text"
-          value={nombre === 'Nombre del Usuario' ? '' : nombre}
-          onChange={e => setNombre(e.target.value)}
-          placeholder="Nombre del Usuario"
-          style={{ padding: '12px', fontSize: 18, borderRadius: 8, border: '1px solid #1a8cff', width: 320, marginTop: 8 }}
-        />
-        <small style={{ color: '#888', marginTop: 8, display: 'block' }}>Puedes editar el nombre que aparecerá en el certificado.</small>
-      </div>
-      <div ref={ref} style={{
-        display: 'inline-block',
-        background: '#fff',
-        padding: 48,
-        minWidth: 816,
-        minHeight: 1056,
-        width: 816,
-        height: 1056,
-        maxWidth: 816,
-        maxHeight: 1056,
-        boxShadow: '0 8px 32px rgba(26,140,255,0.10)',
-        position: 'relative',
-        fontFamily: 'serif',
-        overflow: 'hidden',
-        borderRadius: 32,
-        border: '8px solid #1a8cff',
-        borderImage: 'linear-gradient(135deg, #1a8cff 0%, #00eaff 50%, #2d3e50 100%) 1',
-        outline: '6px solid #fff',
-        outlineOffset: '-12px',
-      }}>
-        <img src="/imagen/Diseño sin título (1) (1).png" alt="Banco Exclusivo" style={{ width: 120, position: 'absolute', top: 32, left: 32, zIndex: 1 }} />
-        <img src="/imagen/BE (17).png" alt="Sello" style={{ width: 80, position: 'absolute', bottom: 32, right: 32, opacity: 0.7, zIndex: 1 }} />
-        <h1 style={{ color: '#1a8cff', marginBottom: 8, fontWeight: 700, fontSize: 36, letterSpacing: 1, position: 'relative', zIndex: 2 }}>Banco Exclusivo</h1>
-        <h2 style={{ color: '#2d3e50', marginBottom: 24, fontWeight: 400, fontSize: 28, position: 'relative', zIndex: 2 }}>Certificado de Finalización</h2>
-        <p style={{ fontSize: 20, margin: '32px 0 0 0', color: '#444', position: 'relative', zIndex: 2 }}>Otorgado a</p>
-        <h2 style={{ color: '#1a8cff', margin: 0, fontSize: 28, fontWeight: 600, position: 'relative', zIndex: 2 }}>{nombre}</h2>
-        <p style={{ fontSize: 20, margin: '32px 0 0 0', color: '#444', position: 'relative', zIndex: 2 }}>por completar satisfactoriamente el curso</p>
-        <h3 style={{ color: '#2d3e50', margin: 0, fontSize: 24, position: 'relative', zIndex: 2 }}>{nombreCurso}</h3>
-        <p style={{ margin: '40px 0 0 0', fontSize: 18, color: '#888', position: 'relative', zIndex: 2 }}>Emitido por Banco Exclusivo • {new Date().toLocaleDateString()}</p>
-        <div style={{ marginTop: 48, textAlign: 'center', color: '#1a8cff', fontWeight: 500, fontSize: 18, position: 'relative', zIndex: 2 }}>
-          <span>__________________________<br/>Heber Mejire Jacobe (Heber Renuel)<br/>Director Académico</span>
+    <>
+      <style>{printStyles}</style>
+      <div className="certificado-container" style={{ textAlign: 'center', padding: 40, background: 'linear-gradient(135deg, #1a8cff 0%, #2d3e50 100%)', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="no-print" style={{ marginBottom: 32 }}>
+          <h2 style={{ color: '#fff' }}>Nombre para el certificado:</h2>
+          <input
+            type="text"
+            value={nombre === 'Nombre del Usuario' ? '' : nombre}
+            onChange={e => setNombre(e.target.value)}
+            placeholder="Nombre del Usuario"
+            style={{ padding: '12px', fontSize: 18, borderRadius: 8, border: '1px solid #fff', width: 320, marginTop: 8, color: '#1a8cff', background: '#fff' }}
+          />
+          <small style={{ color: '#fff', marginTop: 8, display: 'block' }}>Puedes editar el nombre que aparecerá en el certificado.</small>
+        </div>
+        <div ref={ref} id="certificado-print" style={{
+          display: 'inline-block',
+          background: '#1a8cff',
+          padding: 48,
+          minWidth: 816,
+          minHeight: 1056,
+          width: 816,
+          height: 1056,
+          maxWidth: 816,
+          maxHeight: 1056,
+          boxShadow: '0 8px 32px rgba(26,140,255,0.10)',
+          position: 'relative',
+          fontFamily: 'serif',
+          overflow: 'hidden',
+          borderRadius: 32,
+          border: '8px solid #fff',
+          outline: '6px solid #fff',
+          outlineOffset: '-12px',
+          color: '#fff',
+          margin: '0 auto',
+        }}>
+          <img src="/imagen/Diseño sin título (1) (1).png" alt="Banco Exclusivo" style={{ width: 120, position: 'absolute', top: 32, left: 32, zIndex: 1, filter: 'brightness(0) invert(1)' }} />
+          <img src="/imagen/BE (17).png" alt="Sello" style={{ width: 80, position: 'absolute', bottom: 32, right: 32, opacity: 0.7, zIndex: 1, filter: 'brightness(0) invert(1)' }} />
+          <h1 style={{ color: '#fff', marginBottom: 8, fontWeight: 700, fontSize: 36, letterSpacing: 1, position: 'relative', zIndex: 2 }}>Banco Exclusivo</h1>
+          <h2 style={{ color: '#fff', marginBottom: 24, fontWeight: 400, fontSize: 28, position: 'relative', zIndex: 2 }}>Certificado de Finalización</h2>
+          <p style={{ fontSize: 20, margin: '32px 0 0 0', color: '#fff', position: 'relative', zIndex: 2 }}>Otorgado a</p>
+          <h2 style={{ color: '#fff', margin: 0, fontSize: 28, fontWeight: 600, position: 'relative', zIndex: 2 }}>{nombre}</h2>
+          <p style={{ fontSize: 20, margin: '32px 0 0 0', color: '#fff', position: 'relative', zIndex: 2 }}>por completar satisfactoriamente el curso</p>
+          <h3 style={{ color: '#fff', margin: 0, fontSize: 24, position: 'relative', zIndex: 2 }}>{nombreCurso}</h3>
+          <p style={{ margin: '40px 0 0 0', fontSize: 18, color: '#fff', position: 'relative', zIndex: 2 }}>Emitido por Banco Exclusivo • {new Date().toLocaleDateString()}</p>
+          <div style={{ marginTop: 48, textAlign: 'center', color: '#fff', fontWeight: 500, fontSize: 18, position: 'relative', zIndex: 2 }}>
+            <span>__________________________<br/>Heber Mejire Jacobe (Heber Renuel)<br/>Director Académico</span>
+          </div>
+        </div>
+        <div className="no-print" style={{ marginTop: 32 }}>
+          <button onClick={() => window.print()} style={{ marginRight: 16, padding: '10px 24px', fontSize: 16, background: '#fff', color: '#1a8cff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Imprimir</button>
+          <button onClick={descargarPNG} style={{ padding: '10px 24px', fontSize: 16, background: '#2d3e50', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Descargar PNG</button>
         </div>
       </div>
-      <div style={{ marginTop: 32 }}>
-        <button onClick={() => window.print()} style={{ marginRight: 16, padding: '10px 24px', fontSize: 16, background: '#1a8cff', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Imprimir</button>
-        <button onClick={descargarPNG} style={{ padding: '10px 24px', fontSize: 16, background: '#2d3e50', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Descargar PNG</button>
-      </div>
-    </div>
+    </>
   );
 }
