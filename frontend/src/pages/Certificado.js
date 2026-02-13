@@ -1,15 +1,32 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useContext, useEffect } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 import * as htmlToImage from 'html-to-image';
+
 
 export default function Certificado() {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const nombreCurso = params.get('curso') || 'Curso';
-  const [nombre, setNombre] = React.useState(localStorage.getItem('nombreUsuario') || 'Nombre del Usuario');
+  const { usuario } = useContext(AuthContext);
+  // Si el usuario está autenticado, usar nombre y apellido de la cuenta
+  const nombreCompletoUsuario = usuario && usuario.nombre && usuario.apellido
+    ? `${usuario.nombre} ${usuario.apellido}`
+    : null;
+  const [nombre, setNombre] = useState(
+    nombreCompletoUsuario || localStorage.getItem('nombreUsuario') || 'Nombre del Usuario'
+  );
   const ref = useRef();
 
-  React.useEffect(() => {
+  // Si el usuario inicia sesión después de renderizar, actualizar el nombre automáticamente
+  useEffect(() => {
+    if (nombreCompletoUsuario && nombre !== nombreCompletoUsuario) {
+      setNombre(nombreCompletoUsuario);
+    }
+    // eslint-disable-next-line
+  }, [nombreCompletoUsuario]);
+
+  useEffect(() => {
     if (nombre && nombre !== 'Nombre del Usuario') {
       localStorage.setItem('nombreUsuario', nombre);
     }
