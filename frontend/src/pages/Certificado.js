@@ -115,7 +115,7 @@ export default function Certificado() {
           color: '#fff',
           margin: '0 auto',
         }}>
-          <img src="/imagen/Diseño sin título (1) (1).png" alt="Banco Exclusivo" style={{ width: 120, position: 'absolute', top: 32, left: 32, zIndex: 1, filter: 'brightness(0) invert(1)' }} />
+          <img src={process.env.PUBLIC_URL + '/imagen/Diseño sin título (1) (1).png'} alt="Banco Exclusivo" style={{ width: 120, position: 'absolute', top: 32, left: 32, zIndex: 1 }} />
           {/* Bordes académicos decorativos */}
           <div style={{
             position: 'absolute',
@@ -130,8 +130,6 @@ export default function Certificado() {
               <rect x="16" y="16" width="784" height="1024" rx="24" stroke="#fff" strokeWidth="6" fill="none" />
               <rect x="32" y="32" width="752" height="992" rx="18" stroke="#ffd700" strokeWidth="4" fill="none" />
               <rect x="48" y="48" width="720" height="960" rx="12" stroke="#1a8cff" strokeWidth="2" fill="none" />
-              <text x="50%" y="60" textAnchor="middle" fontSize="32" fill="#ffd700" fontWeight="bold">🏛️</text>
-              <text x="50%" y="1040" textAnchor="middle" fontSize="32" fill="#ffd700" fontWeight="bold">🎓</text>
             </svg>
           </div>
           <h1 style={{ color: '#fff', marginBottom: 8, fontWeight: 700, fontSize: 36, letterSpacing: 1, position: 'relative', zIndex: 2 }}>Banco Exclusivo</h1>
