@@ -77,20 +77,23 @@ export default function Certificado() {
   };
 
   return (
-    <>
+    <div>
       <style>{printStyles}</style>
       <div className="certificado-container" style={{ textAlign: 'center', padding: 40, background: 'linear-gradient(135deg, #1a8cff 0%, #2d3e50 100%)', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="no-print" style={{ marginBottom: 32 }}>
-          <h2 style={{ color: '#fff' }}>Nombre para el certificado:</h2>
-          <input
-            type="text"
-            value={nombre === 'Nombre del Usuario' ? '' : nombre}
-            onChange={e => setNombre(e.target.value)}
-            placeholder="Nombre del Usuario"
-            style={{ padding: '12px', fontSize: 18, borderRadius: 8, border: '1px solid #fff', width: 320, marginTop: 8, color: '#1a8cff', background: '#fff' }}
-          />
-          <small style={{ color: '#fff', marginTop: 8, display: 'block' }}>Puedes editar el nombre que aparecerá en el certificado.</small>
-        </div>
+        {/* Campo de edición y botones solo visibles en web, nunca en impresión */}
+        {!window.matchMedia('print').matches && (
+          <div className="no-print" style={{ marginBottom: 32 }}>
+            <h2 style={{ color: '#fff' }}>Nombre para el certificado:</h2>
+            <input
+              type="text"
+              value={nombre === 'Nombre del Usuario' ? '' : nombre}
+              onChange={e => setNombre(e.target.value)}
+              placeholder="Nombre del Usuario"
+              style={{ padding: '12px', fontSize: 18, borderRadius: 8, border: '1px solid #fff', width: 320, marginTop: 8, color: '#1a8cff', background: '#fff' }}
+            />
+            <small style={{ color: '#fff', marginTop: 8, display: 'block' }}>Puedes editar el nombre que aparecerá en el certificado.</small>
+          </div>
+        )}
         <div ref={ref} id="certificado-print" style={{
           display: 'inline-block',
           background: '#1a8cff',
@@ -113,8 +116,6 @@ export default function Certificado() {
           margin: '0 auto',
         }}>
           <img src="/imagen/Diseño sin título (1) (1).png" alt="Banco Exclusivo" style={{ width: 120, position: 'absolute', top: 32, left: 32, zIndex: 1, filter: 'brightness(0) invert(1)' }} />
-          {/* Imagen de sello eliminada (casa) */}
-
           {/* Bordes académicos decorativos */}
           <div style={{
             position: 'absolute',
@@ -144,11 +145,13 @@ export default function Certificado() {
             <span>__________________________<br/>Heber Mejire Jacobe (Heber Renuel)<br/>Director Académico</span>
           </div>
         </div>
-        <div className="no-print" style={{ marginTop: 32 }}>
-          <button onClick={() => window.print()} style={{ marginRight: 16, padding: '10px 24px', fontSize: 16, background: '#fff', color: '#1a8cff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Imprimir</button>
-          <button onClick={descargarPNG} style={{ padding: '10px 24px', fontSize: 16, background: '#2d3e50', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Descargar PNG</button>
-        </div>
+        {!window.matchMedia('print').matches && (
+          <div className="no-print" style={{ marginTop: 32 }}>
+            <button onClick={() => window.print()} style={{ marginRight: 16, padding: '10px 24px', fontSize: 16, background: '#fff', color: '#1a8cff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Imprimir</button>
+            <button onClick={descargarPNG} style={{ padding: '10px 24px', fontSize: 16, background: '#2d3e50', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>Descargar PNG</button>
+          </div>
+        )}
       </div>
-    </>
+    </div>
   );
 }
