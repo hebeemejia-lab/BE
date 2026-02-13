@@ -24,12 +24,10 @@ export default function Certificado() {
     <div className="certificado-container" style={{ textAlign: 'center', padding: 40, background: 'linear-gradient(135deg, #eaf6ff 0%, #f8f8f8 100%)' }}>
       <div ref={ref} style={{
         display: 'inline-block',
-        border: '10px solid #1a8cff',
-        borderRadius: 24,
         background: '#fff',
         padding: 48,
-        minWidth: 816, // 8.5 pulgadas * 96 dpi
-        minHeight: 1056, // 11 pulgadas * 96 dpi
+        minWidth: 816,
+        minHeight: 1056,
         width: 816,
         height: 1056,
         maxWidth: 816,
@@ -38,6 +36,11 @@ export default function Certificado() {
         position: 'relative',
         fontFamily: 'serif',
         overflow: 'hidden',
+        borderRadius: 32,
+        border: '8px solid #1a8cff',
+        borderImage: 'linear-gradient(135deg, #1a8cff 0%, #00eaff 50%, #2d3e50 100%) 1',
+        outline: '6px solid #fff',
+        outlineOffset: '-12px',
       }}>
         <img src="/imagen/Diseño sin título (1) (1).png" alt="Banco Exclusivo" style={{ width: 120, position: 'absolute', top: 32, left: 32, zIndex: 1 }} />
         <img src="/imagen/BE (17).png" alt="Sello" style={{ width: 80, position: 'absolute', bottom: 32, right: 32, opacity: 0.7, zIndex: 1 }} />
@@ -48,7 +51,7 @@ export default function Certificado() {
         <p style={{ fontSize: 20, margin: '32px 0 0 0', color: '#444', position: 'relative', zIndex: 2 }}>por completar satisfactoriamente el curso</p>
         <h3 style={{ color: '#2d3e50', margin: 0, fontSize: 24, position: 'relative', zIndex: 2 }}>{nombreCurso}</h3>
         <p style={{ margin: '40px 0 0 0', fontSize: 18, color: '#888', position: 'relative', zIndex: 2 }}>Emitido por Banco Exclusivo • {new Date().toLocaleDateString()}</p>
-        <div style={{ marginTop: 48, textAlign: 'right', color: '#1a8cff', fontWeight: 500, fontSize: 18, position: 'relative', zIndex: 2 }}>
+        <div style={{ marginTop: 48, textAlign: 'center', color: '#1a8cff', fontWeight: 500, fontSize: 18, position: 'relative', zIndex: 2 }}>
           <span>__________________________<br/>Heber Mejire Jacobe (Heber Renuel)<br/>Director Académico</span>
         </div>
       </div>

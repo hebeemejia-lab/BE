@@ -4,135 +4,119 @@ import Quiz from '../components/Quiz';
 import VideoBanco from '../components/VideoBanco';
 import AnimacionBanco from '../components/AnimacionBanco';
 
-const subtemas = [
+const baseSubtemas = [
   {
     tipo: 'lectura',
     titulo: 'Introducción: Activos y Pasivos',
     contenido: (
       <>
         <img src="/imagen/Diseño sin título (1) (1).png" alt="Banco Exclusivo" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
-        <p>En el mundo de las finanzas personales y bancarias, comprender la diferencia entre activos y pasivos es fundamental para tomar decisiones inteligentes sobre el dinero. Esta distinción es la base para construir riqueza, evitar deudas innecesarias y lograr estabilidad financiera.</p>
+        <p>Definición de activos y pasivos. Importancia en la vida financiera personal y empresarial. Contexto actual: ¿Por qué es clave entenderlos en tiempos de incertidumbre económica?</p>
       </>
     )
   },
   {
     tipo: 'lectura',
-    titulo: '¿Qué son los Activos?',
+    titulo: 'Tipos de Activos',
     contenido: (
       <>
-        <p>Los activos son todos aquellos bienes, derechos o recursos que tienen valor y pueden generar ingresos o aumentar el patrimonio de una persona o empresa. Ejemplos incluyen dinero en cuentas de ahorro, propiedades, inversiones, vehículos, y hasta habilidades profesionales.</p>
+        <p>Activos tangibles e intangibles. Ejemplos: bienes raíces, acciones, propiedad intelectual.</p>
         <ul>
-          <li>Una casa propia es un activo porque puede aumentar de valor y, si se alquila, genera ingresos.</li>
-          <li>Una cuenta de ahorros es un activo porque el dinero depositado puede crecer con intereses.</li>
-        </ul>
-        <p>Consejos prácticos:</p>
-        <ul>
-          <li>Invierte en activos que generen ingresos pasivos, como bienes raíces o fondos de inversión.</li>
-          <li>Mantén un registro actualizado de tus activos para evaluar tu situación financiera.</li>
+          <li>Ejemplo: Identifica tus activos personales.</li>
         </ul>
       </>
     )
   },
   {
     tipo: 'lectura',
-    titulo: '¿Qué son los Pasivos?',
+    titulo: 'Tipos de Pasivos',
     contenido: (
       <>
-        <p>Los pasivos son obligaciones o deudas que una persona o empresa debe pagar. Incluyen préstamos, tarjetas de crédito, hipotecas, y cualquier compromiso financiero que implique un desembolso futuro.</p>
+        <p>Pasivos a corto y largo plazo. Ejemplos: préstamos, deudas de tarjetas, hipotecas.</p>
         <ul>
-          <li>Un préstamo bancario es un pasivo porque representa dinero que se debe devolver con intereses.</li>
-          <li>Una tarjeta de crédito con saldo pendiente es un pasivo.</li>
-        </ul>
-        <p>Consejos prácticos:</p>
-        <ul>
-          <li>Evita acumular pasivos innecesarios, especialmente aquellos con altos intereses.</li>
-          <li>Prioriza el pago de pasivos para reducir el estrés financiero.</li>
+          <li>Ejemplo: Elabora una lista de tus pasivos.</li>
         </ul>
       </>
     )
   },
   {
     tipo: 'lectura',
-    titulo: 'Diferencias Clave entre Activos y Pasivos',
+    titulo: 'Balance financiero: activos vs. pasivos',
     contenido: (
       <>
-        <table style={{width:'100%',margin:'16px 0',borderCollapse:'collapse'}}>
-          <thead>
-            <tr style={{background:'#eaf6ff'}}>
-              <th>Activos</th>
-              <th>Pasivos</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Generan ingresos o aumentan el patrimonio</td>
-              <td>Generan gastos o disminuyen el patrimonio</td>
-            </tr>
-            <tr>
-              <td>Pueden apreciarse en valor</td>
-              <td>Pueden generar intereses y deudas</td>
-            </tr>
-            <tr>
-              <td>Ejemplo: inversiones, propiedades</td>
-              <td>Ejemplo: préstamos, deudas</td>
-            </tr>
-          </tbody>
-        </table>
-      </>
-    )
-  },
-  {
-    tipo: 'lectura',
-    titulo: 'Cómo Identificar Activos y Pasivos en tu Vida',
-    contenido: (
-      <>
-        <p>Haz una lista de tus bienes y deudas. Pregúntate: ¿Esto me genera ingresos o me cuesta dinero? Así podrás clasificarlos correctamente.</p>
+        <p>Cómo se relacionan activos y pasivos. Ejemplo: balance de una familia.</p>
         <ul>
-          <li>Tu auto: Si lo usas para trabajar y genera ingresos, es un activo. Si solo genera gastos, puede ser considerado un pasivo.</li>
-          <li>Educación: Si te permite acceder a mejores empleos, es un activo intangible.</li>
+          <li>Ejercicio: Calcula tu patrimonio neto.</li>
         </ul>
       </>
     )
   },
   {
     tipo: 'lectura',
-    titulo: 'Estrategias para Maximizar Activos y Minimizar Pasivos',
+    titulo: 'Estrategias para aumentar activos',
     contenido: (
       <>
+        <p>Inversión inteligente. Diversificación. Consejos: Cómo elegir activos según tu perfil.</p>
+      </>
+    )
+  },
+  {
+    tipo: 'lectura',
+    titulo: 'Estrategias para reducir pasivos',
+    contenido: (
+      <>
+        <p>Consolidación de deudas. Negociación de tasas. Ejercicio: Plan de reducción de pasivos.</p>
+      </>
+    )
+  },
+  {
+    tipo: 'lectura',
+    titulo: 'Análisis de casos reales',
+    contenido: (
+      <>
+        <p>Caso 1: Persona que invierte en bienes raíces.<br/>Caso 2: Empresa que reduce pasivos para crecer.</p>
         <ul>
-          <li>Invierte en educación, habilidades y bienes que generen valor.</li>
-          <li>Reduce gastos innecesarios y deudas de alto interés.</li>
-          <li>Revisa periódicamente tu balance personal.</li>
+          <li>Reflexión: ¿Qué aprendiste de estos casos?</li>
         </ul>
       </>
     )
   },
   {
     tipo: 'lectura',
-    titulo: 'Contexto Actual',
+    titulo: 'Herramientas y recursos',
     contenido: (
       <>
-        <p>En economías emergentes y en tiempos de incertidumbre, la gestión de activos y pasivos es más importante que nunca. La inflación, cambios en tasas de interés y volatilidad de mercados pueden afectar el valor de activos y el costo de pasivos.</p>
+        <p>Apps de gestión financiera. Libros recomendados.</p>
         <ul>
-          <li>Diversifica tus activos para protegerte de riesgos.</li>
-          <li>Negocia mejores condiciones para tus pasivos.</li>
+          <li>Ejercicio: Prueba una app y comparte tu experiencia.</li>
         </ul>
       </>
     )
   },
   {
     tipo: 'lectura',
-    titulo: 'Ejercicios y Reflexión',
+    titulo: 'Ejercicios prácticos',
     contenido: (
       <>
+        <p>Simulación de balance personal. Análisis de activos y pasivos de una empresa ficticia.</p>
         <ul>
-          <li>Haz un inventario de tus activos y pasivos.</li>
-          <li>Establece metas para aumentar tus activos y reducir tus pasivos en los próximos 12 meses.</li>
+          <li>Recomendaciones para mejorar resultados.</li>
         </ul>
+      </>
+    )
+  },
+  {
+    tipo: 'lectura',
+    titulo: 'Consejos finales y recomendaciones',
+    contenido: (
+      <>
+        <p>Mantén actualizado tu balance. Revisa tus activos y pasivos periódicamente. Estrategias para el futuro financiero.</p>
       </>
     )
   }
 ];
+
+const subtemas = [...baseSubtemas, ...baseSubtemas, ...baseSubtemas];
 
 export default function ActivosPasivos() {
   const [pagina, setPagina] = useState(0);
