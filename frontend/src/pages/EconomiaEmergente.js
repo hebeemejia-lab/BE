@@ -6,56 +6,116 @@ import AnimacionBanco from '../components/AnimacionBanco';
 
 const subtemas = [
   {
+    tipo: 'lectura',
+    titulo: 'Introducción: Economía Emergente',
+    contenido: (
+      <>
+        <img src="/imagen/Diseño sin título (1) (1).png" alt="Banco Exclusivo" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
+        <p>Las economías emergentes son países o regiones que están en proceso de crecimiento y desarrollo económico. Entender cómo funcionan, sus oportunidades y desafíos, es clave para tomar decisiones financieras acertadas.</p>
+      </>
+    )
+  },
+  {
+    tipo: 'lectura',
     titulo: '¿Qué es una Economía Emergente?',
     contenido: (
       <>
-        <img src="/imagen/Diseño sin título (1) (1).png" alt="Economía Emergente Banco Exclusivo" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
-        <img src="https://images.unsplash.com/photo-1465101178521-c1a9136a3b41?auto=format&fit=crop&w=600&q=80" alt="Economía Emergente" style={{maxWidth: 220, borderRadius: 12, marginBottom: 16, marginLeft: 16}} />
-        <p>Una <b>economía emergente</b> es un país que está en proceso de rápido crecimiento e industrialización. Ejemplos: China, India, Brasil, México.</p>
+        <p>Una economía emergente es aquella que está transitando de ser un país en vías de desarrollo a uno más avanzado, con mercados financieros en expansión, mayor industrialización y crecimiento del PIB.</p>
         <ul>
-          <li>Presentan oportunidades de inversión y crecimiento.</li>
-          <li>Enfrentan desafíos como volatilidad y riesgos políticos.</li>
+          <li>Brasil, México, India y China son ejemplos de economías emergentes.</li>
         </ul>
       </>
     )
   },
   {
-    titulo: 'Características principales',
+    tipo: 'lectura',
+    titulo: 'Características de las Economías Emergentes',
     contenido: (
       <>
-        <img src="/imagen/BE (17).png" alt="Características Banco Exclusivo" style={{maxWidth: 120, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
-        <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=600&q=80" alt="Características" style={{maxWidth: 220, borderRadius: 12, marginBottom: 16, marginLeft: 16}} />
         <ul>
-          <li>Crecimiento económico acelerado.</li>
-          <li>Mayor apertura a mercados internacionales.</li>
-          <li>Desarrollo de infraestructura y tecnología.</li>
+          <li>Crecimiento rápido del PIB.</li>
+          <li>Expansión de mercados financieros.</li>
+          <li>Mayor acceso a tecnología y educación.</li>
+          <li>Volatilidad económica y política.</li>
+        </ul>
+        <p>Consejos prácticos:</p>
+        <ul>
+          <li>Aprovecha oportunidades de inversión en sectores en crecimiento.</li>
+          <li>Mantente informado sobre cambios regulatorios y políticos.</li>
         </ul>
       </>
     )
   },
   {
-    titulo: 'Oportunidades y riesgos',
+    tipo: 'lectura',
+    titulo: 'Oportunidades en Economías Emergentes',
     contenido: (
       <>
-        <img src="/imagen/BE (14).png" alt="Oportunidades Banco Exclusivo" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
-        <img src="https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=600&q=80" alt="Oportunidades y riesgos" style={{maxWidth: 220, borderRadius: 12, marginBottom: 16, marginLeft: 16}} />
         <ul>
-          <li>Oportunidades: crecimiento, nuevos mercados, innovación.</li>
-          <li>Riesgos: inestabilidad política, fluctuaciones de moneda, regulaciones cambiantes.</li>
+          <li>Inversiones en infraestructura, tecnología y energía.</li>
+          <li>Crecimiento de la clase media y consumo interno.</li>
+          <li>Innovación y emprendimiento.</li>
         </ul>
+        <p>Ejemplo: Startups tecnológicas en India han crecido exponencialmente en la última década.</p>
       </>
     )
   },
   {
-    titulo: '¿Cómo invertir en economías emergentes?',
+    tipo: 'lectura',
+    titulo: 'Desafíos y Riesgos',
     contenido: (
       <>
-        <img src="/imagen/BE (11).png" alt="Invertir Banco Exclusivo" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
-        <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80" alt="Invertir" style={{maxWidth: 220, borderRadius: 12, marginBottom: 16, marginLeft: 16}} />
         <ul>
-          <li>Investiga el país y su contexto.</li>
+          <li>Volatilidad de monedas y mercados.</li>
+          <li>Riesgo político y regulatorio.</li>
+          <li>Desigualdad social y acceso limitado a servicios financieros.</li>
+        </ul>
+        <p>Consejos:</p>
+        <ul>
           <li>Diversifica tus inversiones.</li>
-          <li>Consulta expertos y mantente informado.</li>
+          <li>Evalúa el riesgo país antes de invertir.</li>
+        </ul>
+      </>
+    )
+  },
+  {
+    tipo: 'lectura',
+    titulo: 'Contexto Actual',
+    contenido: (
+      <>
+        <p>En 2026, las economías emergentes enfrentan retos como inflación, cambios en tasas de interés globales y adaptación a nuevas tecnologías. Sin embargo, siguen siendo motores de crecimiento mundial.</p>
+        <ul>
+          <li>La digitalización bancaria ha permitido mayor inclusión financiera en América Latina.</li>
+        </ul>
+      </>
+    )
+  },
+  {
+    tipo: 'lectura',
+    titulo: 'Impacto en Finanzas Personales',
+    contenido: (
+      <>
+        <ul>
+          <li>Acceso a nuevos productos financieros.</li>
+          <li>Oportunidades de empleo y emprendimiento.</li>
+          <li>Cambios en hábitos de consumo.</li>
+        </ul>
+        <p>Consejos:</p>
+        <ul>
+          <li>Aprovecha la digitalización para acceder a servicios bancarios innovadores.</li>
+          <li>Considera inversiones en sectores emergentes.</li>
+        </ul>
+      </>
+    )
+  },
+  {
+    tipo: 'lectura',
+    titulo: 'Ejercicios y Reflexión',
+    contenido: (
+      <>
+        <ul>
+          <li>Investiga un sector en crecimiento en tu país.</li>
+          <li>Analiza cómo la economía emergente afecta tus decisiones financieras.</li>
         </ul>
       </>
     )
