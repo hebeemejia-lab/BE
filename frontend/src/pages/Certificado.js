@@ -121,7 +121,7 @@ export default function Certificado() {
           color: '#fff',
           margin: '0 auto',
         }}>
-          <img src={process.env.PUBLIC_URL + '/imagen/Diseño sin título (1) (1).png'} alt="Banco Exclusivo" style={{ width: 120, position: 'absolute', top: 32, left: 32, zIndex: 1 }} />
+          <img src={process.env.PUBLIC_URL + '/imagen/Diseño sin título (1) (1).png'} alt="Banco Exclusivo" style={{ width: 100, position: 'absolute', top: 56, left: 56, zIndex: 1, background: 'transparent', padding: '8px', borderRadius: '16px' }} />
           {/* Bordes académicos decorativos */}
           <div style={{
             position: 'absolute',
