@@ -17,6 +17,9 @@ router.get('/test', (req, res) => {
 router.get('/dashboard', adminController.obtenerDashboard);
 router.get('/estado-mercantil', verificarAdminFull, adminController.obtenerEstadoMercantil);
 
+// Estado de cuenta de usuario
+router.get('/usuarios/:id/estado-cuenta', adminController.obtenerEstadoCuentaUsuario);
+
 // 👥 Usuarios
 router.get('/usuarios', adminController.listarUsuarios);
 router.post('/usuarios', adminController.crearUsuarioAdmin);

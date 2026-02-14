@@ -15,6 +15,45 @@ require('../models');
 
 // Dashboard: Estadísticas generales
 exports.obtenerDashboard = async (req, res) => {
+// Estado de cuenta: todas las transacciones de un usuario
+exports.obtenerEstadoCuentaUsuario = async (req, res) => {
+  const usuarioId = req.params.id;
+  try {
+    // Buscar todas las transacciones relacionadas al usuario
+    const [recargas, retiros, transferenciasBancarias, transferenciasInternacionales, prestamos, inversiones, transferencias] = await Promise.all([
+      Recarga.findAll({ where: { usuarioId }, order: [['createdAt', 'DESC']] }),
+      SolicitudRetiroManual.findAll({ where: { usuarioId }, order: [['createdAt', 'DESC']] }),
+      TransferenciaBancaria.findAll({ where: { usuarioId }, order: [['createdAt', 'DESC']] }),
+      TransferenciaInternacional.findAll({ where: { usuarioId }, order: [['createdAt', 'DESC']] }),
+      Loan.findAll({ where: { usuarioId }, order: [['createdAt', 'DESC']] }),
+      Inversion ? Inversion.findAll({ where: { usuarioId }, order: [['createdAt', 'DESC']] }) : [],
+      Transfer.findAll({
+        where: {
+          [Op.or]: [{ remitenteId: usuarioId }, { destinatarioId: usuarioId }]
+        },
+        order: [['createdAt', 'DESC']]
+      })
+    ]);
+
+    res.json({
+      exito: true,
+      recargas,
+      retiros,
+      transferenciasBancarias,
+      transferenciasInternacionales,
+      prestamos,
+      inversiones,
+      transferencias
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo estado de cuenta:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al obtener estado de cuenta',
+      error: error.message
+    });
+  }
+};
   try {
     // Contar usuarios
     const totalUsuarios = await User.count();
