@@ -4,6 +4,7 @@ import * as htmlToImage from 'html-to-image';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import './AdminPanel.css';
+import EstadoCuentaPanel from '../components/EstadoCuentaPanel';
 
 const descargarImagenDesdeHtml = async (html, nombreArchivo) => {
   const wrapper = document.createElement('div');
@@ -20,6 +21,7 @@ const descargarImagenDesdeHtml = async (html, nombreArchivo) => {
       backgroundColor: '#f8fafc',
     });
     const link = document.createElement('a');
+              <EstadoCuentaPanel />
     link.download = nombreArchivo;
     link.href = dataUrl;
     link.click();
