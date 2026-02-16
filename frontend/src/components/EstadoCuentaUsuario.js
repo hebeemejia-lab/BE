@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import FiltrosEstadoCuenta from './FiltrosEstadoCuenta';
-import htmlToImage from 'html-to-image';
+import { toPng } from 'html-to-image';
 
 const EstadoCuentaUsuario = ({ usuario }) => {
   const [estadoCuenta, setEstadoCuenta] = useState(null);
@@ -46,7 +46,7 @@ const EstadoCuentaUsuario = ({ usuario }) => {
 
     const handleDescargarPNG = () => {
       if (!cuentaRef.current) return;
-      htmlToImage.toPng(cuentaRef.current)
+      toPng(cuentaRef.current)
         .then(dataUrl => {
           const link = document.createElement('a');
           link.download = `estado-cuenta-${usuario.nombre}-${usuario.apellido}.png`;
