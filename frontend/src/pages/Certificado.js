@@ -1,7 +1,7 @@
 import React, { useRef, useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
-import * as htmlToImage from 'html-to-image';
+import { toPng } from 'html-to-image';
 
 // Estilos globales para impresión y centrado
 const printStyles = `
@@ -73,7 +73,7 @@ export default function Certificado() {
 
   const descargarPNG = () => {
     if (!ref.current) return;
-    htmlToImage.toPng(ref.current, { pixelRatio: 2 })
+    toPng(ref.current, { pixelRatio: 2 })
       .then(function (dataUrl) {
         const link = document.createElement('a');
         link.download = `certificado-${nombreCurso}.png`;

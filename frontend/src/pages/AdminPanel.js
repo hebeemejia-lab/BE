@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import * as htmlToImage from 'html-to-image';
+import { toJpeg } from 'html-to-image';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import './AdminPanel.css';
@@ -16,7 +16,7 @@ const descargarImagenDesdeHtml = async (html, nombreArchivo) => {
   const node = wrapper.firstElementChild;
 
   try {
-    const dataUrl = await htmlToImage.toJpeg(node, {
+    const dataUrl = await toJpeg(node, {
       quality: 0.95,
       backgroundColor: '#f8fafc',
     });
