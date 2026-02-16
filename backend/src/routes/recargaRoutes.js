@@ -3,12 +3,15 @@ const router = express.Router();
 const {
   crearRecargaStripe,
   crearRecargaRapyd,
+  crearRecargaPayPal,
+  capturarRecargaPayPal,
   procesarRecargaTarjeta,
   procesarRecargaExitosa,
   obtenerRecargas,
   obtenerResumenPayPal,
   canjearcoCodigo,
   generarCodigos,
+  crearRecargaTwoCheckout,
   webhookRapyd,
   webhookPayPal,
 } = require('../controllers/recargaController');
@@ -47,13 +50,13 @@ router.post('/webhook-rapyd', webhookRapyd);
 router.post('/paypal/webhook', webhookPayPal);
 
 // Paypal capture (SIN autenticación - viene desde PayPal, no tiene JWT)
-router.post('/paypal/capturar', require('../controllers/recargaController').capturarRecargaPayPal);
+router.post('/paypal/capturar', capturarRecargaPayPal);
 
 // Todas requieren autenticación
 router.post('/crear', verificarToken, crearRecargaStripe);
 router.post('/crear-rapyd', verificarToken, crearRecargaRapyd);
-router.post('/crear-paypal', verificarToken, require('../controllers/recargaController').crearRecargaPayPal);
-router.post('/crear-2checkout', verificarToken, require('../controllers/recargaController').crearRecargaTwoCheckout);
+router.post('/crear-paypal', verificarToken, crearRecargaPayPal);
+router.post('/crear-2checkout', verificarToken, crearRecargaTwoCheckout);
 router.post('/procesar-tarjeta', verificarToken, procesarRecargaTarjeta);
 router.post('/procesar', verificarToken, procesarRecargaExitosa);
 router.get('/historial', verificarToken, obtenerRecargas);
