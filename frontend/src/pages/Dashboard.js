@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { transferAPI, loanAPI } from '../services/api';
+import { transferAPI, loanAPI, depositoAPI } from '../services/api';
 import './Dashboard.css';
 
 export default function Dashboard() {
