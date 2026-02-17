@@ -252,62 +252,93 @@
 }
 
 @media (max-width: 480px) {
+  .home-container {
+    padding: 0 4vw;
+    box-sizing: border-box;
+  }
   .hero-section {
-    padding: 56px 16px;
+    padding: 36px 0 24px 0;
+    text-align: center;
   }
-
+  .hero-content {
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
   .hero-title {
-    font-size: 28px;
+    font-size: 22px;
+    text-align: center;
+    margin-bottom: 12px;
   }
-
   .hero-subtitle {
-    font-size: 16px;
-    margin-bottom: 28px;
+    font-size: 14px;
+    margin-bottom: 18px;
+    text-align: center;
   }
-
   .hero-features {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 10px;
+    width: 100%;
+    justify-items: center;
+    align-items: center;
   }
-
   .feature-button {
-    padding: 14px;
-    font-size: 14px;
+    padding: 8px 0;
+    font-size: 12px;
+    min-width: 0;
+    width: 92vw;
+    max-width: 300px;
+    margin: 0 auto;
+    border-radius: 10px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
-
   .feature-button .button-icon {
-    font-size: 30px;
+    font-size: 22px;
   }
-
   .hero-buttons {
     flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .btn {
+    align-items: center;
+    gap: 10px;
     width: 100%;
-    padding: 12px 20px;
+    margin: 0 auto;
   }
-
+  .btn {
+    width: 92vw;
+    max-width: 300px;
+    padding: 8px 0;
+    font-size: 13px;
+    border-radius: 8px;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
   .features-section,
   .info-section {
-    padding: 56px 16px;
+    padding: 36px 0 24px 0;
   }
-
   .features-section h2,
   .info-section h2 {
-    font-size: 24px;
+    font-size: 18px;
+    text-align: center;
   }
-
   .features-grid,
   .info-grid {
     grid-template-columns: 1fr;
-    gap: 18px;
+    gap: 12px;
+    width: 100%;
+    margin: 0 auto;
   }
-
   .feature-card,
   .info-card {
-    padding: 24px;
+    padding: 16px;
+    border-radius: 10px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
   }
 }
