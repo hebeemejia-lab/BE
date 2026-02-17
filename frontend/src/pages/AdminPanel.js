@@ -1112,7 +1112,7 @@ const DashboardView = ({ dashboard, onNavigate, onGenerarEstado, estadoDesde, es
 
     <div className="gestion-grid">
       <div className="gestion-card">
-        <h3>💵 Depositos en efectivo</h2>
+        <h3>💵 Depositos en efectivo</h3>
         <p>Registra depositos manuales y actualiza saldo.</p>
         <button type="button" onClick={() => onNavigate?.('depositos')}>
           Abrir gestion
