@@ -576,7 +576,7 @@ export default function Deposita() {
               <button
                 type="submit"
                 className="btn-payment"
-                disabled={loading || !codigoRecarga.trim()}
+                disabled={loading || !codigoDeposito.trim()}
               >
                 {loading ? (
                   <>
