@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API from '../services/api';
 
 const BuscadorUsuarios = ({ onSelectUsuario }) => {
   const [usuarios, setUsuarios] = useState([]);
@@ -7,7 +8,7 @@ const BuscadorUsuarios = ({ onSelectUsuario }) => {
   const [filtrados, setFiltrados] = useState([]);
 
   useEffect(() => {
-    axios.get('/backend/usuarios')
+    API.get('/admin/usuarios')
       .then(res => {
         setUsuarios(res.data.usuarios || []);
         setFiltrados(res.data.usuarios || []);
