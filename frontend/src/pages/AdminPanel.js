@@ -1039,11 +1039,16 @@ const AdminPanel = () => {
         )}
 
         {vistaActual === 'clientes' && (
-          <ClientesView
-            usuarios={usuariosAdmin}
-            cargando={usuariosCargando}
-            onCrearUsuario={crearUsuarioAdmin}
-          />
+          <>
+            <ClientesView
+              usuarios={usuariosAdmin}
+              cargando={usuariosCargando}
+              onCrearUsuario={crearUsuarioAdmin}
+            />
+            <div style={{marginTop: 32}}>
+              <EstadoCuentaPanel />
+            </div>
+          </>
         )}
 
         {/* FAQ Feedback */}
