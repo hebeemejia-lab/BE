@@ -106,57 +106,7 @@ exports.obtenerEstadoCuentaUsuario = async (req, res) => {
   }
 };
     
-    // Contar préstamos
-    const totalPrestamos = await Loan.count();
-    const prestamosActivos = await Loan.count({ where: { estado: 'aprobado' } });
-    const prestamosPendientes = await Loan.count({ where: { estado: 'pendiente' } });
-    
-    // Total dinero prestado
-    const prestamos = await Loan.findAll({ where: { estado: 'aprobado' } });
-    const totalPrestado = prestamos.reduce((sum, p) => sum + parseFloat(p.monto), 0);
-    
-    // Cuotas pendientes
-    const cuotasPendientes = await CuotaPrestamo.count({ where: { pagado: false } });
-    const cuotasPagadas = await CuotaPrestamo.count({ where: { pagado: true } });
-    
-    // Feedback FAQ
-    const totalFeedback = await FAQFeedback.count();
-    const feedbackUtil = await FAQFeedback.count({ where: { util: true } });
-    
-    res.json({
-      exito: true,
-      dashboard: {
-        usuarios: {
-          total: totalUsuarios,
-          nuevosHoy: 0 // TODO: implementar
-        },
-        prestamos: {
-          total: totalPrestamos,
-          activos: prestamosActivos,
-          pendientes: prestamosPendientes,
-          totalPrestado: `$${totalPrestado.toFixed(2)}`
-        },
-        cuotas: {
-          pendientes: cuotasPendientes,
-          pagadas: cuotasPagadas,
-          porcentajePago: totalPrestamos > 0 ? ((cuotasPagadas / (cuotasPagadas + cuotasPendientes)) * 100).toFixed(1) : 0
-        },
-        faq: {
-          totalFeedback,
-          feedbackPositivo: feedbackUtil,
-          satisfaccion: totalFeedback > 0 ? ((feedbackUtil / totalFeedback) * 100).toFixed(1) : 0
-        }
-      }
-    });
-  } catch (error) {
-    console.error('❌ Error en dashboard:', error);
-    res.status(500).json({
-      exito: false,
-      mensaje: 'Error al obtener dashboard',
-      error: error.message
-    });
-  }
-};
+
 
 // Listar usuarios básicos (admin)
 exports.listarUsuarios = async (req, res) => {
