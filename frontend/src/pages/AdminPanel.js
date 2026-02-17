@@ -878,7 +878,7 @@ const AdminPanel = () => {
 
   const titulosVista = {
     dashboard: 'Dashboard',
-    depositos: 'Deposita',
+    depositos: 'Depositos en efectivo',
     'retiros-efectivo': 'Retiros en efectivo',
     prestamos: 'Gestion de Prestamos',
     clientes: 'Gestion de Clientes',
@@ -904,7 +904,7 @@ const AdminPanel = () => {
             className={vistaActual === 'depositos' ? 'active' : ''}
             onClick={() => navegarAdmin(rutasAdmin.depositos)}
           >
-            💵 Deposita
+            💵 Depositos en efectivo
           </button>
           <button
             className={vistaActual === 'retiros-efectivo' ? 'active' : ''}
@@ -1112,10 +1112,10 @@ const DashboardView = ({ dashboard, onNavigate, onGenerarEstado, estadoDesde, es
 
     <div className="gestion-grid">
       <div className="gestion-card">
-        <h3>💵 Deposita</h3>
-        <p>Registra depósitos manuales y actualiza saldo.</p>
+        <h3>💵 Depositos en efectivo</h2>
+        <p>Registra depositos manuales y actualiza saldo.</p>
         <button type="button" onClick={() => onNavigate?.('depositos')}>
-          Abrir gestión
+          Abrir gestion
         </button>
       </div>
       <div className="gestion-card">
@@ -1481,14 +1481,14 @@ const DepositosEfectivoView = ({ usuarios, cargando, onActualizarSaldo }) => {
       alert('Monto invalido');
       return;
     }
-    await onActualizarSaldo(form.usuarioId, saldoNuevo, 'Depósito aplicado');
+    await onActualizarSaldo(form.usuarioId, saldoNuevo, 'Deposito en efectivo aplicado');
     setForm({ usuarioId: '', monto: '', notas: '' });
   };
 
   return (
     <div className="depositos-view">
-      <h1>💵 Gestión de Deposita</h1>
-      <p className="view-subtitle">Registra depósitos manuales y actualiza el saldo del cliente.</p>
+      <h1>💵 Gestion de Depositos en Efectivo</h1>
+      <p className="view-subtitle">Registra depositos manuales y actualiza el saldo del cliente.</p>
 
       <form className="movimiento-form" onSubmit={handleSubmit}>
         <select
@@ -1522,7 +1522,7 @@ const DepositosEfectivoView = ({ usuarios, cargando, onActualizarSaldo }) => {
           <span>Saldo nuevo: <strong>${saldoNuevo.toFixed(2)}</strong></span>
         </div>
         <button type="submit" className="btn-crear" disabled={cargando}>
-          {cargando ? 'Procesando...' : 'Registrar depósito'}
+          {cargando ? 'Procesando...' : 'Registrar deposito'}
         </button>
       </form>
     </div>
