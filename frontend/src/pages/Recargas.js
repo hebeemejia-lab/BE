@@ -15,9 +15,6 @@ export default function Recargas() {
   const [backendStatus, setBackendStatus] = useState('checking');
   const paypalButtonRef = useRef(null);
   const recargaIdRef = useRef(null);
-  const [googlePayStep, setGooglePayStep] = useState('start');
-  const [googlePayCard, setGooglePayCard] = useState('visa-4242');
-  const [googlePayAddress, setGooglePayAddress] = useState('home');
 
   // Verificar estado del backend al cargar
   useEffect(() => {
@@ -395,17 +392,6 @@ export default function Recargas() {
     }
   };
 
-  const iniciarGooglePayMock = () => {
-    setGooglePayStep('sheet');
-  };
-
-  const confirmarGooglePayMock = () => {
-    setGooglePayStep('success');
-  };
-
-  const reiniciarGooglePayMock = () => {
-    setGooglePayStep('start');
-  };
 
   return (
     <div className="recargas-container">
@@ -423,13 +409,6 @@ export default function Recargas() {
         >
           <span className="tab-logo paypal-mark" aria-hidden="true">P</span>
           <span>Pagar con PayPal</span>
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'googlepay' ? 'active' : ''}`}
-          onClick={() => setActiveTab('googlepay')}
-        >
-          <span className="tab-logo gpay-g" aria-hidden="true">G</span>
-          <span>Google Pay</span>
         </button>
         <button
           className={`tab-button ${activeTab === 'codigo' ? 'active' : ''}`}
@@ -568,114 +547,6 @@ export default function Recargas() {
         </div>
       )}
 
-      {/* TAB: Google Pay (Mock) */}
-      {activeTab === 'googlepay' && (
-        <div className="payment-container">
-          <div className="payment-card">
-            <div className="card-title">
-              <div className="payment-logo gpay-logo" aria-label="Google Pay">
-                <span className="gpay-g">G</span>
-                <span className="gpay-text">Pay</span>
-              </div>
-              <h2>Google Pay</h2>
-              <p className="card-subtitle">Flujo de compra para revision</p>
-            </div>
-
-            <form onSubmit={(e) => e.preventDefault()} className="payment-form">
-              <div className="form-section">
-                <label htmlFor="monto-gpay" className="monto-label">¿Cuanto deseas recargar?</label>
-                <div className="monto-input-group">
-                  <span className="currency-prefix">USD $</span>
-                  <input
-                    id="monto-gpay"
-                    type="number"
-                    value={monto}
-                    onChange={(e) => setMonto(e.target.value)}
-                    placeholder="0.00"
-                    step="0.01"
-                    min="1"
-                    max="10000"
-                    required
-                    className="monto-input"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="gpay-button"
-                onClick={iniciarGooglePayMock}
-              >
-                <span className="gpay-icon" aria-hidden="true">G</span>
-                <span className="gpay-label">Google Pay</span>
-              </button>
-
-              {googlePayStep === 'success' && (
-                <div className="status-indicator success">
-                  <span className="status-icon">✅</span>
-                  <span>Pago completado (mock)</span>
-                </div>
-              )}
-            </form>
-          </div>
-
-          {googlePayStep === 'sheet' && (
-            <div className="gpay-overlay" role="dialog" aria-modal="true">
-              <div className="gpay-sheet">
-                <div className="gpay-sheet-header">
-                  <div className="gpay-brand">
-                    <span className="gpay-dot"></span>
-                    <span>Google Pay</span>
-                  </div>
-                  <button type="button" className="gpay-close" onClick={reiniciarGooglePayMock}>
-                    ✕
-                  </button>
-                </div>
-                <div className="gpay-merchant">
-                  <div>
-                    <div className="gpay-merchant-name">Banco Exclusivo</div>
-                    <div className="gpay-merchant-sub">Recarga de saldo</div>
-                  </div>
-                  <div className="gpay-total">USD ${parseFloat(monto || 0).toFixed(2)}</div>
-                </div>
-                <div className="gpay-sheet-body">
-                  <div className="gpay-row gpay-row-stack">
-                    <span>Tarjeta</span>
-                    <select
-                      className="gpay-select"
-                      value={googlePayCard}
-                      onChange={(e) => setGooglePayCard(e.target.value)}
-                    >
-                      <option value="visa-4242">Visa •••• 4242</option>
-                      <option value="master-1111">Mastercard •••• 1111</option>
-                      <option value="amex-0005">Amex •••• 0005</option>
-                    </select>
-                  </div>
-                  <div className="gpay-row gpay-row-stack">
-                    <span>Direccion</span>
-                    <select
-                      className="gpay-select"
-                      value={googlePayAddress}
-                      onChange={(e) => setGooglePayAddress(e.target.value)}
-                    >
-                      <option value="home">Casa - Avenida Central 123</option>
-                      <option value="office">Oficina - Torre Norte, Piso 4</option>
-                    </select>
-                  </div>
-                  <div className="gpay-row">
-                    <span>Entrega</span>
-                    <strong>Instantaneo</strong>
-                  </div>
-                </div>
-                <button type="button" className="gpay-confirm" onClick={confirmarGooglePayMock}>
-                  Confirmar pago
-                </button>
-                <div className="gpay-footnote">No se comparte tu numero real de tarjeta.</div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* TAB: Código */}
       {activeTab === 'codigo' && (
