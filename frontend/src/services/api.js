@@ -46,15 +46,15 @@ export const loanAPI = {
   rechazar: (datos) => API.post('/prestamos/rechazar', datos),
 };
 
-// Recargas
-export const recargaAPI = {
-  crearRecargaStripe: (datos) => API.post('/recargas/crear', datos),
-  procesarRecargaTarjeta: (datos) => API.post('/recargas/procesar-tarjeta', datos),
-  procesarRecargaExitosa: (datos) => API.post('/recargas/procesar', datos),
-  obtenerRecargas: () => API.get('/recargas/historial'),
-  obtenerResumenPayPal: () => API.get('/recargas/resumen-paypal'),
-  canjearcoCodigo: (datos) => API.post('/recargas/canjear-codigo', datos),
-  generarCodigos: (datos) => API.post('/recargas/generar-codigos', datos),
+// Depositos
+export const depositoAPI = {
+  crearDepositoStripe: (datos) => API.post('/depositos/crear', datos),
+  procesarDepositoTarjeta: (datos) => API.post('/depositos/procesar-tarjeta', datos),
+  procesarDepositoExitoso: (datos) => API.post('/depositos/procesar', datos),
+  obtenerDepositos: () => API.get('/depositos/historial'),
+  obtenerResumenPayPal: () => API.get('/depositos/resumen-paypal'),
+  canjearCodigo: (datos) => API.post('/depositos/canjear-codigo', datos),
+  generarCodigos: (datos) => API.post('/depositos/generar-codigos', datos),
 };
 
 // Cuentas Bancarias

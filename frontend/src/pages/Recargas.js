@@ -92,7 +92,7 @@ export default function Deposita() {
             console.log('📤 Enviando al backend:', { monto: montoNum });
 
             const response = await axios.post(
-              `${API_URL}/recargas/crear-paypal`, // Ruta backend puede mantenerse si es necesario
+              `${API_URL}/depositos/crear-paypal`, // Ruta backend puede mantenerse si es necesario
               { monto: montoNum },
               {
                 headers: {
@@ -105,7 +105,7 @@ export default function Deposita() {
             console.log('✅ Respuesta del backend:', response.data);
 
             const orderId = response.data.orderId;
-            depositoIdRef.current = response.data.recargaId;
+            depositoIdRef.current = response.data.depositoId;
 
             if (!orderId || !depositoIdRef.current) {
               setError('No se pudo iniciar el pago. Intenta de nuevo.');
@@ -144,7 +144,7 @@ export default function Deposita() {
             console.log('🔄 Capturando pago PayPal:', data.orderID);
             console.log('   depositoIdRef.current:', depositoIdRef.current);
             console.log('   Enviando al backend:', { 
-              recargaId: depositoIdRef.current,
+              depositoId: depositoIdRef.current,
               paypalOrderId: data.orderID
             });
             
@@ -154,9 +154,9 @@ export default function Deposita() {
               : { 'Content-Type': 'application/json' };
 
             const response = await axios.post(
-              `${API_URL}/recargas/paypal/capturar`,
+              `${API_URL}/depositos/paypal/capturar`,
               { 
-                recargaId: depositoIdRef.current,
+                depositoId: depositoIdRef.current,
                 paypalOrderId: data.orderID 
               },
               { headers }
@@ -305,7 +305,7 @@ export default function Deposita() {
     const params = new URLSearchParams(window.location.search);
     const success = params.get('success');
     const cancelled = params.get('error');
-    const depositoId = params.get('recargaId'); // ID de depósito en BD
+    const depositoId = params.get('depositoId'); // ID de depósito en BD
 
     if (cancelled === 'cancelled') {
       setError('Pago cancelado por el usuario.');
@@ -322,8 +322,8 @@ export default function Deposita() {
         }
 
         const response = await axios.post(
-          `${API_URL}/recargas/paypal/capturar`,
-          { recargaId: depositoId },
+          `${API_URL}/depositos/paypal/capturar`,
+          { depositoId: depositoId },
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -352,7 +352,7 @@ export default function Deposita() {
 
   const verificarBackend = async () => {
     try {
-      const response = await axios.get(`${API_URL}/recargas/test`);
+      const response = await axios.get(`${API_URL}/depositos/test`);
       console.log('✅ Backend response:', response.data);
       setBackendStatus('ok');
     } catch (err) {
@@ -376,7 +376,7 @@ export default function Deposita() {
 
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${API_URL}/recargas/canjear-codigo`,
+        `${API_URL}/depositos/canjear-codigo`,
         { codigo: codigoDeposito.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -538,7 +538,7 @@ export default function Deposita() {
                 </div>
 
                 <div className="info-limits">
-                  <p><strong>Límites de Recarga:</strong></p>
+                  <p><strong>Límites de Depósito:</strong></p>
                   <p>Mínimo: USD $1.00 | Máximo: USD $10,000.00</p>
                 </div>
               </div>
@@ -576,7 +576,7 @@ export default function Deposita() {
               <button
                 type="submit"
                 className="btn-payment"
-                disabled={loading || !codigoRecarga.trim()}
+                disabled={loading || !codigoDeposito.trim()}
               >
                 {loading ? (
                   <>

@@ -1,8 +1,8 @@
 /* ===========================
-   RECARGAS - FORMULARIO DE PAGO
+  DEPOSITOS - FORMULARIO DE PAGO
    =========================== */
 
-.recargas-container {
+.depositos-container {
   max-width: 900px;
   margin: 0 auto;
   padding: 40px 20px;
@@ -11,7 +11,7 @@
 }
 
 /* Header */
-.recargas-header {
+.depositos-header {
   text-align: center;
   margin-bottom: 40px;
   animation: fadeIn 0.6s ease;
@@ -28,21 +28,21 @@
   }
 }
 
-.recargas-header h1 {
+.depositos-header h1 {
   font-size: 2.5rem;
   color: #2c3e50;
   margin: 0 0 10px 0;
   font-weight: 700;
 }
 
-.recargas-header p {
+.depositos-header p {
   font-size: 1rem;
   color: #7f8c8d;
   margin: 0;
 }
 
 /* Tabs */
-.recargas-tabs {
+.depositos-tabs {
   display: flex;
   gap: 15px;
   margin-bottom: 30px;
@@ -779,11 +779,11 @@
 
 /* Responsive */
 @media (max-width: 600px) {
-  .recargas-container {
+  .depositos-container {
     padding: 20px 15px;
   }
 
-  .recargas-header h1 {
+  .depositos-header h1 {
     font-size: 1.8rem;
   }
 

@@ -74,9 +74,9 @@ export default function Navbar() {
                   <img src="/imagen/BE (17).png" alt="Dashboard" className="nav-icon" />
                   Dashboard
                 </Link>
-                <Link to="/recargas" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
-                  <img src="/imagen/BE (4) (1).png" alt="Recargas" className="nav-icon" />
-                  Recargas
+                <Link to="/depositos" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
+                  <img src="/imagen/BE (4) (1).png" alt="Depositos" className="nav-icon" />
+                  Deposita
                 </Link>
                 <Link to="/retiros" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
                   <img src="/imagen/BE (5) (1).png" alt="Retiros" className="nav-icon" />
