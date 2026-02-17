@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import API from '../services/api';
 import FiltrosEstadoCuenta from './FiltrosEstadoCuenta';
 import { toPng } from 'html-to-image';
 
@@ -11,7 +12,7 @@ const EstadoCuentaUsuario = ({ usuario }) => {
 
   useEffect(() => {
     setLoading(true);
-    axios.get(`/backend/usuarios/${usuario.id}/estado-cuenta`)
+    API.get(`/admin/usuarios/${usuario.id}/estado-cuenta`)
       .then(res => {
         setEstadoCuenta(res.data);
         setLoading(false);
