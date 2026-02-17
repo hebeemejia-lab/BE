@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { transferAPI, loanAPI, recargaAPI } from '../services/api';
+import { transferAPI, loanAPI } from '../services/api';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -50,7 +50,7 @@ export default function Dashboard() {
         const [transResponse, prestResponse, paypalResponse] = await Promise.all([
           transferAPI.obtenerHistorial(),
           loanAPI.obtenerMios(),
-          recargaAPI.obtenerResumenPayPal(),
+          depositoAPI.obtenerResumenPayPal(),
         ]);
         setTransferencias(transResponse.data.slice(0, 5));
         setPrestamos(prestResponse.data.slice(0, 5));
