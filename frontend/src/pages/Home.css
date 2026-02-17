@@ -253,36 +253,59 @@
 
 @media (max-width: 480px) {
   .home-container {
+    min-height: 100vh;
+    min-width: 100vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     padding: 0 4vw;
     box-sizing: border-box;
+    background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
   }
   .hero-section {
-    padding: 36px 0 24px 0;
+    width: 100vw;
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 0 12px 0;
     text-align: center;
+    background: linear-gradient(135deg, rgba(0, 26, 77, 0.95) 0%, rgba(0, 61, 153, 0.95) 100%);
   }
   .hero-content {
+    width: 100vw;
+    max-width: 98vw;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 0 2vw;
+    box-sizing: border-box;
   }
   .hero-title {
     font-size: 22px;
     text-align: center;
     margin-bottom: 12px;
+    width: 100%;
+    word-break: break-word;
   }
   .hero-subtitle {
     font-size: 14px;
     margin-bottom: 18px;
     text-align: center;
+    width: 100%;
+    word-break: break-word;
   }
   .hero-features {
     grid-template-columns: 1fr;
     gap: 10px;
-    width: 100%;
+    width: 100vw;
     justify-items: center;
     align-items: center;
+    margin: 0 auto;
   }
   .feature-button {
     padding: 8px 0;
@@ -305,8 +328,10 @@
     flex-direction: column;
     align-items: center;
     gap: 10px;
-    width: 100%;
+    width: 100vw;
     margin: 0 auto;
+    justify-content: flex-end;
+    padding-bottom: 12px;
   }
   .btn {
     width: 92vw;
@@ -319,26 +344,31 @@
   }
   .features-section,
   .info-section {
-    padding: 36px 0 24px 0;
+    padding: 24px 0 12px 0;
+    width: 100vw;
+    box-sizing: border-box;
   }
   .features-section h2,
   .info-section h2 {
     font-size: 18px;
     text-align: center;
+    width: 100vw;
+    box-sizing: border-box;
   }
   .features-grid,
   .info-grid {
     grid-template-columns: 1fr;
     gap: 12px;
-    width: 100%;
+    width: 100vw;
     margin: 0 auto;
+    box-sizing: border-box;
   }
   .feature-card,
   .info-card {
     padding: 16px;
     border-radius: 10px;
     margin: 0 auto;
-    width: 100%;
+    width: 96vw;
     box-sizing: border-box;
   }
 }
