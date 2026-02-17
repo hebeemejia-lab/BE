@@ -70,8 +70,8 @@ const EstadoCuentaUsuario = ({ usuario }) => {
       <div ref={cuentaRef} style={{ background: 'linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%)', padding: 24, borderRadius: 16, boxShadow: '0 4px 16px #e2e8f0', marginTop: 8 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 24 }}>
           <div>
-            <h4 style={{ color: '#0f1b3d', marginBottom: 8 }}>Recargas</h4>
-            <ul style={{ listStyle: 'none', padding: 0 }}>{filtrar(estadoCuenta.recargas, 'recargas').map(r => <li key={r.id} style={{ background: '#fff', borderRadius: 8, marginBottom: 6, padding: 8, boxShadow: '0 1px 4px #eee' }}>+${r.monto} <span style={{ color: '#b21d2b' }}>({r.metodo})</span> <span style={{ color: '#64748b' }}>{r.estado}</span> <span style={{ float: 'right', color: '#94a3b8' }}>{new Date(r.createdAt).toLocaleString()}</span></li>)}</ul>
+            <h4 style={{ color: '#0f1b3d', marginBottom: 8 }}>Depositos</h4>
+            <ul style={{ listStyle: 'none', padding: 0 }}>{filtrar(estadoCuenta.depositos, 'depositos').map(r => <li key={r.id} style={{ background: '#fff', borderRadius: 8, marginBottom: 6, padding: 8, boxShadow: '0 1px 4px #eee' }}>+${r.monto} <span style={{ color: '#b21d2b' }}>({r.metodo})</span> <span style={{ color: '#64748b' }}>{r.estado}</span> <span style={{ float: 'right', color: '#94a3b8' }}>{new Date(r.createdAt).toLocaleString()}</span></li>)}</ul>
           </div>
           <div>
             <h4 style={{ color: '#0f1b3d', marginBottom: 8 }}>Retiros</h4>

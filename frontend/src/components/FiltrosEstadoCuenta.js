@@ -5,7 +5,7 @@ const FiltrosEstadoCuenta = ({ filtros, setFiltros }) => {
     <div style={{ marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
       <select value={filtros.tipo} onChange={e => setFiltros(f => ({ ...f, tipo: e.target.value }))}>
         <option value="">Todos los tipos</option>
-        <option value="recargas">Recargas</option>
+        <option value="depositos">Depositos</option>
         <option value="retiros">Retiros</option>
         <option value="transferenciasBancarias">Transferencias Bancarias</option>
         <option value="transferenciasInternacionales">Transferencias Internacionales</option>
