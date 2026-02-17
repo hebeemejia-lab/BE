@@ -18,6 +18,12 @@ app.get('/health', (req, res) => {
   });
 });
 
+
+// Servir manifest.json en cualquier ruta
+app.get(['/manifest.json', '/admin/manifest.json'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'manifest.json'));
+});
+
 // SPA Fallback - Servir index.html para todas las rutas no encontradas
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));

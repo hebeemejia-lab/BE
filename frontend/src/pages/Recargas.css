@@ -1,3 +1,30 @@
+@media (max-width: 600px) {
+  .depositos-container {
+    width: 100vw !important;
+    min-width: 100vw !important;
+    max-width: 100vw !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-sizing: border-box;
+  }
+  .payment-container {
+    width: 100vw !important;
+    min-width: 100vw !important;
+    max-width: 100vw !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-sizing: border-box;
+    justify-content: center;
+  }
+  .payment-card {
+    width: 98vw !important;
+    min-width: 0 !important;
+    max-width: 100vw !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    box-sizing: border-box;
+  }
+}
 /* === MOBILE & DESKTOP CENTERING FIXES === */
 @media (max-width: 480px) {
   .recargas-container {
