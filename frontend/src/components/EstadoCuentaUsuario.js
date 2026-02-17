@@ -68,36 +68,81 @@ const EstadoCuentaUsuario = ({ usuario }) => {
         <button onClick={handleImprimir} style={{ background: '#0f1b3d', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', fontWeight: 600, cursor: 'pointer' }}>🖨️ Imprimir</button>
         <button onClick={handleDescargarPNG} style={{ marginLeft: 8, background: '#b21d2b', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', fontWeight: 600, cursor: 'pointer' }}>🖼️ Descargar PNG</button>
       </div>
-      <div ref={cuentaRef} style={{ background: 'linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%)', padding: 24, borderRadius: 16, boxShadow: '0 4px 16px #e2e8f0', marginTop: 8 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 24 }}>
-          <div>
-            <h4 style={{ color: '#0f1b3d', marginBottom: 8 }}>Depositos</h4>
-            <ul style={{ listStyle: 'none', padding: 0 }}>{filtrar(estadoCuenta.depositos, 'depositos').map(r => <li key={r.id} style={{ background: '#fff', borderRadius: 8, marginBottom: 6, padding: 8, boxShadow: '0 1px 4px #eee' }}>+${r.monto} <span style={{ color: '#b21d2b' }}>({r.metodo})</span> <span style={{ color: '#64748b' }}>{r.estado}</span> <span style={{ float: 'right', color: '#94a3b8' }}>{new Date(r.createdAt).toLocaleString()}</span></li>)}</ul>
-          </div>
-          <div>
-            <h4 style={{ color: '#0f1b3d', marginBottom: 8 }}>Retiros</h4>
-            <ul style={{ listStyle: 'none', padding: 0 }}>{filtrar(estadoCuenta.retiros, 'retiros').map(r => <li key={r.id} style={{ background: '#fff', borderRadius: 8, marginBottom: 6, padding: 8, boxShadow: '0 1px 4px #eee' }}>-${r.monto} <span style={{ color: '#b21d2b' }}>{r.estado}</span> <span style={{ float: 'right', color: '#94a3b8' }}>{new Date(r.createdAt).toLocaleString()}</span></li>)}</ul>
-          </div>
-          <div>
-            <h4 style={{ color: '#0f1b3d', marginBottom: 8 }}>Transferencias Bancarias</h4>
-            <ul style={{ listStyle: 'none', padding: 0 }}>{filtrar(estadoCuenta.transferenciasBancarias, 'transferenciasBancarias').map(t => <li key={t.id} style={{ background: '#fff', borderRadius: 8, marginBottom: 6, padding: 8, boxShadow: '0 1px 4px #eee' }}>-${t.monto} <span style={{ color: '#b21d2b' }}>{t.banco}</span> <span style={{ color: '#64748b' }}>{t.estado}</span> <span style={{ float: 'right', color: '#94a3b8' }}>{new Date(t.createdAt).toLocaleString()}</span></li>)}</ul>
-          </div>
-          <div>
-            <h4 style={{ color: '#0f1b3d', marginBottom: 8 }}>Transferencias Internacionales</h4>
-            <ul style={{ listStyle: 'none', padding: 0 }}>{filtrar(estadoCuenta.transferenciasInternacionales, 'transferenciasInternacionales').map(t => <li key={t.id} style={{ background: '#fff', borderRadius: 8, marginBottom: 6, padding: 8, boxShadow: '0 1px 4px #eee' }}>-${t.monto} <span style={{ color: '#b21d2b' }}>{t.paisDestino}</span> <span style={{ color: '#64748b' }}>{t.estado}</span> <span style={{ float: 'right', color: '#94a3b8' }}>{new Date(t.createdAt).toLocaleString()}</span></li>)}</ul>
-          </div>
-          <div>
-            <h4 style={{ color: '#0f1b3d', marginBottom: 8 }}>Préstamos</h4>
-            <ul style={{ listStyle: 'none', padding: 0 }}>{filtrar(estadoCuenta.prestamos, 'prestamos').map(p => <li key={p.id} style={{ background: '#fff', borderRadius: 8, marginBottom: 6, padding: 8, boxShadow: '0 1px 4px #eee' }}>${p.montoSolicitado} <span style={{ color: '#64748b' }}>{p.estado}</span> <span style={{ float: 'right', color: '#94a3b8' }}>{new Date(p.createdAt).toLocaleString()}</span></li>)}</ul>
-          </div>
-          <div>
-            <h4 style={{ color: '#0f1b3d', marginBottom: 8 }}>Inversiones</h4>
-            <ul style={{ listStyle: 'none', padding: 0 }}>{filtrar(estadoCuenta.inversiones, 'inversiones').map(i => <li key={i.id} style={{ background: '#fff', borderRadius: 8, marginBottom: 6, padding: 8, boxShadow: '0 1px 4px #eee' }}>{i.symbol} {i.cantidad} <span style={{ color: '#64748b' }}>{i.estado}</span> <span style={{ float: 'right', color: '#94a3b8' }}>{new Date(i.createdAt).toLocaleString()}</span></li>)}</ul>
-          </div>
-          <div>
-            <h4 style={{ color: '#0f1b3d', marginBottom: 8 }}>Transferencias entre usuarios</h4>
-            <ul style={{ listStyle: 'none', padding: 0 }}>{filtrar(estadoCuenta.transferencias, 'transferencias').map(t => <li key={t.id} style={{ background: '#fff', borderRadius: 8, marginBottom: 6, padding: 8, boxShadow: '0 1px 4px #eee' }}>${t.monto} <span style={{ color: '#b21d2b' }}>{t.concepto}</span> <span style={{ color: '#64748b' }}>{t.estado}</span> <span style={{ float: 'right', color: '#94a3b8' }}>{new Date(t.createdAt).toLocaleString()}</span></li>)}</ul>
-          </div>
+      <div ref={cuentaRef} style={{ background: '#fff', padding: 32, borderRadius: 18, boxShadow: '0 4px 24px #e2e8f0', marginTop: 8, border: '1.5px solid #e2e8f0', fontFamily: 'Segoe UI, Arial, sans-serif', color: '#222', minWidth: 320 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 24, fontSize: 15 }}>
+          <thead>
+            <tr style={{ background: '#f8fafc', color: '#0f1b3d' }}>
+              <th style={{ padding: 10, border: '1px solid #e2e8f0' }}>Fecha</th>
+              <th style={{ padding: 10, border: '1px solid #e2e8f0' }}>Tipo</th>
+              <th style={{ padding: 10, border: '1px solid #e2e8f0' }}>Monto</th>
+              <th style={{ padding: 10, border: '1px solid #e2e8f0' }}>Método/Detalle</th>
+              <th style={{ padding: 10, border: '1px solid #e2e8f0' }}>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ...filtrar(estadoCuenta.depositos, 'depositos').map(r => ({
+                fecha: new Date(r.createdAt).toLocaleString(),
+                tipo: 'Depósito',
+                monto: `+$${r.monto}`,
+                detalle: r.metodo,
+                estado: r.estado
+              })),
+              ...filtrar(estadoCuenta.retiros, 'retiros').map(r => ({
+                fecha: new Date(r.createdAt).toLocaleString(),
+                tipo: 'Retiro',
+                monto: `-$${r.monto}`,
+                detalle: r.metodo || '',
+                estado: r.estado
+              })),
+              ...filtrar(estadoCuenta.transferenciasBancarias, 'transferenciasBancarias').map(t => ({
+                fecha: new Date(t.createdAt).toLocaleString(),
+                tipo: 'Transf. Bancaria',
+                monto: `-$${t.monto}`,
+                detalle: t.banco,
+                estado: t.estado
+              })),
+              ...filtrar(estadoCuenta.transferenciasInternacionales, 'transferenciasInternacionales').map(t => ({
+                fecha: new Date(t.createdAt).toLocaleString(),
+                tipo: 'Transf. Internacional',
+                monto: `-$${t.monto}`,
+                detalle: t.paisDestino,
+                estado: t.estado
+              })),
+              ...filtrar(estadoCuenta.prestamos, 'prestamos').map(p => ({
+                fecha: new Date(p.createdAt).toLocaleString(),
+                tipo: 'Préstamo',
+                monto: `$${p.montoSolicitado}`,
+                detalle: '',
+                estado: p.estado
+              })),
+              ...filtrar(estadoCuenta.inversiones, 'inversiones').map(i => ({
+                fecha: new Date(i.createdAt).toLocaleString(),
+                tipo: 'Inversión',
+                monto: i.cantidad,
+                detalle: i.symbol,
+                estado: i.estado
+              })),
+              ...filtrar(estadoCuenta.transferencias, 'transferencias').map(t => ({
+                fecha: new Date(t.createdAt).toLocaleString(),
+                tipo: 'Transf. Usuario',
+                monto: `$${t.monto}`,
+                detalle: t.concepto,
+                estado: t.estado
+              })),
+            ].map((row, idx) => (
+              <tr key={idx} style={{ background: idx % 2 === 0 ? '#f8fafc' : '#fff' }}>
+                <td style={{ padding: 8, border: '1px solid #e2e8f0' }}>{row.fecha}</td>
+                <td style={{ padding: 8, border: '1px solid #e2e8f0' }}>{row.tipo}</td>
+                <td style={{ padding: 8, border: '1px solid #e2e8f0', fontWeight: 600 }}>{row.monto}</td>
+                <td style={{ padding: 8, border: '1px solid #e2e8f0' }}>{row.detalle}</td>
+                <td style={{ padding: 8, border: '1px solid #e2e8f0' }}>{row.estado}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div style={{ marginTop: 16, color: '#64748b', fontSize: 13, textAlign: 'right' }}>
+          Generado: {new Date().toLocaleString()}
         </div>
       </div>
     </div>
