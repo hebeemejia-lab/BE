@@ -1,5 +1,5 @@
 // Controlador del Panel de Administración
-const { Loan, User, BankAccount, CuotaPrestamo } = require('../models');
+const { Loan, User, BankAccount, CuotaPrestamo, Inversion } = require('../models');
 const Transfer = require('../models/Transfer');
 const TransferenciaBancaria = require('../models/TransferenciaBancaria');
 const TransferenciaInternacional = require('../models/TransferenciaInternacional');
