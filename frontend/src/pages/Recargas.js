@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import './Recargas.css';
+import './Recargas.css'; // El nombre del archivo CSS puede mantenerse
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const PAYPAL_CLIENT_ID = process.env.REACT_APP_PAYPAL_CLIENT_ID;
 
-export default function Recargas() {
+export default function Deposita() {
   const [activeTab, setActiveTab] = useState('tarjeta');
   const [monto, setMonto] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [codigoRecarga, setCodigoRecarga] = useState('');
+  const [codigoDeposito, setCodigoDeposito] = useState('');
   const [backendStatus, setBackendStatus] = useState('checking');
   const paypalButtonRef = useRef(null);
-  const recargaIdRef = useRef(null);
+  const depositoIdRef = useRef(null);
 
   // Verificar estado del backend al cargar
   useEffect(() => {
@@ -84,7 +84,7 @@ export default function Recargas() {
 
             const token = localStorage.getItem('token');
             if (!token) {
-              setError('Debes estar autenticado para recargar');
+              setError('Debes estar autenticado para depositar');
               throw new Error('No autenticado');
             }
 
@@ -92,7 +92,7 @@ export default function Recargas() {
             console.log('📤 Enviando al backend:', { monto: montoNum });
 
             const response = await axios.post(
-              `${API_URL}/recargas/crear-paypal`,
+              `${API_URL}/recargas/crear-paypal`, // Ruta backend puede mantenerse si es necesario
               { monto: montoNum },
               {
                 headers: {
@@ -105,9 +105,9 @@ export default function Recargas() {
             console.log('✅ Respuesta del backend:', response.data);
 
             const orderId = response.data.orderId;
-            recargaIdRef.current = response.data.recargaId;
+            depositoIdRef.current = response.data.recargaId;
 
-            if (!orderId || !recargaIdRef.current) {
+            if (!orderId || !depositoIdRef.current) {
               setError('No se pudo iniciar el pago. Intenta de nuevo.');
               throw new Error('Orden inválida');
             }
@@ -119,7 +119,7 @@ export default function Recargas() {
               window.gtag('event', 'begin_checkout', {
                 currency: 'USD',
                 value: montoNum,
-                items: [{ id: orderId, name: 'Recarga PayPal', price: montoNum }]
+                items: [{ id: orderId, name: 'Depósito PayPal', price: montoNum }]
               });
             }
 
@@ -142,9 +142,9 @@ export default function Recargas() {
             setSuccess('🔄 Procesando pago...');
             
             console.log('🔄 Capturando pago PayPal:', data.orderID);
-            console.log('   recargaIdRef.current:', recargaIdRef.current);
+            console.log('   depositoIdRef.current:', depositoIdRef.current);
             console.log('   Enviando al backend:', { 
-              recargaId: recargaIdRef.current,
+              recargaId: depositoIdRef.current,
               paypalOrderId: data.orderID
             });
             
@@ -156,7 +156,7 @@ export default function Recargas() {
             const response = await axios.post(
               `${API_URL}/recargas/paypal/capturar`,
               { 
-                recargaId: recargaIdRef.current,
+                recargaId: depositoIdRef.current,
                 paypalOrderId: data.orderID 
               },
               { headers }
@@ -173,7 +173,7 @@ export default function Recargas() {
                 transaction_id: data.orderID,
                 currency: 'USD',
                 value: response.data.monto || 0,
-                items: [{ id: data.orderID, name: 'Recarga PayPal', price: response.data.monto }]
+                items: [{ id: data.orderID, name: 'Depósito PayPal', price: response.data.monto }]
               });
             }
             
@@ -305,14 +305,14 @@ export default function Recargas() {
     const params = new URLSearchParams(window.location.search);
     const success = params.get('success');
     const cancelled = params.get('error');
-    const recargaId = params.get('recargaId'); // ID de recarga en BD
+    const depositoId = params.get('recargaId'); // ID de depósito en BD
 
     if (cancelled === 'cancelled') {
       setError('Pago cancelado por el usuario.');
       return;
     }
 
-    if (success === 'true' && recargaId) {
+    if (success === 'true' && depositoId) {
       try {
         setLoading(true);
         const authToken = localStorage.getItem('token');
@@ -323,7 +323,7 @@ export default function Recargas() {
 
         const response = await axios.post(
           `${API_URL}/recargas/paypal/capturar`,
-          { recargaId: recargaId },
+          { recargaId: depositoId },
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -368,8 +368,8 @@ export default function Recargas() {
     setLoading(true);
 
     try {
-      if (!codigoRecarga || codigoRecarga.trim() === '') {
-        setError('Ingresa un código de recarga válido');
+      if (!codigoDeposito || codigoDeposito.trim() === '') {
+        setError('Ingresa un código de depósito válido');
         setLoading(false);
         return;
       }
@@ -377,12 +377,12 @@ export default function Recargas() {
       const token = localStorage.getItem('token');
       const response = await axios.post(
         `${API_URL}/recargas/canjear-codigo`,
-        { codigo: codigoRecarga.trim() },
+        { codigo: codigoDeposito.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       setSuccess(`✅ ¡Código canjeado exitosamente! Se agregaron $${response.data.montoAgregado} USD a tu saldo`);
-      setCodigoRecarga('');
+      setCodigoDeposito('');
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
       const mensajeError = err.response?.data?.mensaje || 'Código inválido o ya utilizado';
@@ -394,21 +394,21 @@ export default function Recargas() {
 
 
   return (
-    <div className="recargas-container">
+    <div className="depositos-container">
       {/* Header */}
-      <div className="recargas-header">
+      <div className="depositos-header">
         <h1>💰 Deposita tu Saldo</h1>
         <p>Agrega fondos rápido y seguro con tu tarjeta</p>
       </div>
 
       {/* Tabs */}
-      <div className="recargas-tabs">
+      <div className="depositos-tabs">
         <button
           className={`tab-button ${activeTab === 'tarjeta' ? 'active' : ''}`}
           onClick={() => setActiveTab('tarjeta')}
         >
           <span className="tab-logo paypal-mark" aria-hidden="true">P</span>
-          <span>Pagar con PayPal</span>
+          <span>Depositar con PayPal</span>
         </button>
         <button
           className={`tab-button ${activeTab === 'codigo' ? 'active' : ''}`}
@@ -553,18 +553,18 @@ export default function Recargas() {
         <div className="payment-container">
           <div className="payment-card">
             <div className="card-title">
-              <h2>Canjear Código de Recarga</h2>
+              <h2>Canjear Código de Depósito</h2>
               <p className="card-subtitle">¿Tienes un código? Úsalo aquí</p>
             </div>
 
             <form onSubmit={handleCanjearCodigo} className="payment-form">
               <div className="form-section">
-                <label htmlFor="codigo" className="codigo-label">Código de Recarga</label>
+                <label htmlFor="codigo" className="codigo-label">Código de Depósito</label>
                 <input
                   id="codigo"
                   type="text"
-                  value={codigoRecarga}
-                  onChange={(e) => setCodigoRecarga(e.target.value.toUpperCase())}
+                  value={codigoDeposito}
+                  onChange={(e) => setCodigoDeposito(e.target.value.toUpperCase())}
                   placeholder="Ej: ABC12-XYZ34-DEF56-GHI78"
                   maxLength="30"
                   required
@@ -592,7 +592,7 @@ export default function Recargas() {
               </button>
 
               <div className="codigo-info">
-                <h3>ℹ️ Sobre los Códigos de Recarga</h3>
+                <h3>ℹ️ Sobre los Códigos de Depósito</h3>
                 <ul>
                   <li>📦 Los códigos son de un solo uso</li>
                   <li>♾️ Sin fecha de expiración</li>
