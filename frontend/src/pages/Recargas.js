@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import GooglePayButton from '../components/GooglePayButton';
 import axios from 'axios';
 import './Recargas.css'; // El nombre del archivo CSS puede mantenerse
 
@@ -605,6 +606,11 @@ export default function Deposita() {
           </div>
         </div>
       )}
+      {/* Google Pay Integration */}
+      <div style={{ margin: '32px 0', textAlign: 'center' }}>
+        <h3>O paga con Google Pay</h3>
+        <GooglePayButton />
+      </div>
     </div>
   );
 }
