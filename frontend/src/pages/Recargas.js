@@ -16,274 +16,115 @@ export default function Deposita() {
   const [backendStatus, setBackendStatus] = useState('checking');
   const paypalButtonRef = useRef(null);
   const depositoIdRef = useRef(null);
+  // --- FUNCIONES AUXILIARES ---
+  const renderButtons = () => {
+    if (!window.paypal || !paypalButtonRef.current) return;
+    paypalButtonRef.current.innerHTML = '';
+    window.paypal.Buttons({
+      style: {
+        layout: 'vertical',
+        color: 'gold',
+        shape: 'rect',
+        label: 'paypal',
+        height: 45,
+      },
+      createOrder: async () => {
+        try {
+          setError('');
+          setSuccess('');
+          setLoading(true);
+          const montoNum = parseFloat(monto);
+          if (!monto || isNaN(montoNum) || !isFinite(montoNum) || montoNum <= 0) {
+            setError('Debes ingresar un monto válido');
+            throw new Error('Monto inválido');
+          }
+          if (montoNum < 1) {
+            setError('El monto mínimo es $1 USD');
+            throw new Error('Monto menor al mínimo');
+          }
+          if (montoNum > 10000) {
+            setError('El monto máximo por transacción es $10,000 USD');
+            throw new Error('Monto excedido');
+          }
+          const token = localStorage.getItem('token');
+          if (!token) {
+            setError('Debes estar autenticado para depositar');
+            throw new Error('No autenticado');
+          }
+          const response = await axios.post(
+            `${API_URL}/depositos/crear-paypal`,
+            { monto: montoNum },
+            { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+          );
+          const orderId = response.data.orderId;
+          depositoIdRef.current = response.data.depositoId;
+          if (!orderId || !depositoIdRef.current) {
+            setError('No se pudo iniciar el pago. Intenta de nuevo.');
+            throw new Error('Orden inválida');
+          }
+          setLoading(false);
+          return orderId;
+        } catch (err) {
+          setLoading(false);
+          setError(`Error al iniciar pago: ${err.message}`);
+          throw err;
+        }
+      },
+      onApprove: async (data, actions) => {
+        try {
+          setLoading(true);
+          setSuccess('🔄 Procesando pago...');
+          const token = localStorage.getItem('token');
+          const headers = token
+            ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+            : { 'Content-Type': 'application/json' };
+          const response = await axios.post(
+            `${API_URL}/depositos/paypal/capturar`,
+            { depositoId: depositoIdRef.current, paypalOrderId: data.orderID },
+            { headers }
+          );
+          setSuccess(`✅ ¡Pago completado! Saldo actualizado: $${response.data.nuevoSaldo || 'N/A'}`);
+          setMonto('');
+          setTimeout(() => window.location.reload(), 3000);
+        } catch (err) {
+          setLoading(false);
+          setError('Error al capturar el pago.');
+        }
+      },
+      onError: (err) => {
+        setError(`Error al procesar el pago: ${err.message}`);
+        setLoading(false);
+      },
+      onCancel: (data) => {
+        setError('Pago cancelado. No se realizó ningún cargo.');
+        setLoading(false);
+      },
+      onInit: (data, actions) => {},
+      onClick: (data, actions) => {
+        const montoNum = parseFloat(monto);
+        if (!montoNum || montoNum <= 0) {
+          setError('Por favor ingresa un monto válido');
+          return actions.reject();
+        }
+        return actions.resolve();
+      }
+    }).render(paypalButtonRef.current);
+  };
 
-  // Verificar estado del backend al cargar
+
+  // (Duplicated) const verificarBackend removed to avoid redeclaration error
+
+
+  // --- HOOKS ---
   useEffect(() => {
     verificarBackend();
     verificarRetornoPayPal();
   }, []);
-
-  const renderButtons = () => {
-    if (!window.paypal || !paypalButtonRef.current) return;
-
-    paypalButtonRef.current.innerHTML = '';
-
-    window.paypal.Buttons({
-        // ESTILO Y APARIENCIA
-        style: {
-          layout: 'vertical',
-          color: 'gold',
-          shape: 'rect',
-          label: 'paypal',
-          height: 45,
-        },
-        
-        // CREAR ORDEN
-        createOrder: async () => {
-          try {
-            setError('');
-            setSuccess('');
-            setLoading(true);
-
-            console.log('🔍 Frontend - Monto ingresado:', monto, 'Tipo:', typeof monto);
-
-            const montoNum = parseFloat(monto);
-            console.log('🔍 Frontend - Monto parseado:', montoNum, 'Tipo:', typeof montoNum);
-            
-            // Validaciones estrictas de monto
-            if (!monto || monto === '' || monto === null || monto === undefined) {
-              setError('Debes ingresar un monto');
-              throw new Error('Monto vacío');
-            }
-
-            if (isNaN(montoNum) || !isFinite(montoNum)) {
-              setError('El monto ingresado no es válido');
-              throw new Error('Monto inválido');
-            }
-
-            if (montoNum <= 0) {
-              setError('El monto debe ser mayor a $0');
-              throw new Error('Monto debe ser positivo');
-            }
-            
-            if (montoNum < 1) {
-              setError('El monto mínimo es $1 USD');
-              throw new Error('Monto menor al mínimo');
-            }
-
-            if (montoNum > 10000) {
-              setError('El monto máximo por transacción es $10,000 USD');
-              throw new Error('Monto excedido');
-            }
-
-            const token = localStorage.getItem('token');
-            if (!token) {
-              setError('Debes estar autenticado para depositar');
-              throw new Error('No autenticado');
-            }
-
-            console.log('🔄 Creando orden PayPal para $', montoNum);
-            console.log('📤 Enviando al backend:', { monto: montoNum });
-
-            const response = await axios.post(
-              `${API_URL}/depositos/crear-paypal`, // Ruta backend puede mantenerse si es necesario
-              { monto: montoNum },
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                },
-              }
-            );
-
-            console.log('✅ Respuesta del backend:', response.data);
-
-            const orderId = response.data.orderId;
-            depositoIdRef.current = response.data.depositoId;
-
-            if (!orderId || !depositoIdRef.current) {
-              setError('No se pudo iniciar el pago. Intenta de nuevo.');
-              throw new Error('Orden inválida');
-            }
-
-            console.log('✅ Orden creada:', orderId);
-            
-            // Analytics: seguimiento de inicio de conversión
-            if (window.gtag) {
-              window.gtag('event', 'begin_checkout', {
-                currency: 'USD',
-                value: montoNum,
-                items: [{ id: orderId, name: 'Depósito PayPal', price: montoNum }]
-              });
-            }
-
-            setLoading(false);
-            return orderId;
-          } catch (err) {
-            setLoading(false);
-            console.error('❌ Error creando orden:', err);
-            console.error('📋 Detalles de error:', err.response?.data);
-            const errorMsg = err.response?.data?.mensaje || err.response?.data?.error || err.message || 'Error desconocido';
-            setError(`Error al iniciar pago: ${errorMsg}`);
-            throw err;
-          }
-        },
-        
-        // APROBAR PAGO
-        onApprove: async (data, actions) => {
-          try {
-            setLoading(true);
-            setSuccess('🔄 Procesando pago...');
-            
-            console.log('🔄 Capturando pago PayPal:', data.orderID);
-            console.log('   depositoIdRef.current:', depositoIdRef.current);
-            console.log('   Enviando al backend:', { 
-              depositoId: depositoIdRef.current,
-              paypalOrderId: data.orderID
-            });
-            
-            const token = localStorage.getItem('token');
-            const headers = token
-              ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-              : { 'Content-Type': 'application/json' };
-
-            const response = await axios.post(
-              `${API_URL}/depositos/paypal/capturar`,
-              { 
-                depositoId: depositoIdRef.current,
-                paypalOrderId: data.orderID 
-              },
-              { headers }
-            );
-
-            console.log('✅ Pago capturado:', response.data);
-            
-            setSuccess(`✅ ¡Pago completado! Saldo actualizado: $${response.data.nuevoSaldo || 'N/A'}`);
-            setMonto('');
-            
-            // Analytics: seguimiento de conversión exitosa
-            if (window.gtag) {
-              window.gtag('event', 'purchase', {
-                transaction_id: data.orderID,
-                currency: 'USD',
-                value: response.data.monto || 0,
-                items: [{ id: data.orderID, name: 'Depósito PayPal', price: response.data.monto }]
-              });
-            }
-            
-            // Recargar página después de 3 segundos para actualizar saldo
-            setTimeout(() => window.location.reload(), 3000);
-          } catch (err) {
-            console.error('❌ Error capturando PayPal:', err);
-            console.error('   Respuesta del servidor:', err.response?.data);
-            const redirectUrl = err.response?.data?.redirectUrl;
-            const action = err.response?.data?.action;
-            if (action === 'REDIRECT' && redirectUrl) {
-              setSuccess('🔁 Tu pago fue rechazado. Redirigiendo a PayPal para elegir otro metodo...');
-              window.location.href = redirectUrl;
-              return;
-            }
-            const errorMsg = err.response?.data?.mensaje || err.message || 'Error desconocido';
-            const detalles = err.response?.data?.detalles;
-            const debugId = err.response?.data?.debug_id || 'N/A';
-            const issue = detalles?.details?.[0]?.issue;
-            const mensajeUsuarioBackend = err.response?.data?.mensajeUsuario;
-            const sugerencias = err.response?.data?.sugerencias || [];
-            
-            // Usar mensaje del backend si está disponible, sino construir uno
-            let mensajeUsuario = mensajeUsuarioBackend || errorMsg;
-            
-            // Si no hay mensaje del backend, construir basado en el error
-            if (!mensajeUsuarioBackend) {
-              if (issue === 'INSTRUMENT_DECLINED') {
-                mensajeUsuario = '❌ Tu tarjeta fue rechazada.\n\nVerifica:\n• Que tenga fondos suficientes\n• Que no esté bloqueada\n• Intenta con otra tarjeta o cuenta bancaria';
-              } else if (detalles?.name === 'UNPROCESSABLE_ENTITY') {
-                mensajeUsuario = '❌ Error procesando el pago.\n\nIntenta:\n• Con otro método de pago en PayPal\n• En unos minutos\n• Contacta a tu banco';
-              }
-            }
-            
-            // Agregar sugerencias si las hay
-            if (sugerencias && sugerencias.length > 0) {
-              mensajeUsuario += '\n\n💡 Sugerencias:\n• ' + sugerencias.join('\n• ');
-            }
-            
-            setError(mensajeUsuario);
-            
-            // Log detallado para debugging
-            console.log('🔍 Detalles del error:');
-            console.log('   Issue:', issue);
-            console.log('   Error Code:', detalles?.name);
-            console.log('   Debug ID:', debugId);
-            console.log('   Mensaje usuario:', mensajeUsuario);
-
-            // Analytics: seguimiento de error
-            if (window.gtag) {
-              window.gtag('event', 'exception', {
-                description: `PayPal capture error: ${issue || detalles?.name || errorMsg}`,
-                fatal: false
-              });
-            }
-          } finally {
-            setLoading(false);
-          }
-        },
-        
-        // ERROR EN PAGO
-        onError: (err) => {
-          console.error('❌ Error PayPal JS SDK:', err);
-          const errorMsg = err.message || 'Error desconocido en PayPal';
-          setError(`Error al procesar el pago: ${errorMsg}`);
-          setLoading(false);
-          
-          // Analytics: seguimiento de error
-          if (window.gtag) {
-            window.gtag('event', 'exception', {
-              description: `PayPal SDK error: ${errorMsg}`,
-              fatal: false
-            });
-          }
-        },
-        
-        // CANCELAR PAGO
-        onCancel: (data) => {
-          console.log('⚠️ Pago cancelado por el usuario:', data);
-          setError('Pago cancelado. No se realizó ningún cargo.');
-          setLoading(false);
-          
-          // Analytics: seguimiento de cancelación
-          if (window.gtag) {
-            window.gtag('event', 'remove_from_cart', {
-              currency: 'USD',
-              value: parseFloat(monto) || 0
-            });
-          }
-        },
-        
-        // INICIAR RENDERIZADO
-        onInit: (data, actions) => {
-          console.log('🔵 PayPal botón inicializado');
-        },
-        
-        // AL HACER CLICK
-        onClick: (data, actions) => {
-          console.log('🔵 Usuario hizo click en botón PayPal');
-          
-          const montoNum = parseFloat(monto);
-          if (!montoNum || montoNum <= 0) {
-            setError('Por favor ingresa un monto válido');
-            return actions.reject();
-          }
-          
-          return actions.resolve();
-        },
-      }).render(paypalButtonRef.current);
-    };
-
+  useEffect(() => {
     if (window.paypal) {
       renderButtons();
       return;
     }
-
     const scriptId = 'paypal-js-sdk';
     if (!document.getElementById(scriptId)) {
       const script = document.createElement('script');
@@ -294,6 +135,7 @@ export default function Deposita() {
       document.body.appendChild(script);
     }
   }, [activeTab, monto]);
+        
 
   const verificarRetornoPayPal = async () => {
     const params = new URLSearchParams(window.location.search);
