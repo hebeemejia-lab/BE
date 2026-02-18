@@ -13,27 +13,28 @@ const googlePayConfig = {
       tokenizationSpecification: {
         type: 'PAYMENT_GATEWAY',
         parameters: {
-          gateway: 'example', // Cambia esto por tu gateway real (ej: stripe, checkout, etc)
-          gatewayMerchantId: 'exampleGatewayMerchantId',
+          gateway: 'braintree',
+          gatewayMerchantId: process.env.REACT_APP_BRAINTREE_MERCHANT_ID || 'sandbox_merchant_id',
         },
       },
     },
   ],
   merchantInfo: {
-    merchantId: '12345678901234567890', // Cambia por tu merchantId real si tienes
+    merchantId: process.env.REACT_APP_BRAINTREE_MERCHANT_ID || 'sandbox_merchant_id',
     merchantName: 'Banco Exclusivo',
   },
   transactionInfo: {
     totalPriceStatus: 'FINAL',
     totalPriceLabel: 'Total',
-    totalPrice: '10.00', // Cambia por el monto real
+    totalPrice: '10.00',
     currencyCode: 'USD',
     countryCode: 'US',
   },
 };
 
-function GooglePayButton() {
+function GooglePayButton({ monto }) {
   const buttonRef = useRef(null);
+  const [error, setError] = React.useState('');
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -42,18 +43,24 @@ function GooglePayButton() {
     script.onload = () => {
       if (window.google) {
         const paymentsClient = new window.google.payments.api.PaymentsClient({
-          environment: 'TEST', // Cambia a 'PRODUCTION' cuando esté listo
+          environment: 'PRODUCTION',
         });
+        const config = {
+          ...googlePayConfig,
+          transactionInfo: {
+            ...googlePayConfig.transactionInfo,
+            totalPrice: parseFloat(monto || 0).toFixed(2),
+          },
+        };
         paymentsClient.isReadyToPay({
-          allowedPaymentMethods: googlePayConfig.allowedPaymentMethods,
+          allowedPaymentMethods: config.allowedPaymentMethods,
         }).then(function(response) {
           if (response.result) {
             paymentsClient.createButton({
               onClick: () => {
-                paymentsClient.loadPaymentData(googlePayConfig)
+                paymentsClient.loadPaymentData(config)
                   .then(paymentData => {
-                    // Aquí recibes el token de pago
-                    alert('Pago exitoso: ' + JSON.stringify(paymentData));
+                    alert('Pago exitoso (token real): ' + JSON.stringify(paymentData));
                   })
                   .catch(err => {
                     alert('Error en el pago: ' + err.message);
@@ -67,17 +74,31 @@ function GooglePayButton() {
                 buttonRef.current.appendChild(button);
               }
             });
+          } else {
+            setError('Google Pay no está disponible en este navegador o configuración.');
           }
+        }).catch(() => {
+          setError('Error al verificar disponibilidad de Google Pay. Revisa tus credenciales o configuración.');
         });
+      } else {
+        setError('No se pudo cargar el script de Google Pay.');
       }
     };
     document.body.appendChild(script);
     return () => {
       document.body.removeChild(script);
     };
-  }, []);
+  }, [monto]);
 
-  return <div ref={buttonRef}></div>;
+  return (
+    <>
+      <div ref={buttonRef}></div>
+      {error && (
+        <div style={{ color: 'red', marginTop: 8, fontWeight: 'bold' }}>
+          {error}
+        </div>
+      )}
+    </>
+  );
 }
-
 export default GooglePayButton;
