@@ -1,3 +1,4 @@
+router.post('/procesar-googlepay', verificarToken, require('../controllers/recargaController').procesarRecargaGooglePay);
 const express = require('express');
 const router = express.Router();
 const {

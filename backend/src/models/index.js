@@ -1,4 +1,5 @@
 // Definir relaciones entre modelos
+const { sequelize } = require('../config/database');
 const User = require('./User');
 const Loan = require('./Loan');
 const BankAccount = require('./BankAccount');
@@ -50,6 +51,7 @@ Inversion.belongsTo(User, {
 });
 
 module.exports = {
+  sequelize,
   User,
   Loan,
   BankAccount,

@@ -1,3 +1,77 @@
+// ...existing code...
+
+// Notificación masiva cursos de finanzas
+async function enviarNotificacionCursosFinanzas(usuario) {
+  const config = getConfig();
+  const cursosUrl = `${config.frontendUrl}/seleccion-curso`;
+  const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¡Nuevos Cursos de Finanzas!</title>
+  <style>
+    body { background: #f4f6fb; font-family: 'Segoe UI', Arial, sans-serif; padding: 0; margin: 0; }
+    .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; }
+    .header { background: linear-gradient(135deg, #001a4d 0%, #003d99 100%); padding: 32px 24px; text-align: center; }
+    .header-title { color: #fff; font-size: 28px; font-weight: 700; margin: 0; }
+    .content { padding: 32px 24px; }
+    .greeting { font-size: 22px; color: #001a4d; font-weight: 600; margin-bottom: 18px; }
+    .message { font-size: 16px; color: #333; line-height: 1.6; margin-bottom: 28px; }
+    .button-container { text-align: center; margin: 32px 0; }
+    .curso-btn { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #1976d2 0%, #1e88e5 100%); color: #fff !important; text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: 600; box-shadow: 0 4px 15px rgba(25, 118, 210, 0.18); transition: background 0.3s; }
+    .curso-btn:hover { background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%); }
+    .footer { background: #f8f9fa; padding: 24px; text-align: center; border-top: 1px solid #e0e0e0; }
+    .footer-text { font-size: 14px; color: #666; }
+    @media only screen and (max-width: 600px) { .container { margin: 0; border-radius: 0; } .content { padding: 18px 8px; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="header-title">¡Nuevos Cursos de Finanzas!</h1>
+    </div>
+    <div class="content">
+      <div class="greeting">Hola, ${usuario.nombre || 'usuario'} 👋</div>
+      <div class="message">
+        Te invitamos a descubrir y seleccionar los cursos de finanzas que tenemos disponibles para ti.<br><br>
+        Ahora puedes elegir el curso que más te interese desde una página dedicada, diseñada para que tu experiencia sea más sencilla y visual.
+      </div>
+      <div class="button-container">
+        <a href="${cursosUrl}" class="curso-btn">Ir a Selección de Curso</a>
+      </div>
+      <div class="message" style="font-size: 14px; color: #666;">
+        Si el botón no funciona, copia y pega este enlace en tu navegador:<br>
+        <span style="word-break: break-all; color: #1976d2;">${cursosUrl}</span>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="footer-text">
+        Banco Exclusivo | www.bancoexclusivo.lat<br>
+        © ${new Date().getFullYear()} Banco Exclusivo. Todos los derechos reservados.
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  // Usar SOLO SendGrid, nunca SMTP ni Resend
+  if (config.sendgridApiKey) {
+    const resultadoSendGrid = await enviarConSendGrid({
+      to: usuario.email,
+      subject: '¡Descubre los nuevos cursos de finanzas!',
+      html,
+    });
+    if (resultadoSendGrid.enviado) return resultadoSendGrid;
+    // Si falla, mostrar el error real
+    return { enviado: false, motivo: resultadoSendGrid.error || 'No se pudo enviar el correo', detalles: resultadoSendGrid.detalles, cursosUrl };
+  }
+  return { enviado: false, motivo: 'SendGrid no configurado', cursosUrl };
+}
+
+// ...existing code...
 // Servicio de email para notificaciones y verificación
 // Soporta: SendGrid API (preferido), SMTP, y Resend
 
@@ -56,8 +130,8 @@ const enviarConSendGrid = async ({ to, subject, html }) => {
   }
 
   try {
+    console.log('--- INICIO ENVÍO SENDGRID ---');
     console.log(`📤 Intentando enviar con SendGrid a: ${Array.isArray(to) ? to.join(', ') : to}`);
-    
     const payload = {
       personalizations: [
         {
@@ -76,9 +150,8 @@ const enviarConSendGrid = async ({ to, subject, html }) => {
         },
       ],
     };
-    
     console.log('📦 Payload SendGrid:', JSON.stringify(payload, null, 2));
-    
+    console.log('--- ANTES DE LLAMAR A AXIOS POST ---');
     const response = await axios.post(
       'https://api.sendgrid.com/v3/mail/send',
       payload,
@@ -90,14 +163,23 @@ const enviarConSendGrid = async ({ to, subject, html }) => {
         timeout: 15000,
       }
     );
-
+    console.log('--- DESPUÉS DE LLAMAR A AXIOS POST ---');
     console.log(`✅ Email enviado exitosamente con SendGrid (Status: ${response.status})`);
     return { enviado: true, provider: 'sendgrid', id: response.headers['x-message-id'] };
   } catch (error) {
+    console.log('--- ERROR EN AXIOS O ANTES ---');
+    // Mostrar SIEMPRE el error completo
     console.error('❌ Error en SendGrid:');
-    console.error('   Status:', error.response?.status);
-    console.error('   Data:', JSON.stringify(error.response?.data, null, 2));
-    console.error('   Message:', error.message);
+    const fs = require('fs');
+    let logMsg = '\n❌ Error en SendGrid:';
+    if (error.response) {
+      logMsg += `\n   Status: ${error.response.status}`;
+      logMsg += `\n   Data: ${JSON.stringify(error.response.data, null, 2)}`;
+    } else {
+      logMsg += `\n   Sin respuesta de SendGrid: ${error.message}`;
+    }
+    fs.appendFileSync('sendgrid-error.log', logMsg + '\n', 'utf8');
+    console.error(logMsg);
     const mensajeError = error.response?.data?.errors?.[0]?.message || error.message || 'Error desconocido en SendGrid';
     return { enviado: false, error: mensajeError, provider: 'sendgrid', detalles: error.response?.data };
   }
@@ -136,6 +218,7 @@ const enviarConResend = async ({ to, subject, html }) => {
 };
 
 const emailService = {
+    enviarNotificacionCursosFinanzas,
   // Enviar verificación de email
   enviarVerificacionEmail: async (usuario, token) => {
     try {

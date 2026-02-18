@@ -1,3 +1,70 @@
+const braintreeService = require('../services/braintreeService');
+// Procesar recarga con Google Pay (Braintree)
+const procesarRecargaGooglePay = async (req, res) => {
+  try {
+    const { nonce, monto } = req.body;
+    const usuarioId = req.usuario.id;
+    const usuario = await User.findByPk(usuarioId);
+
+    if (!nonce || !monto) {
+      return res.status(400).json({ mensaje: 'Nonce y monto son requeridos' });
+    }
+    const montoNumerico = parseFloat(monto);
+    if (isNaN(montoNumerico) || montoNumerico <= 0) {
+      return res.status(400).json({ mensaje: 'Monto inválido' });
+    }
+
+    const comision = calcularComisionRecarga();
+    const montoNeto = calcularMontoNeto(montoNumerico, comision);
+    if (montoNeto <= 0) {
+      return res.status(400).json({ mensaje: 'Monto insuficiente para cubrir la comisión' });
+    }
+
+    // Crear recarga pendiente en BD
+    const recarga = await Recarga.create({
+      usuarioId,
+      monto: montoNumerico,
+      montoNeto,
+      comision,
+      metodo: 'googlepay',
+      estado: 'pendiente',
+      numeroReferencia: `GP-${Date.now()}`,
+    });
+
+    try {
+      const resultado = await braintreeService.procesarPagoGooglePay(nonce, montoNumerico);
+      if (resultado.success) {
+        recarga.estado = 'exitosa';
+        recarga.mensajeError = null;
+        await recarga.save();
+        // Actualizar saldo del usuario
+        usuario.saldo = parseFloat(usuario.saldo) + parseFloat(montoNeto);
+        await usuario.save();
+        return res.json({
+          mensaje: 'Recarga Google Pay exitosa',
+          recargaId: recarga.id,
+          monto: recarga.monto,
+          montoNeto: recarga.montoNeto,
+          comision: recarga.comision,
+          nuevoSaldo: usuario.saldo,
+        });
+      } else {
+        recarga.estado = 'fallida';
+        recarga.mensajeError = resultado.message || 'Error en el pago';
+        await recarga.save();
+        return res.status(400).json({ mensaje: 'Error procesando pago Google Pay', error: resultado.message });
+      }
+    } catch (braintreeError) {
+      recarga.estado = 'fallida';
+      recarga.mensajeError = braintreeError.message;
+      await recarga.save();
+      return res.status(400).json({ mensaje: 'Error procesando pago Google Pay', error: braintreeError.message });
+    }
+  } catch (error) {
+    console.error('❌ Error en procesarRecargaGooglePay:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
 const Recarga = require('../models/Recarga');
 const CodigoRecarga = require('../models/CodigoRecarga');
 const User = require('../models/User');
@@ -1094,4 +1161,5 @@ module.exports = {
   crearRecargaTwoCheckout,
   webhookRapyd,
   webhookPayPal,
+  procesarRecargaGooglePay,
 };
