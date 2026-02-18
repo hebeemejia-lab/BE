@@ -450,8 +450,12 @@ export default function Deposita() {
                 <span className="paypal-mark">P</span>
                 <span className="paypal-text">PayPal</span>
               </div>
-              <h2>Pago con PayPal</h2>
-              <p className="card-subtitle">Paga de forma segura con tu cuenta PayPal</p>
+              <div className="payment-logo gpay-logo" aria-label="Google Pay" style={{marginLeft: 16}}>
+                <span className="gpay-g">G</span>
+                <span className="gpay-text">Google Pay</span>
+              </div>
+              <h2>Pago con PayPal o Google Pay</h2>
+              <p className="card-subtitle">Paga de forma segura con tu cuenta PayPal o Google Pay</p>
             </div>
 
             <form onSubmit={(e) => e.preventDefault()} className="payment-form">
@@ -483,17 +487,22 @@ export default function Deposita() {
                 )}
               </div>
 
-              {/* Botón de PayPal (JS SDK) */}
-              <div className="paypal-buttons" aria-disabled={loading}>
-                {loading && (
-                  <div className="loading-overlay">
-                    <div className="spinner"></div>
-                    <p>Procesando pago...</p>
-                  </div>
-                )}
-                <div ref={paypalButtonRef} />
+              {/* Botón de PayPal (JS SDK) y Google Pay */}
+              <div style={{display: 'flex', gap: '18px', alignItems: 'center', justifyContent: 'center', marginBottom: '24px'}}>
+                <div className="paypal-buttons" aria-disabled={loading} style={{flex: 1}}>
+                  {loading && (
+                    <div className="loading-overlay">
+                      <div className="spinner"></div>
+                      <p>Procesando pago...</p>
+                    </div>
+                  )}
+                  <div ref={paypalButtonRef} />
+                </div>
+                <div className="gpay-buttons" style={{flex: 1}}>
+                  <GooglePayButton monto={monto} />
+                </div>
               </div>
-              
+
               {/* Indicador de estado */}
               {loading && (
                 <div className="status-indicator processing">
@@ -515,6 +524,7 @@ export default function Deposita() {
                   <div className="payment-methods">
                     <span className="method">🅿️ PayPal</span>
                     <span className="method">💳 Tarjeta vinculada a PayPal</span>
+                    <span className="method">🅶 Google Pay</span>
                   </div>
                 </div>
 
@@ -522,7 +532,7 @@ export default function Deposita() {
                   <h3>🔒 Seguridad Garantizada</h3>
                   <ul className="security-list">
                     <li>Encriptación SSL de nivel banco</li>
-                    <li>Procesado por PayPal</li>
+                    <li>Procesado por PayPal y Google Pay</li>
                     <li>Tu información nunca se almacena en nuestros servidores</li>
                     <li>Garantía de reembolso si hay problemas</li>
                   </ul>
@@ -533,7 +543,7 @@ export default function Deposita() {
                   <ul className="process-list">
                     <li>1️⃣ Ingresa tu monto</li>
                     <li>2️⃣ Haz clic en "Proceder a Pago"</li>
-                    <li>3️⃣ Completa los datos de tu tarjeta</li>
+                    <li>3️⃣ Completa los datos de tu tarjeta o Google Pay</li>
                     <li>4️⃣ ¡Listo! Fondos disponibles instantáneamente</li>
                   </ul>
                 </div>
