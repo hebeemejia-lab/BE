@@ -23,19 +23,12 @@ export default function Deposita() {
     verificarRetornoPayPal();
   }, []);
 
-  useEffect(() => {
-    if (activeTab !== 'tarjeta') return;
-    if (!PAYPAL_CLIENT_ID) {
-      setError('Falta configurar PAYPAL_CLIENT_ID en el frontend.');
-      return;
-    }
+  const renderButtons = () => {
+    if (!window.paypal || !paypalButtonRef.current) return;
 
-    const renderButtons = () => {
-      if (!window.paypal || !paypalButtonRef.current) return;
+    paypalButtonRef.current.innerHTML = '';
 
-      paypalButtonRef.current.innerHTML = '';
-
-      window.paypal.Buttons({
+    window.paypal.Buttons({
         // ESTILO Y APARIENCIA
         style: {
           layout: 'vertical',
@@ -412,6 +405,13 @@ export default function Deposita() {
           <span>Depositar con PayPal</span>
         </button>
         <button
+          className={`tab-button ${activeTab === 'googlepay' ? 'active' : ''}`}
+          onClick={() => setActiveTab('googlepay')}
+        >
+          <span className="tab-logo gpay-g" aria-hidden="true">G</span>
+          <span>Depositar con Google Pay</span>
+        </button>
+        <button
           className={`tab-button ${activeTab === 'codigo' ? 'active' : ''}`}
           onClick={() => setActiveTab('codigo')}
         >
@@ -450,12 +450,8 @@ export default function Deposita() {
                 <span className="paypal-mark">P</span>
                 <span className="paypal-text">PayPal</span>
               </div>
-              <div className="payment-logo gpay-logo" aria-label="Google Pay" style={{marginLeft: 16}}>
-                <span className="gpay-g">G</span>
-                <span className="gpay-text">Google Pay</span>
-              </div>
-              <h2>Pago con PayPal o Google Pay</h2>
-              <p className="card-subtitle">Paga de forma segura con tu cuenta PayPal o Google Pay</p>
+              <h2>Pago con PayPal</h2>
+              <p className="card-subtitle">Paga de forma segura con tu cuenta PayPal</p>
             </div>
 
             <form onSubmit={(e) => e.preventDefault()} className="payment-form">
@@ -487,8 +483,8 @@ export default function Deposita() {
                 )}
               </div>
 
-              {/* Botón de PayPal (JS SDK) y Google Pay */}
-              <div style={{display: 'flex', gap: '18px', alignItems: 'center', justifyContent: 'center', marginBottom: '24px'}}>
+              {/* Botón de PayPal (JS SDK) */}
+              <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px'}}>
                 <div className="paypal-buttons" aria-disabled={loading} style={{flex: 1}}>
                   {loading && (
                     <div className="loading-overlay">
@@ -497,9 +493,6 @@ export default function Deposita() {
                     </div>
                   )}
                   <div ref={paypalButtonRef} />
-                </div>
-                <div className="gpay-buttons" style={{flex: 1}}>
-                  <GooglePayButton monto={monto} />
                 </div>
               </div>
 
@@ -518,39 +511,53 @@ export default function Deposita() {
               )}
 
               {/* Info de seguridad y métodos */}
-              <div className="payment-info">
-                <div className="info-section">
-                  <h3>✅ Métodos de Pago Aceptados</h3>
-                  <div className="payment-methods">
-                    <span className="method">🅿️ PayPal</span>
-                    <span className="method">💳 Tarjeta vinculada a PayPal</span>
-                    <span className="method">🅶 Google Pay</span>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: Google Pay */}
+      {activeTab === 'googlepay' && (
+        <div className="payment-container">
+          <div className="payment-card">
+            <div className="card-title">
+              <div className="payment-logo gpay-logo" aria-label="Google Pay">
+                <span className="gpay-g">G</span>
+                <span className="gpay-text">Google Pay</span>
+              </div>
+              <h2>Pago con Google Pay</h2>
+              <p className="card-subtitle">Paga de forma segura con Google Pay</p>
+            </div>
+            <form onSubmit={(e) => e.preventDefault()} className="payment-form">
+              <div className="form-section">
+                <label htmlFor="monto-gpay" className="monto-label">¿Cuánto deseas depositar?</label>
+                <div className="monto-input-group">
+                  <span className="currency-prefix">USD $</span>
+                  <input
+                    id="monto-gpay"
+                    type="number"
+                    value={monto}
+                    onChange={(e) => setMonto(e.target.value)}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="1"
+                    max="10000"
+                    required
+                    className="monto-input"
+                  />
+                </div>
+                {monto && (
+                  <div className="monto-summary">
+                    <p className="summary-text">
+                      Depositarás: <span className="summary-amount">USD ${parseFloat(monto || 0).toFixed(2)}</span>
+                    </p>
+                    <p className="summary-info">Sin comisiones adicionales</p>
                   </div>
-                </div>
-
-                <div className="info-section">
-                  <h3>🔒 Seguridad Garantizada</h3>
-                  <ul className="security-list">
-                    <li>Encriptación SSL de nivel banco</li>
-                    <li>Procesado por PayPal y Google Pay</li>
-                    <li>Tu información nunca se almacena en nuestros servidores</li>
-                    <li>Garantía de reembolso si hay problemas</li>
-                  </ul>
-                </div>
-
-                <div className="info-section">
-                  <h3>⚡ Proceso Rápido</h3>
-                  <ul className="process-list">
-                    <li>1️⃣ Ingresa tu monto</li>
-                    <li>2️⃣ Haz clic en "Proceder a Pago"</li>
-                    <li>3️⃣ Completa los datos de tu tarjeta o Google Pay</li>
-                    <li>4️⃣ ¡Listo! Fondos disponibles instantáneamente</li>
-                  </ul>
-                </div>
-
-                <div className="info-limits">
-                  <p><strong>Límites de Depósito:</strong></p>
-                  <p>Mínimo: USD $1.00 | Máximo: USD $10,000.00</p>
+                )}
+              </div>
+              <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px'}}>
+                <div className="gpay-buttons" style={{flex: 1}}>
+                  <GooglePayButton monto={monto} />
                 </div>
               </div>
             </form>
@@ -616,10 +623,37 @@ export default function Deposita() {
           </div>
         </div>
       )}
-      {/* Google Pay Integration */}
-      <div style={{ margin: '32px 0', textAlign: 'center' }}>
-        <h3>O paga con Google Pay</h3>
-        <GooglePayButton />
+      <div className="payment-info">
+        <div className="info-section">
+          <h3>✅ Métodos de Pago Aceptados</h3>
+          <div className="payment-methods">
+            <span className="method">🅿️ PayPal</span>
+            <span className="method">💳 Tarjeta vinculada a PayPal</span>
+            <span className="method">🅶 Google Pay</span>
+          </div>
+        </div>
+        <div className="info-section">
+          <h3>🔒 Seguridad Garantizada</h3>
+          <ul className="security-list">
+            <li>Encriptación SSL de nivel banco</li>
+            <li>Procesado por PayPal y Google Pay</li>
+            <li>Tu información nunca se almacena en nuestros servidores</li>
+            <li>Garantía de reembolso si hay problemas</li>
+          </ul>
+        </div>
+        <div className="info-section">
+          <h3>⚡ Proceso Rápido</h3>
+          <ul className="process-list">
+            <li>1️⃣ Ingresa tu monto</li>
+            <li>2️⃣ Haz clic en "Proceder a Pago"</li>
+            <li>3️⃣ Completa los datos de tu tarjeta o Google Pay</li>
+            <li>4️⃣ ¡Listo! Fondos disponibles instantáneamente</li>
+          </ul>
+        </div>
+        <div className="info-limits">
+          <p><strong>Límites de Depósito:</strong></p>
+          <p>Mínimo: USD $1.00 | Máximo: USD $10,000.00</p>
+        </div>
       </div>
     </div>
   );
