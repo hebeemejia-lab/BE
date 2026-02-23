@@ -44,6 +44,25 @@ const obtenerVistaDesdeRuta = (pathname) => {
 
 const AdminPanel = () => {
   const [vistaActual, setVistaActual] = useState('dashboard');
+  const [cuotasVencidas, setCuotasVencidas] = useState([]);
+  const [mostrarNotificaciones, setMostrarNotificaciones] = useState(false);
+    // Script para obtener cuotas vencidas (placeholder, debe ajustarse a la API real)
+    const cargarCuotasVencidas = useCallback(async () => {
+      try {
+        // Suponiendo endpoint /admin/cuotas-vencidas
+        const response = await api.get('/admin/cuotas-vencidas');
+        setCuotasVencidas(response.data.cuotas || []);
+      } catch (error) {
+        setCuotasVencidas([]);
+      }
+    }, []);
+
+    useEffect(() => {
+      cargarCuotasVencidas();
+      // Opcional: refrescar cada 5 minutos
+      const interval = setInterval(cargarCuotasVencidas, 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }, [cargarCuotasVencidas]);
   const [dashboard, setDashboard] = useState(null);
   const [prestamos, setPrestamos] = useState([]);
   const [usuariosAdmin, setUsuariosAdmin] = useState([]);
@@ -952,6 +971,46 @@ const AdminPanel = () => {
           >
             ☰
           </button>
+          {/* Campanita de notificaciones */}
+          <div style={{ position: 'relative', marginLeft: 12, marginRight: 12 }}>
+            <button
+              type="button"
+              className="admin-bell"
+              aria-label="Notificaciones de cuotas vencidas"
+              onClick={() => setMostrarNotificaciones((v) => !v)}
+            >
+              <span
+                role="img"
+                aria-label="Campanita"
+                className={cuotasVencidas.length > 0 ? 'bell-anim' : ''}
+                style={{ display: 'inline-block', transition: 'color 0.2s' }}
+              >
+                🔔
+              </span>
+              {cuotasVencidas.length > 0 && (
+                <span className="bell-badge">{cuotasVencidas.length}</span>
+              )}
+            </button>
+            {/* Panel de notificaciones innovador */}
+            {mostrarNotificaciones && (
+              <div className="admin-notification-panel">
+                <div className="notif-title">Cuotas vencidas</div>
+                {cuotasVencidas.length === 0 ? (
+                  <div className="notif-empty">No hay cuotas vencidas.</div>
+                ) : (
+                  <ul>
+                    {cuotasVencidas.map((cuota, idx) => (
+                      <li key={cuota.id || idx}>
+                        <div className="notif-cliente">{cuota.clienteNombre || cuota.cliente || 'N/A'}</div>
+                        <div className="notif-monto">${cuota.monto}</div>
+                        <div className="notif-vencimiento">Vence: {cuota.fechaVencimiento || cuota.vencimiento || 'N/A'}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
           <div className="admin-breadcrumb">
             <span className="admin-breadcrumb-root">Admin</span>
             <span className="admin-breadcrumb-sep">/</span>
