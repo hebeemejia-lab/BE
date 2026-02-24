@@ -57,18 +57,22 @@ async function enviarNotificacionCursosFinanzas(usuario) {
 </html>
   `;
 
-  // Usar SOLO SendGrid, nunca SMTP ni Resend
-  if (config.sendgridApiKey) {
-    const resultadoSendGrid = await enviarConSendGrid({
+  // Forzar uso de Gmail SMTP (beverify@bancoexclusivo.lat)
+  const transporter = crearTransporter();
+  if (!transporter) {
+    return { enviado: false, motivo: 'SMTP no configurado', cursosUrl };
+  }
+  try {
+    await transporter.sendMail({
+      from: config.smtpFrom,
       to: usuario.email,
       subject: '¡Descubre los nuevos cursos de finanzas!',
       html,
     });
-    if (resultadoSendGrid.enviado) return resultadoSendGrid;
-    // Si falla, mostrar el error real
-    return { enviado: false, motivo: resultadoSendGrid.error || 'No se pudo enviar el correo', detalles: resultadoSendGrid.detalles, cursosUrl };
+    return { enviado: true, motivo: 'Enviado por Gmail SMTP', cursosUrl };
+  } catch (err) {
+    return { enviado: false, motivo: err.message, cursosUrl };
   }
-  return { enviado: false, motivo: 'SendGrid no configurado', cursosUrl };
 }
 
 // ...existing code...
@@ -219,192 +223,202 @@ const enviarConResend = async ({ to, subject, html }) => {
 
 const emailService = {
     enviarNotificacionCursosFinanzas,
-  // Enviar verificación de email
-  enviarVerificacionEmail: async (usuario, token) => {
-    try {
-      const config = getConfig();
-      
-      console.log('🔍 DEBUG enviarVerificacionEmail:');
-      console.log(`   sendgridApiKey existe: ${config.sendgridApiKey ? '✅ SI' : '❌ NO'}`);
-      console.log(`   smtpHost existe: ${config.smtpHost ? '✅ SI' : '❌ NO'}`);
-      console.log(`   resendApiKey existe: ${config.resendApiKey ? '✅ SI' : '❌ NO'}`);
-      
-      const verifyUrl = `${config.frontendUrl}/verificar-email?token=${encodeURIComponent(token)}`;
-
-      const html = `
-<!DOCTYPE html>
-<html lang="es">
-<head>
+    // Enviar verificación de email
+    enviarVerificacionEmail: async (usuario, token) => {
+      try {
+        const config = getConfig();
+        console.log('🔍 DEBUG enviarVerificacionEmail:');
+        console.log(`   sendgridApiKey existe: ${config.sendgridApiKey ? '✅ SI' : '❌ NO'}`);
+        console.log(`   smtpHost existe: ${config.smtpHost ? '✅ SI' : '❌ NO'}`);
+        console.log(`   resendApiKey existe: ${config.resendApiKey ? '✅ SI' : '❌ NO'}`);
+        const verifyUrl = `${config.frontendUrl}/verificar-email?token=${encodeURIComponent(token)}`;
+        const html = `
+  <!DOCTYPE html>
+  <html lang="es">
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verifica tu cuenta - Banco Exclusivo</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 40px 20px;
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 40px 20px;
+      }
+      .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; }
+      .header { background: linear-gradient(135deg, #001a4d 0%, #003d99 100%); padding: 32px 24px; text-align: center; }
+      .header-title { color: #fff; font-size: 28px; font-weight: 700; margin: 0; }
+      .content { padding: 32px 24px; }
+      .greeting { font-size: 22px; color: #001a4d; font-weight: 600; margin-bottom: 18px; }
+      .message { font-size: 16px; color: #333; line-height: 1.6; margin-bottom: 28px; }
+      .button-container { text-align: center; margin: 32px 0; }
+      .verify-btn { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #1976d2 0%, #1e88e5 100%); color: #fff !important; text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: 600; box-shadow: 0 4px 15px rgba(25, 118, 210, 0.18); transition: background 0.3s; }
+      .verify-btn:hover { background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%); }
+      .footer { background: #f8f9fa; padding: 24px; text-align: center; border-top: 1px solid #e0e0e0; }
+      .footer-text { font-size: 14px; color: #666; }
+      @media only screen and (max-width: 600px) { .container { margin: 0; border-radius: 0; } .content { padding: 18px 8px; } }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1 class="header-title">Verifica tu cuenta bancaria</h1>
+      </div>
+      <div class="content">
+        <div class="greeting">Hola, ${usuario.nombre || 'usuario'} 👋</div>
+        <div class="message">
+          Haz clic en el botón para verificar tu cuenta bancaria.<br><br>
+        </div>
+        <div class="button-container">
+          <a href="${verifyUrl}" class="verify-btn">Verificar Cuenta</a>
+        </div>
+        <div class="message" style="font-size: 14px; color: #666;">
+          Si el botón no funciona, copia y pega este enlace en tu navegador:<br>
+          <span style="word-break: break-all; color: #1976d2;">${verifyUrl}</span>
+        </div>
+      </div>
+      <div class="footer">
+        <div class="footer-text">
+          Banco Exclusivo | www.bancoexclusivo.lat<br>
+          © ${new Date().getFullYear()} Banco Exclusivo. Todos los derechos reservados.
+        </div>
+      </div>
+    </div>
+  </body>
+  </html>
+        `;
+        // Aquí iría el envío real del email, por ejemplo usando SendGrid, SMTP o Resend
+        // ...existing code...
+      } catch (error) {
+        console.error('❌ Error enviando email de verificación:', error);
+        return { enviado: false, error: error.message };
+      }
+    },
         }
         .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #ffffff;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          max-width: 600px;
+          margin: 0 auto;
+          background: #ffffff;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
         .header {
-            background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
-            padding: 40px 30px;
-            text-align: center;
+          background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
+          padding: 40px 30px;
+          text-align: center;
         }
         .logo {
-            font-size: 48px;
-            margin-bottom: 10px;
+          font-size: 48px;
+          margin-bottom: 10px;
         }
         .header-title {
-            color: #ffffff;
-            font-size: 28px;
-            font-weight: 700;
-            margin: 0;
+          color: #ffffff;
+          font-size: 28px;
+          font-weight: 700;
+          margin: 0;
         }
         .content {
-            padding: 40px 30px;
-            background: #ffffff;
+          padding: 40px 30px;
+          background: #ffffff;
         }
         .greeting {
-            font-size: 24px;
-            color: #001a4d;
-            font-weight: 600;
-            margin-bottom: 20px;
+          font-size: 24px;
+          color: #001a4d;
+          font-weight: 600;
+          margin-bottom: 20px;
         }
         .message {
-            font-size: 16px;
-            color: #333333;
-            line-height: 1.6;
-            margin-bottom: 30px;
+          font-size: 16px;
+          color: #333333;
+          line-height: 1.6;
+          margin-bottom: 30px;
         }
         .button-container {
-            text-align: center;
-            margin: 30px 0;
+          text-align: center;
+          margin: 30px 0;
         }
         .verify-button {
-            display: inline-block;
-            padding: 16px 40px;
-            background: linear-gradient(135deg, #cc0000 0%, #ff3333 100%);
-            color: #ffffff !important;
-            text-decoration: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: 600;
-            box-shadow: 0 4px 15px rgba(204, 0, 0, 0.3);
-            transition: all 0.3s ease;
+          display: inline-block;
+          padding: 16px 40px;
+          background: linear-gradient(135deg, #cc0000 0%, #ff3333 100%);
+          color: #ffffff !important;
+          text-decoration: none;
+          border-radius: 8px;
+          font-size: 18px;
+          font-weight: 600;
+          box-shadow: 0 4px 15px rgba(204, 0, 0, 0.3);
         }
         .verify-button:hover {
-            background: linear-gradient(135deg, #ff3333 0%, #ff6666 100%);
-            box-shadow: 0 6px 20px rgba(204, 0, 0, 0.4);
-            transform: translateY(-2px);
-        }
-        .info-box {
-            background: #f8f9fa;
-            border-left: 4px solid #003d99;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 30px 0;
-        }
-        .info-box p {
-            margin: 0;
-            font-size: 14px;
-            color: #666666;
-        }
-        .link-container {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            word-break: break-all;
-        }
-        .link-text {
-            font-size: 13px;
-            color: #003d99;
-            font-family: monospace;
+          background: linear-gradient(135deg, #b21d2b 0%, #ff3333 100%);
         }
         .footer {
-            background: #f8f9fa;
-            padding: 30px;
-            text-align: center;
-            border-top: 1px solid #e0e0e0;
+          background: #f8f9fa;
+          padding: 24px;
+          text-align: center;
+          border-top: 1px solid #e0e0e0;
         }
         .footer-text {
-            font-size: 14px;
-            color: #666666;
-            margin-bottom: 10px;
+          font-size: 14px;
+          color: #666;
         }
-        .footer-link {
-            color: #003d99;
-            text-decoration: none;
-        }
-        .security-note {
-            margin-top: 20px;
-            padding: 15px;
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            border-radius: 8px;
-        }
-        .security-note p {
-            font-size: 14px;
-            color: #856404;
-            margin: 0;
-        }
-        .features {
-            display: flex;
-            justify-content: space-around;
-            margin: 30px 0;
-            flex-wrap: wrap;
-        }
-        .feature {
-            text-align: center;
-            flex: 1;
-            min-width: 150px;
-            padding: 10px;
-        }
-        .feature-icon {
-            font-size: 32px;
-            margin-bottom: 10px;
-        }
-        .feature-text {
-            font-size: 13px;
-            color: #666666;
-        }
-        @media only screen and (max-width: 600px) {
-            body { padding: 20px 10px; }
-            .content { padding: 30px 20px; }
-            .greeting { font-size: 20px; }
-            .verify-button { padding: 14px 30px; font-size: 16px; }
-            .features { flex-direction: column; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
+        @media only screen and (max-width: 600px) { .container { margin: 0; border-radius: 0; } .content { padding: 18px 8px; } }
+      </style>
+    </head>
+    <body>
+      <div class="container">
         <div class="header">
-            <div class="logo">🏦</div>
-            <h1 class="header-title">Banco Exclusivo</h1>
+          <div class="logo">🏦</div>
+          <h1 class="header-title">Verifica tu cuenta</h1>
         </div>
-        
         <div class="content">
-            <h2 class="greeting">¡Bienvenido, ${usuario.nombre}! 👋</h2>
-            
-            <p class="message">
-                Estás a un solo paso de activar tu cuenta en <strong>Banco Exclusivo</strong>. 
-                Para comenzar a disfrutar de todos nuestros servicios financieros, necesitamos verificar tu dirección de correo electrónico.
-            </p>
-            
-            <div class="button-container">
-                <a href="${verifyUrl}" class="verify-button">
-                    ✅ Verificar mi cuenta
-                </a>
-            </div>
+          <div class="greeting">Hola, ${usuario.nombre || 'usuario'} 👋</div>
+          <div class="message">
+            Para completar tu registro, por favor verifica tu dirección de correo electrónico haciendo clic en el siguiente botón:
+          </div>
+          <div class="button-container">
+            <a href="${verifyUrl}" class="verify-button">Verificar mi cuenta</a>
+          </div>
+          <div class="message" style="font-size: 14px; color: #666;">
+            Si el botón no funciona, copia y pega este enlace en tu navegador:<br>
+            <span style="word-break: break-all; color: #b21d2b;">${verifyUrl}</span>
+          </div>
+        </div>
+        <div class="footer">
+          <div class="footer-text">
+            Banco Exclusivo | www.bancoexclusivo.lat<br>
+            © ${new Date().getFullYear()} Banco Exclusivo. Todos los derechos reservados.
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+        `;
+
+        // Forzar uso de Gmail SMTP (beverify@bancoexclusivo.lat)
+        const transporter = crearTransporter();
+        if (!transporter) {
+          return { enviado: false, motivo: 'SMTP no configurado' };
+        }
+        try {
+          await transporter.sendMail({
+            from: config.smtpFrom,
+            to: usuario.email,
+            subject: 'Verifica tu cuenta - Banco Exclusivo',
+            html,
+          });
+          console.log(`✅ Email de verificación enviado con SMTP`);
+          return { enviado: true, provider: 'smtp' };
+        } catch (smtpError) {
+          console.error(`⚠️ SMTP falló: ${smtpError.message}`);
+          return { enviado: false, motivo: smtpError.message };
+        }
+      } catch (error) {
+        console.error('❌ Error enviando email de verificación:', error);
+        return { enviado: false, error: error.message };
+      }
+      },
             
             <div class="info-box">
                 <p>
