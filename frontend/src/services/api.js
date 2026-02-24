@@ -28,6 +28,14 @@ export const authAPI = {
   resendVerification: (email) => API.post('/auth/resend-verification', { email }),
 };
 
+  // Gastos Personales
+  export const gastosAPI = {
+    registrarTransaccion: (datos) => API.post('/transactions', datos),
+    obtenerTransacciones: () => API.get('/transactions'),
+    definirPresupuesto: (datos) => API.post('/budget', datos),
+    obtenerPresupuesto: () => API.get('/budget'),
+    obtenerReportes: (params) => API.get('/reports', { params }),
+  };
 // Transfers
 export const transferAPI = {
   realizar: (datos) => API.post('/transferencias/realizar', datos),
