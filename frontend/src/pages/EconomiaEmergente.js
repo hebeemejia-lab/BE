@@ -10,7 +10,7 @@ const baseSubtemas = [
     titulo: 'Introducción: Economía Emergente',
     contenido: (
       <>
-        <img src="/imagen/Diseño sin título (1) (1).png" alt="Banco Exclusivo" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
+        <img src="/imagen/Diseño sin título (1) (1).png" alt="BE" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
         <p>¿Qué es una economía emergente? Contexto global: países emergentes y su impacto.</p>
       </>
     )

@@ -313,7 +313,7 @@ const AdminPanel = () => {
       </head>
       <body>
         <div class="header">
-          <h1>Banco Exclusivo</h1>
+          <h1>BE</h1>
           <p>Factura de Préstamo</p>
           <p><strong>#${prestamo.id}</strong></p>
         </div>
@@ -346,7 +346,7 @@ const AdminPanel = () => {
         </div>
         
         <div class="footer">
-          <p>Banco Exclusivo - www.bancoexclusivo.lat</p>
+          <p>BE - www.bancoexclusivo.lat</p>
           <p>Documento generado electrónicamente</p>
         </div>
       </body>
@@ -539,7 +539,7 @@ const AdminPanel = () => {
       </head>
       <body>
         <div class="header">
-          <h1>🏦 Banco Exclusivo</h1>
+          <h1>🏦 BE</h1>
           <p>Recibo de Pago de Cuota</p>
           <p><strong>${recibo.numeroRecibo}</strong></p>
         </div>
@@ -652,7 +652,7 @@ const AdminPanel = () => {
           Monto del Retiro: ${monto}
         </div>
         <div class="footer">
-          <p>Banco Exclusivo - www.bancoexclusivo.lat</p>
+          <p>BE - www.bancoexclusivo.lat</p>
           <p>Documento generado electrónicamente</p>
         </div>
       </body>
@@ -679,10 +679,10 @@ const AdminPanel = () => {
       <div style="width: 860px; padding: 32px; font-family: 'Space Grotesk', Arial, sans-serif; background: #f8fafc; color: #0f1b3d;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <h2 style="margin: 0; color: #0f1b3d;">Banco Exclusivo</h2>
+            <h2 style="margin: 0; color: #0f1b3d;">BE</h2>
             <p style="margin: 4px 0 0; color: #64748b;">Factura de Retiro</p>
           </div>
-          <img src="${logoUrl}" alt="Banco Exclusivo" style="width: 72px; height: 72px; object-fit: contain;" />
+          <img src="${logoUrl}" alt="BE" style="width: 72px; height: 72px; object-fit: contain;" />
         </div>
         <div style="margin-top: 24px; padding: 18px; border-radius: 16px; background: linear-gradient(140deg, #0f1b3d 0%, #b21d2b 120%); color: #f8fafc;">
           <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Retiro ID</div>
@@ -705,7 +705,7 @@ const AdminPanel = () => {
           <div style="font-size: 32px; font-weight: 700; color: #0f1b3d;">${monto}</div>
           <div style="font-size: 13px; color: #64748b;">Estado: ${solicitud?.estado || 'pendiente'}</div>
         </div>
-        <div style="margin-top: 28px; text-align: center; font-size: 12px; color: #94a3b8;">Documento generado por Banco Exclusivo</div>
+        <div style="margin-top: 28px; text-align: center; font-size: 12px; color: #94a3b8;">Documento generado por BE</div>
       </div>
     `;
 

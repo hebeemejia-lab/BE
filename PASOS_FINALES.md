@@ -74,7 +74,7 @@ https://be-backend-hfib.onrender.com/health
 Deberías ver algo como:
 ```json
 {
-  "mensaje": "✓ Banco Exclusivo Backend - Servidor en línea",
+   "mensaje": "✓ BE Backend - Servidor en línea",
   "version": "2.2"
 }
 ```

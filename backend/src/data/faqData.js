@@ -1,4 +1,4 @@
-// Base de conocimiento del Bot FAQ - Banco Exclusivo
+// Base de conocimiento del Bot FAQ - BE
 // Respuestas automáticas sin necesidad de APIs
 
 const faqData = [
@@ -65,7 +65,7 @@ Recibirás una notificación cuando el saldo esté disponible.`,
     id: 4,
     keywords: ['comision', 'costo', 'tarifa', 'cobro', 'precio'],
     pregunta: '¿Cuáles son las comisiones?',
-    respuesta: `📊 **Comisiones de Banco Exclusivo:**
+    respuesta: `📊 **Comisiones de BE:**
 
 ✅ **GRATIS:**
 - Transferencias entre usuarios del banco
@@ -134,7 +134,7 @@ Recibirás una notificación cuando el saldo esté disponible.`,
     id: 7,
     keywords: ['seguro', 'seguridad', 'proteccion', 'hack', 'robo', 'fraude'],
     pregunta: '¿Mi dinero está seguro?',
-    respuesta: `🔒 **Seguridad en Banco Exclusivo:**
+    respuesta: `🔒 **Seguridad en BE:**
 
 ✅ **Protección de cuenta:**
 - Encriptación de datos SSL/TLS
@@ -161,7 +161,7 @@ Contáctanos inmediatamente: ${process.env.ADMIN_EMAIL || 'soporte@bancoexclusiv
     id: 8,
     keywords: ['crear cuenta', 'registro', 'registrarse', 'sign up', 'nueva cuenta'],
     pregunta: '¿Cómo creo una cuenta?',
-    respuesta: `📝 **Registro en Banco Exclusivo:**
+    respuesta: `📝 **Registro en BE:**
 
 1. Haz clic en "Registrarse"
 2. Completa el formulario:
@@ -230,8 +230,8 @@ Contáctanos inmediatamente: ${process.env.ADMIN_EMAIL || 'soporte@bancoexclusiv
   {
     id: 11,
     keywords: ['que es', 'banco', 'quienes son', 'about', 'informacion'],
-    pregunta: '¿Qué es Banco Exclusivo?',
-    respuesta: `🏦 **Banco Exclusivo** es una plataforma bancaria digital que te permite:
+    pregunta: '¿Qué es BE?',
+    respuesta: `🏦 **BE** es una plataforma bancaria digital que te permite:
 
 ✅ **Gestionar tu dinero:**
 - Recargas instantáneas

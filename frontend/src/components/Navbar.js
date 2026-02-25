@@ -38,8 +38,8 @@ export default function Navbar() {
       <div className="navbar-container">
         <div className="navbar-header">
           <Link to="/" className="navbar-logo" onClick={handleMenuClose}>
-            <img src="/imagen/BE (1) (1).png" alt="Banco Exclusivo" className="logo-img" />
-            <span className="logo-text">Banco Exclusivo</span>
+            <img src="/imagen/BE (1) (1).png" alt="BE" className="logo-img" />
+            <span className="logo-text">BE</span>
           </Link>
 
           {usuario && (

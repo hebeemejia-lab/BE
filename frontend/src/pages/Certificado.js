@@ -121,7 +121,7 @@ export default function Certificado() {
           color: '#fff',
           margin: '0 auto',
         }}>
-          <img src={process.env.PUBLIC_URL + '/imagen/Diseño sin título (1) (1).png'} alt="Banco Exclusivo" style={{ width: 100, position: 'absolute', top: 56, left: 56, zIndex: 1, background: 'transparent', padding: '8px', borderRadius: '16px' }} />
+          <img src={process.env.PUBLIC_URL + '/imagen/Diseño sin título (1) (1).png'} alt="BE" style={{ width: 100, position: 'absolute', top: 56, left: 56, zIndex: 1, background: 'transparent', padding: '8px', borderRadius: '16px' }} />
           {/* Bordes académicos decorativos */}
           <div style={{
             position: 'absolute',
@@ -138,13 +138,13 @@ export default function Certificado() {
               <rect x="48" y="48" width="720" height="960" rx="12" stroke="#1a8cff" strokeWidth="2" fill="none" />
             </svg>
           </div>
-          <h1 style={{ color: '#fff', marginBottom: 8, fontWeight: 700, fontSize: 36, letterSpacing: 1, position: 'relative', zIndex: 2 }}>Banco Exclusivo</h1>
+          <h1 style={{ color: '#fff', marginBottom: 8, fontWeight: 700, fontSize: 36, letterSpacing: 1, position: 'relative', zIndex: 2 }}>BE</h1>
           <h2 style={{ color: '#fff', marginBottom: 24, fontWeight: 400, fontSize: 28, position: 'relative', zIndex: 2 }}>Certificado de Finalización</h2>
           <p style={{ fontSize: 20, margin: '32px 0 0 0', color: '#fff', position: 'relative', zIndex: 2 }}>Otorgado a</p>
           <h2 style={{ color: '#fff', margin: 0, fontSize: 28, fontWeight: 600, position: 'relative', zIndex: 2 }}>{nombre}</h2>
           <p style={{ fontSize: 20, margin: '32px 0 0 0', color: '#fff', position: 'relative', zIndex: 2 }}>por completar satisfactoriamente el curso</p>
           <h3 style={{ color: '#fff', margin: 0, fontSize: 24, position: 'relative', zIndex: 2 }}>{nombreCurso}</h3>
-          <p style={{ margin: '40px 0 0 0', fontSize: 18, color: '#fff', position: 'relative', zIndex: 2 }}>Emitido por Banco Exclusivo • {new Date().toLocaleDateString()}</p>
+          <p style={{ margin: '40px 0 0 0', fontSize: 18, color: '#fff', position: 'relative', zIndex: 2 }}>Emitido por BE • {new Date().toLocaleDateString()}</p>
           <div style={{ marginTop: 48, textAlign: 'center', color: '#fff', fontWeight: 500, fontSize: 18, position: 'relative', zIndex: 2 }}>
             <span>__________________________<br/>Heber Mejire Jacobe (Heber Renuel)<br/>Director Académico</span>
           </div>

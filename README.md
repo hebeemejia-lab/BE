@@ -1,4 +1,4 @@
-# 🏦 Banco Exclusivo - Plataforma de Transferencias y Préstamos
+# 🏦 BE - Plataforma de Transferencias y Préstamos
 
 Una aplicación web completa para gestionar transferencias bancarias y solicitudes de préstamos con un diseño moderno en azul y rojo.
 
@@ -102,7 +102,7 @@ La aplicación estará disponible en: `http://localhost:3000`
 ## 📁 Estructura del Proyecto
 
 ```
-Banco Exclusivo/
+BE/
 ├── backend/
 │   ├── src/
 │   │   ├── config/
@@ -212,4 +212,4 @@ Para reportar problemas o sugerencias, contacta con el equipo de desarrollo.
 
 ---
 
-**¡Gracias por usar Banco Exclusivo!** 🎉
+**¡Gracias por usar BE!** 🎉

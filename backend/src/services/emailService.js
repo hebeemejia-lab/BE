@@ -48,8 +48,8 @@ async function enviarNotificacionCursosFinanzas(usuario) {
     </div>
     <div class="footer">
       <div class="footer-text">
-        Banco Exclusivo | www.bancoexclusivo.lat<br>
-        © ${new Date().getFullYear()} Banco Exclusivo. Todos los derechos reservados.
+        BE | www.bancoexclusivo.lat<br>
+        © ${new Date().getFullYear()} BE. Todos los derechos reservados.
       </div>
     </div>
   </div>

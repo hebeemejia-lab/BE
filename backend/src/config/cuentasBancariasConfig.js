@@ -7,7 +7,7 @@ const cuentasBancariasDefault = {
     banco: 'BanReservas',
     tipoCuenta: 'Corriente',
     numeroCuenta: '9608141071', // Tu cuenta
-    nombreTitular: 'Banco Exclusivo',
+    nombreTitular: 'BE',
     cedula: '', // Cédula o RNC del negocio
     telefono: '',
     email: 'Hebelmejia2@gmail.com',
@@ -23,7 +23,7 @@ const cuentasBancariasDefault = {
     banco: 'Banco Popular',
     tipoCuenta: 'Corriente',
     numeroCuenta: null, // Completar si existe
-    nombreTitular: 'Banco Exclusivo',
+    nombreTitular: 'BE',
     cedula: '',
     telefono: '',
     email: 'Hebelmejia2@gmail.com',

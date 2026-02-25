@@ -10,7 +10,7 @@ const baseSubtemas = [
     titulo: 'Introducción: Activos y Pasivos',
     contenido: (
       <>
-        <img src="/imagen/Diseño sin título (1) (1).png" alt="Banco Exclusivo" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
+        <img src="/imagen/Diseño sin título (1) (1).png" alt="BE" style={{maxWidth: 180, borderRadius: 12, marginBottom: 16, boxShadow: '0 2px 8px #1a8cff33'}} />
         <p>Definición de activos y pasivos. Importancia en la vida financiera personal y empresarial. Contexto actual: ¿Por qué es clave entenderlos en tiempos de incertidumbre económica?</p>
       </>
     )

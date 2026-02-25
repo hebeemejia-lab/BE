@@ -1,6 +1,6 @@
 # Política de Privacidad
 
-En Banco Exclusivo, tu seguridad y privacidad son nuestra prioridad. A continuación, te informamos sobre el tratamiento de tus datos y la seguridad de tus transacciones:
+En BE, tu seguridad y privacidad son nuestra prioridad. A continuación, te informamos sobre el tratamiento de tus datos y la seguridad de tus transacciones:
 
 ## 1. Seguridad de la Información
 - Todos los datos personales y bancarios se transmiten de forma cifrada mediante SSL/TLS.

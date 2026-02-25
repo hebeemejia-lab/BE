@@ -1,7 +1,5 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
 const nodemailer = require('nodemailer');
-const plantillaAhorro = require('./plantilla-ahorro-exclusivo');
-
 const plantillaCursos = {
   subject: '¡Descubre los nuevos cursos de finanzas!',
   html: `
@@ -33,10 +31,7 @@ const plantillaCursos = {
     </div>
   `
 };
-
-const correos = [
-  'hebelmejia2@gmail.com'
-];
+const { User } = require('./src/models/User');
 
 const transporterCursos = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -48,21 +43,20 @@ const transporterCursos = nodemailer.createTransport({
   },
 });
 
-const transporterAhorro = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+async function obtenerCorreosUsuarios() {
+  try {
+    const usuarios = await User.findAll({ attributes: ['email'], where: { emailVerificado: true } });
+    return usuarios.map(u => u.email);
+  } catch (err) {
+    console.error('Error obteniendo correos:', err);
+    return [];
+  }
+}
 
-async function enviarCorreos() {
-  console.log(`Enviando correos a ${correos.length} destinatarios...`);
+async function enviarCursosMasivo() {
+  const correos = await obtenerCorreosUsuarios();
+  console.log(`Enviando plantilla de cursos a ${correos.length} destinatarios...`);
   for (const to of correos) {
-    // Aquí puedes enviar correos usando transporterCursos o transporterAhorro
-    // Ejemplo:
     const msgCursos = {
       to,
       from: process.env.SMTP_CURSOS_FROM,
@@ -78,34 +72,4 @@ async function enviarCorreos() {
   }
 }
 
-// Nueva función para enviar a todos los usuarios
-async function obtenerCorreosUsuarios() {
-  try {
-    const User = require('./src/models/User');
-    const usuarios = await User.findAll({ attributes: ['email'], where: { emailVerificado: true } });
-    return usuarios.map(u => u.email);
-  } catch (err) {
-    console.error('Error obteniendo correos:', err);
-    return [];
-  }
-}
-
-async function enviarCorreosMasivos() {
-  const correos = await obtenerCorreosUsuarios();
-  console.log(`Enviando correos a ${correos.length} destinatarios...`);
-  for (const to of correos) {
-    const msgCursos = {
-      to,
-      from: process.env.SMTP_CURSOS_FROM, // correo de cursos
-      subject: plantillaCursos.subject,
-      html: plantillaCursos.html,
-    };
-    try {
-      await transporterCursos.sendMail(msgCursos);
-      console.log(`Correo de cursos enviado a: ${to}`);
-    } catch (err) {
-      console.error(`Error enviando a ${to}:`, err.message);
-    }
-  }
-}
-enviarCorreosMasivos();
+enviarCursosMasivo();
