@@ -1,7 +1,7 @@
 {
   "name": "banco-exclusivo-backend",
   "version": "1.0.1",
-  "description": "Backend para Banco Exclusivo - Transferencias y Préstamos",
+  "description": "Backend para BE - Transferencias y Préstamos",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",

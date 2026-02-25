@@ -1,4 +1,4 @@
-# 🚀 Guía de Inicio de Servicios - Banco Exclusivo
+# 🚀 Guía de Inicio de Servicios - BE
 
 ## Opciones para mantener servicios corriendo
 
@@ -127,13 +127,13 @@ sudo nano /etc/systemd/system/banco-exclusivo-backend.service
 
 ```ini
 [Unit]
-Description=Banco Exclusivo Backend
+Description=BE Backend
 After=network.target
 
 [Service]
 Type=simple
 User=tu-usuario
-WorkingDirectory=/home/tu-usuario/Banco Exclusivo/backend
+WorkingDirectory=/home/tu-usuario/BE/backend
 ExecStart=/usr/bin/node src/index.js
 Restart=always
 RestartSec=10
@@ -263,7 +263,7 @@ curl http://localhost:8080
 Respuesta esperada:
 ```json
 {
-  "mensaje": "✓ Banco Exclusivo Backend - Servidor en línea",
+  "mensaje": "✓ BE Backend - Servidor en línea",
   "timestamp": "2026-01-31T..."
 }
 ```

@@ -39,7 +39,7 @@ async function crearSubAdmin() {
 
     const subadmin = await User.create({
       nombre: 'Sub Admin',
-      apellido: 'Banco Exclusivo',
+      apellido: 'BE',
       email: emailNormalizado,
       password: passwordHash,
       cedula: '000-0000000-1',
