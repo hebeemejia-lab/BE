@@ -81,10 +81,17 @@
     gap: 0 !important;
     width: auto !important;
     height: 80px !important;
-    overflow-x: visible !important;
+    overflow-x: auto !important;
     overflow-y: hidden !important;
     display: flex !important;
     padding: 0 8px !important;
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+
+  /* Webkit browsers (Chrome, Safari, Edge) - Hide scrollbar for navbar-links */
+  .navbar-links::-webkit-scrollbar {
+    display: none !important;
   }
   
   .nav-link, .nav-button, .admin-link {
