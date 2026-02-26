@@ -6,13 +6,13 @@
     width: 100vw !important;
     min-width: 100vw !important;
     max-width: 100vw !important;
-    height: 70px !important;
+    height: 50px !important;
     top: auto !important;
     bottom: 0 !important;
     z-index: 10000 !important;
-    background: transparent !important;
+    background: linear-gradient(180deg, #001a4d 0%, #003d99 100%) !important;
     border-top: 3px solid #a7d8ff !important;
-    box-shadow: none !important;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1) !important;
     align-items: center !important;
     justify-content: center !important;
     transition: none !important;
@@ -23,7 +23,7 @@
     flex-direction: row !important;
     align-items: center !important;
     justify-content: center !important;
-    height: 70px !important;
+    height: 50px !important;
     padding: 0 !important;
     width: 100vw !important;
     gap: 0 !important;
@@ -52,7 +52,7 @@
     justify-content: flex-start !important;
     gap: 0 !important;
     width: 100vw !important;
-    height: 70px !important;
+    height: 50px !important;
     background: transparent !important;
     padding: 0 !important;
     overflow-x: auto !important;
@@ -72,12 +72,12 @@
     justify-content: flex-start !important;
     gap: 0 !important;
     width: auto !important;
-    height: 70px !important;
+    height: 50px !important;
     overflow-x: visible !important;
     overflow-y: hidden !important;
     display: flex !important;
     padding: 0 8px !important;
-  }
+  
   
   .nav-link, .nav-button, .admin-link {
     font-size: 11px !important;
@@ -85,7 +85,7 @@
     border-radius: 8px !important;
     min-width: 70px !important;
     width: auto !important;
-    height: 60px !important;
+    height: 50px !important;
     background: transparent !important;
     color: #fff !important;
     display: flex !important;
@@ -125,7 +125,7 @@
   
   .dropdown-menu {
     position: absolute !important;
-    bottom: 75px !important;
+    bottom: 55px !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
     background: linear-gradient(135deg, #001a4d 0%, #003d99 100%) !important;
@@ -160,14 +160,14 @@
   }
 }
 .navbar {
-  background: transparent;
+  background: linear-gradient(90deg, #001a4d 0%, #003d99 100%);
   border-bottom: 3px solid #a7d8ff;
-  box-shadow: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 70px;
+  height: 45px;
   width: 100%;
   z-index: 10000;
   display: flex;
@@ -210,14 +210,14 @@
 }
 
 .logo-img {
-  width: 60px;
-  height: 60px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
 }
 
 .logo-text {
   display: inline;
-  font-size: 16px;
+  font-size: 12px;
 }
 
 .hamburger {
