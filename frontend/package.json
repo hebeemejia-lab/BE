@@ -17,7 +17,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "node --max_old_space_size=2048 ./node_modules/react-scripts/bin/react-scripts.js build",
     "serve": "npm run build && node server.js",
     "prod": "npm run build && node server.js",
     "test": "react-scripts test",
