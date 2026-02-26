@@ -16,6 +16,12 @@ export default function Navbar() {
   const touchEndX = useRef(0);
   const touchStartY = useRef(0);
   const touchEndY = useRef(0);
+  const menuOpenRef = useRef(menuOpen);
+
+  // Mantener menuOpenRef sincronizado
+  useEffect(() => {
+    menuOpenRef.current = menuOpen;
+  }, [menuOpen]);
 
   const handleLogout = () => {
     logout();
@@ -35,7 +41,8 @@ export default function Navbar() {
 
   // Detectar swipe gestures en móvil
   useEffect(() => {
-    if (!usuario) return; // Solo si hay usuario logueado
+    // Solo en dispositivos móviles y si hay usuario logueado
+    if (!usuario || window.innerWidth > 600) return;
 
     const handleTouchStart = (e) => {
       touchStartX.current = e.touches[0].clientX;
@@ -51,33 +58,37 @@ export default function Navbar() {
       const diffX = touchEndX.current - touchStartX.current;
       const diffY = Math.abs(touchEndY.current - touchStartY.current);
       
-      // Solo detectar swipe horizontal (no vertical)
-      if (diffY > 50) return;
+      // Solo detectar swipe horizontal (no vertical - evitar conflicto con scroll)
+      if (diffY > 70) return;
 
-      // Swipe desde el borde izquierdo hacia la derecha (abrir)
-      if (touchStartX.current < 50 && diffX > 100 && !menuOpen) {
+      const isMenuOpen = menuOpenRef.current;
+
+      // Swipe desde el borde izquierdo hacia la derecha (ABRIR menú)
+      if (!isMenuOpen && touchStartX.current < 50 && diffX > 80) {
         setMenuOpen(true);
       }
       
-      // Swipe hacia la izquierda (cerrar) cuando el menú está abierto
-      if (diffX < -100 && menuOpen) {
+      // Swipe hacia la izquierda (CERRAR menú) - desde cualquier parte cuando está abierto
+      if (isMenuOpen && diffX < -80) {
+        setMenuOpen(false);
+      }
+      
+      // Swipe hacia la derecha desde dentro del menú también puede cerrarlo si es muy fuerte
+      if (isMenuOpen && touchStartX.current < 280 && diffX < -50) {
         setMenuOpen(false);
       }
     };
 
-    // Solo en dispositivos móviles (max-width: 600px)
-    if (window.innerWidth <= 600) {
-      document.addEventListener('touchstart', handleTouchStart, { passive: true });
-      document.addEventListener('touchmove', handleTouchMove, { passive: true });
-      document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
 
-      return () => {
-        document.removeEventListener('touchstart', handleTouchStart);
-        document.removeEventListener('touchmove', handleTouchMove);
-        document.removeEventListener('touchend', handleTouchEnd);
-      };
-    }
-  }, [usuario, menuOpen]);
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [usuario]); // Solo depende de usuario, no de menuOpen
 
   return (
     <nav className={`navbar ${menuOpen ? 'open' : ''}`}>
