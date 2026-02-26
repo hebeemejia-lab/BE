@@ -3,12 +3,14 @@ import React, { createContext, useState, useEffect, useCallback } from 'react';
 export const CurrencyContext = createContext();
 
 const CURRENCY_SYMBOLS = {
+  DOP: 'RD$',
   USD: '$',
   EUR: '€',
   GBP: '£'
 };
 
 const CURRENCY_NAMES = {
+  DOP: 'Peso Dominicano (DOP)',
   USD: 'Dólar (USD)',
   EUR: 'Euro (EUR)',
   GBP: 'Libra (GBP)'
@@ -16,7 +18,7 @@ const CURRENCY_NAMES = {
 
 export const CurrencyProvider = ({ children }) => {
   const [currency, setCurrency] = useState(() => {
-    return localStorage.getItem('selectedCurrency') || 'USD';
+    return localStorage.getItem('selectedCurrency') || 'DOP';
   });
   
   const [exchangeRates, setExchangeRates] = useState(() => {
@@ -28,26 +30,32 @@ export const CurrencyProvider = ({ children }) => {
       return JSON.parse(cached);
     }
     
-    return { USD: 1, EUR: 0.92, GBP: 0.79 }; // Valores por defecto
+    // Valores por defecto (1 DOP a otras monedas)
+    return { DOP: 1, USD: 0.017, EUR: 0.016, GBP: 0.013 };
   });
   
   const [loading, setLoading] = useState(false);
 
-  // Función para obtener tasas de cambio actualizadas
+  // Función para obtener tasas de cambio actualizadas (desde DOP a otras monedas)
   const fetchExchangeRates = useCallback(async (userLocation = null) => {
     setLoading(true);
     try {
-      // Usar exchangerate-api.io (gratuita, no requiere API key para uso básico)
+      // Primero obtener tasa USD (base internacional)
       const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
       
       if (!response.ok) throw new Error('Error al obtener tasas de cambio');
       
       const data = await response.json();
       
+      // DOP normalmente está alrededor de 58-60 por USD
+      const dopToUsd = data.rates.DOP || 59; // Cuántos DOP = 1 USD
+      
+      // Calcular tasas desde DOP (1 DOP = ? USD/EUR/GBP)
       const rates = {
-        USD: 1,
-        EUR: data.rates.EUR || 0.92,
-        GBP: data.rates.GBP || 0.79
+        DOP: 1,
+        USD: 1 / dopToUsd, // Convertir de DOP a USD
+        EUR: (1 / dopToUsd) * (data.rates.EUR || 0.92), // DOP -> USD -> EUR
+        GBP: (1 / dopToUsd) * (data.rates.GBP || 0.79)  // DOP -> USD -> GBP
       };
       
       setExchangeRates(rates);
@@ -77,14 +85,16 @@ export const CurrencyProvider = ({ children }) => {
     // location puede ser código de país o coordenadas
     const euroCountries = ['ES', 'FR', 'DE', 'IT', 'PT', 'NL', 'BE', 'AT', 'IE', 'FI', 'GR'];
     const gbpCountries = ['GB', 'UK'];
+    const dominicanCountries = ['DO'];
     
     if (typeof location === 'string') {
       const countryCode = location.toUpperCase();
+      if (dominicanCountries.includes(countryCode)) return 'DOP';
       if (euroCountries.includes(countryCode)) return 'EUR';
       if (gbpCountries.includes(countryCode)) return 'GBP';
     }
     
-    return 'USD'; // Por defecto dólar
+    return 'DOP'; // Por defecto peso dominicano
   };
 
   // Obtener ubicación del usuario usando API de geolocalización
@@ -95,7 +105,7 @@ export const CurrencyProvider = ({ children }) => {
       if (!response.ok) throw new Error('Error al obtener ubicación');
       
       const data = await response.json();
-      return data.country_code; // Devuelve código de país como 'US', 'ES', etc.
+      return data.country_code; // Devuelve código de país como 'DO', 'US', 'ES', etc.
     } catch (error) {
       console.error('Error al obtener ubicación:', error);
       return null;
@@ -110,9 +120,9 @@ export const CurrencyProvider = ({ children }) => {
     }
   };
 
-  // Convertir monto de USD a la divisa seleccionada
-  const convertAmount = (amountUSD) => {
-    const amount = parseFloat(amountUSD);
+  // Convertir monto de DOP a la divisa seleccionada
+  const convertAmount = (amountDOP) => {
+    const amount = parseFloat(amountDOP);
     if (!isFinite(amount)) return 0;
     
     const rate = exchangeRates[currency] || 1;
