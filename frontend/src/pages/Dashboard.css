@@ -38,7 +38,7 @@
 
 .account-overview {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
   margin-bottom: 10px;
 }
@@ -63,6 +63,11 @@
   background: linear-gradient(140deg, #1f2937 0%, #0f1b3d 60%, #b21d2b 140%);
   color: #f8fafc;
   border: none;
+}
+
+.overview-card.investment {
+  border: 1px solid rgba(67, 160, 71, 0.35);
+  box-shadow: 0 12px 26px rgba(67, 160, 71, 0.18);
 }
 
 .overview-label {

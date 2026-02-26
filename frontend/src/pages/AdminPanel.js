@@ -197,6 +197,11 @@ const AdminPanel = () => {
     }
     if (vistaRuta === 'faq') {
       setVistaActual('faq');
+      return;
+    }
+    if (vistaRuta === 'analisisInversiones') {
+      setVistaActual('analisisInversiones');
+      return;
     }
   }, [location.pathname, cargarDashboard, cargarUsuariosParaVista, cargarPrestamos, cargarUsuarios]);
 
@@ -905,6 +910,7 @@ const AdminPanel = () => {
     prestamos: 'Gestion de Prestamos',
     clientes: 'Gestion de Clientes',
     faq: 'Feedback FAQ',
+    analisisInversiones: 'Analisis de Inversiones',
   };
   const tituloActual = titulosVista[vistaActual] || 'Dashboard';
 

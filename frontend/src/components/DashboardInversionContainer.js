@@ -13,9 +13,15 @@ const DashboardInversionContainer = () => {
   const [gananciaTotal, setGananciaTotal] = useState(0);
 
   useEffect(() => {
-    if (usuario?.id) {
-      cargarInversiones();
+    if (!usuario?.id) {
+      setInversiones([]);
+      setSaldoTotal(0);
+      setGananciaTotal(0);
+      setLoading(false);
+      return;
     }
+    setLoading(true);
+    cargarInversiones();
   }, [usuario]);
 
   const cargarInversiones = async () => {
