@@ -49,13 +49,13 @@ html, body, #root {
   flex-direction: column;
   height: 100vh;
   width: 100vw;
-  padding-top: 70px;
+  padding-top: 45px;
 }
 
 @media (max-width: 600px) {
   #root {
     padding-top: 0;
-    padding-bottom: 80px;
+    padding-bottom: 60px;
   }
 }
 
