@@ -10,8 +10,9 @@
     top: auto !important;
     bottom: 0 !important;
     z-index: 10000 !important;
-    background: linear-gradient(180deg, #001a4d 0%, #002766 100%) !important;
-    box-shadow: 0 -4px 12px rgba(0,0,0,0.3) !important;
+    background: transparent !important;
+    border-top: 3px solid #a7d8ff !important;
+    box-shadow: none !important;
     align-items: center !important;
     justify-content: center !important;
     transition: none !important;
@@ -159,8 +160,9 @@
   }
 }
 .navbar {
-  background: linear-gradient(90deg, #001a4d 0%, #003d99 100%);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: transparent;
+  border-bottom: 3px solid #a7d8ff;
+  box-shadow: none;
   position: fixed;
   top: 0;
   left: 0;
