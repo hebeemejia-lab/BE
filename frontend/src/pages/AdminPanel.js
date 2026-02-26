@@ -86,7 +86,8 @@ const AdminPanel = () => {
     faq: '/admin/faq',
     analisisInversiones: '/admin/analisis-inversiones',
   };
-  import AnalisisInversiones from '../components/AnalisisInversiones';
+
+import AnalisisInversiones from '../components/AnalisisInversiones';
   };
 
   const navegarAdmin = (ruta) => {
