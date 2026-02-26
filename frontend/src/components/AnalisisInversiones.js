@@ -167,7 +167,7 @@ const AnalisisInversiones = () => {
               type="date"
               value={fechaRegistro}
               onChange={e => setFechaRegistro(e.target.value)}
-              max={new Date().toISOString().split('T')[0]}
+              min={new Date().toISOString().split('T')[0]}
               required
             />
           </div>
