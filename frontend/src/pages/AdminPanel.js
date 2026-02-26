@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useCallback } from 'react';
+import React, { useState, useEffect, useContext, useCallback, Suspense } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toJpeg } from 'html-to-image';
 import api from '../services/api';
@@ -6,6 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import './AdminPanel.css';
 import EstadoCuentaPanel from '../components/EstadoCuentaPanel';
 import AnalisisInversiones from '../components/AnalisisInversiones';
+import HtmlToImage from 'html-to-image';
 
 const descargarImagenDesdeHtml = async (html, nombreArchivo) => {
   const wrapper = document.createElement('div');
@@ -1173,7 +1174,7 @@ const DashboardView = ({ dashboard, onNavigate, onGenerarEstado, estadoDesde, es
 
     <div className="gestion-grid">
       <div className="gestion-card">
-        <h3>💵 Depositos en efectivo</h3>
+        <h3>💵 Depositos en efectivo</h2>
         <p>Registra depositos manuales y actualiza saldo.</p>
         <button type="button" onClick={() => onNavigate?.('depositos')}>
           Abrir gestion

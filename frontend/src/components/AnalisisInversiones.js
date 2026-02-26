@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import api from '../services/api';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
+import Recharts from 'recharts';
 
 const timeRanges = [
   { label: 'Diario', value: 'daily' },
@@ -71,8 +71,8 @@ const AnalisisInversiones = () => {
       </div>
       <div style={{marginTop: 32}}>
         {tipoGrafico === 'line' && (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={analysisData.length === 0 ? [{fechaRegistro:'',monto:0,crecimiento:0}] : analysisData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+          <Suspense fallback={<div>Cargando...</div>}>
+            <Recharts.LineChart data={analysisData.length === 0 ? [{fechaRegistro:'',monto:0,crecimiento:0}] : analysisData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="fechaRegistro" />
               <YAxis />
@@ -80,12 +80,12 @@ const AnalisisInversiones = () => {
               <Legend />
               <Line type="monotone" dataKey="monto" stroke={analysisData.length === 0 ? '#bbb' : '#1976d2'} name="Monto" />
               <Line type="monotone" dataKey="crecimiento" stroke={analysisData.length === 0 ? '#bbb' : '#43a047'} name="Crecimiento" />
-            </LineChart>
-          </ResponsiveContainer>
+            </Recharts.LineChart>
+          </Suspense>
         )}
         {tipoGrafico === 'bar' && (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={analysisData.length === 0 ? [{fechaRegistro:'',monto:0,crecimiento:0}] : analysisData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+          <Suspense fallback={<div>Cargando...</div>}>
+            <Recharts.BarChart data={analysisData.length === 0 ? [{fechaRegistro:'',monto:0,crecimiento:0}] : analysisData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="fechaRegistro" />
               <YAxis />
@@ -93,12 +93,12 @@ const AnalisisInversiones = () => {
               <Legend />
               <Bar dataKey="monto" fill={analysisData.length === 0 ? '#bbb' : '#1976d2'} name="Monto" />
               <Bar dataKey="crecimiento" fill={analysisData.length === 0 ? '#bbb' : '#43a047'} name="Crecimiento" />
-            </BarChart>
-          </ResponsiveContainer>
+            </Recharts.BarChart>
+          </Suspense>
         )}
         {tipoGrafico === 'pie' && (
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
+          <Suspense fallback={<div>Cargando...</div>}>
+            <Recharts.PieChart>
               <Pie data={analysisData.length === 0 ? [{fechaRegistro:'',monto:0}] : analysisData} dataKey="monto" nameKey="fechaRegistro" cx="50%" cy="50%" outerRadius={80} label>
                 {(analysisData.length === 0 ? [{fechaRegistro:'',monto:0}] : analysisData).map((entry, idx) => (
                   <Cell key={`cell-${idx}`} fill={analysisData.length === 0 ? '#bbb' : ['#1976d2','#43a047','#fbc02d','#e53935','#8e24aa','#00bcd4','#ff9800'][idx % 7]} />
@@ -106,8 +106,8 @@ const AnalisisInversiones = () => {
               </Pie>
               <Tooltip />
               <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+            </Recharts.PieChart>
+          </Suspense>
         )}
       </div>
       <div>

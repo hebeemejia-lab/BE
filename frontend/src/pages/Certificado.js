@@ -1,7 +1,7 @@
-import React, { useRef, useState, useContext, useEffect } from 'react';
+import React, { useRef, useState, useContext, useEffect, Suspense } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
-import { toPng } from 'html-to-image';
+import HtmlToImage from 'html-to-image';
 
 // Estilos globales para impresión y centrado
 const printStyles = `

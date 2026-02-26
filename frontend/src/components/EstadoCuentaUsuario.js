@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import axios from 'axios';
 import API from '../services/api';
 import FiltrosEstadoCuenta from './FiltrosEstadoCuenta';
-import { toPng } from 'html-to-image';
+import HtmlToImage from 'html-to-image';
 
 const EstadoCuentaUsuario = ({ usuario }) => {
   const [estadoCuenta, setEstadoCuenta] = useState(null);
@@ -45,13 +45,15 @@ const EstadoCuentaUsuario = ({ usuario }) => {
 
   const handleDescargarPNG = () => {
     if (!cuentaRef.current) return;
-    toPng(cuentaRef.current)
-      .then(dataUrl => {
-        const link = document.createElement('a');
-        link.download = `estado-cuenta-${usuario.nombre}-${usuario.apellido}.png`;
-        link.href = dataUrl;
-        link.click();
-      });
+    <Suspense fallback={<div>Cargando...</div>}>
+      <HtmlToImage.toPng(cuentaRef.current)
+        .then(dataUrl => {
+          const link = document.createElement('a');
+          link.download = `estado-cuenta-${usuario.nombre}-${usuario.apellido}.png`;
+          link.href = dataUrl;
+          link.click();
+        });
+    </Suspense>
   };
 
   return (
