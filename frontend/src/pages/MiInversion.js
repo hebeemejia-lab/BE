@@ -7,7 +7,20 @@ import './MiInversion.css';
 const MiInversion = () => {
   const navigate = useNavigate();
   const { usuario } = useContext(AuthContext);
-  
+
+  const toNumber = (value) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  const formatMoney = (value) =>
+    toNumber(value).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+  const formatPercent = (value) => toNumber(value).toFixed(2);
+
   const [rechartsComponents, setRechartsComponents] = useState(null);
   const [datos, setDatos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -52,7 +65,12 @@ const MiInversion = () => {
         const response = await api.get(`/fondo-riesgo/analysis/${usuario.id}`);
         
         if (response.data && Array.isArray(response.data)) {
-          setDatos(response.data);
+          const normalizados = response.data.map((item) => ({
+            ...item,
+            monto: toNumber(item.monto),
+            crecimiento: toNumber(item.crecimiento),
+          }));
+          setDatos(normalizados);
           setError(null);
         } else {
           setDatos([]);
@@ -103,9 +121,9 @@ const MiInversion = () => {
   }
 
   // Calcular totales
-  const totalInvertido = datos.reduce((sum, d) => sum + (d.monto || 0), 0);
-  const totalGanancia = datos.reduce((sum, d) => sum + (d.crecimiento || 0), 0);
-  const gananciaPromedio = datos.length > 0 ? (totalGanancia / datos.length).toFixed(2) : 0;
+  const totalInvertido = datos.reduce((sum, d) => sum + toNumber(d.monto), 0);
+  const totalGanancia = datos.reduce((sum, d) => sum + toNumber(d.crecimiento), 0);
+  const gananciaPromedio = datos.length > 0 ? formatPercent(totalGanancia / datos.length) : '0.00';
 
   // Colores para gráfico de pie
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
@@ -123,11 +141,11 @@ const MiInversion = () => {
       <div className="inversion-resumen">
         <div className="resumen-card">
           <h3>Total Invertido</h3>
-          <p className="monto">${totalInvertido.toLocaleString()}</p>
+          <p className="monto">${formatMoney(totalInvertido)}</p>
         </div>
         <div className="resumen-card">
           <h3>Ganancia Total</h3>
-          <p className="monto ganancia">${totalGanancia.toLocaleString()}</p>
+          <p className="monto ganancia">${formatMoney(totalGanancia)}</p>
         </div>
         <div className="resumen-card">
           <h3>Ganancia Promedio</h3>
@@ -239,11 +257,11 @@ const MiInversion = () => {
             {datos.map((inversion, idx) => (
               <tr key={idx}>
                 <td>{inversion.fechaRegistro || 'N/A'}</td>
-                <td className="monto">${(inversion.monto || 0).toLocaleString()}</td>
-                <td className="ganancia">{(inversion.crecimiento || 0).toFixed(2)}%</td>
+                <td className="monto">${formatMoney(inversion.monto)}</td>
+                <td className="ganancia">{formatPercent(inversion.crecimiento)}%</td>
                 <td>
-                  <span className={`estado ${(inversion.crecimiento || 0) >= 0 ? 'activo' : 'decreciendo'}`}>
-                    {(inversion.crecimiento || 0) >= 0 ? '✅ Activo' : '⚠️ Decreciendo'}
+                  <span className={`estado ${toNumber(inversion.crecimiento) >= 0 ? 'activo' : 'decreciendo'}`}>
+                    {toNumber(inversion.crecimiento) >= 0 ? '✅ Activo' : '⚠️ Decreciendo'}
                   </span>
                 </td>
               </tr>
