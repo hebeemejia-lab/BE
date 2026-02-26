@@ -56,6 +56,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
             path="/mi-inversion"
             element={
               <ProtectedRoute>
@@ -63,6 +64,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
