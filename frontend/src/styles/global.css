@@ -101,10 +101,6 @@ main {
 main::-webkit-scrollbar {
   display: none;
 }
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-}
 
 /* Asegurar que TODOS los containers respeten el layout */
 main > div {
