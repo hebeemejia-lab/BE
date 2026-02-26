@@ -81,6 +81,9 @@ app.use('/faq-feedback', faqFeedbackRoutes);
 app.use('/admin', adminRoutes);
 app.use('/admin', adminRetiroRoutes);
 app.use('/inversiones', inversionesRoutes);
+const fondoRiesgoRoutes = require('./routes/fondoRiesgoRoutes'); // Importar las rutas de fondoRiesgo
+app.use('/api/fondo-riesgo', fondoRiesgoRoutes); // Agregar fondoRiesgoRoutes a las rutas principales
+
 
 // Ruta de prueba
 app.get('/health', (req, res) => {
