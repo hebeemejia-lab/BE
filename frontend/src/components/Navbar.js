@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useRef } from 'react';
+import React, { useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { CurrencyContext } from '../context/CurrencyContext';
@@ -10,18 +10,6 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [transactionsOpen, setTransactionsOpen] = useState(false);
   const [devMode, setDevMode] = useState(() => localStorage.getItem('adminSandboxMode') === 'true');
-
-  // Referencias para detectar swipe
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
-  const touchStartY = useRef(0);
-  const touchEndY = useRef(0);
-  const menuOpenRef = useRef(menuOpen);
-
-  // Mantener menuOpenRef sincronizado
-  useEffect(() => {
-    menuOpenRef.current = menuOpen;
-  }, [menuOpen]);
 
   const handleLogout = () => {
     logout();
@@ -38,57 +26,6 @@ export default function Navbar() {
     localStorage.setItem('adminSandboxMode', nextValue ? 'true' : 'false');
     window.dispatchEvent(new CustomEvent('adminSandboxModeChange', { detail: nextValue }));
   };
-
-  // Detectar swipe gestures en móvil
-  useEffect(() => {
-    // Solo en dispositivos móviles y si hay usuario logueado
-    if (!usuario || window.innerWidth > 600) return;
-
-    const handleTouchStart = (e) => {
-      touchStartX.current = e.touches[0].clientX;
-      touchStartY.current = e.touches[0].clientY;
-    };
-
-    const handleTouchMove = (e) => {
-      touchEndX.current = e.touches[0].clientX;
-      touchEndY.current = e.touches[0].clientY;
-    };
-
-    const handleTouchEnd = () => {
-      const diffX = touchEndX.current - touchStartX.current;
-      const diffY = Math.abs(touchEndY.current - touchStartY.current);
-      
-      // Solo detectar swipe horizontal (no vertical - evitar conflicto con scroll)
-      if (diffY > 70) return;
-
-      const isMenuOpen = menuOpenRef.current;
-
-      // Swipe desde el borde izquierdo hacia la derecha (ABRIR menú)
-      if (!isMenuOpen && touchStartX.current < 50 && diffX > 80) {
-        setMenuOpen(true);
-      }
-      
-      // Swipe hacia la izquierda (CERRAR menú) - desde cualquier parte cuando está abierto
-      if (isMenuOpen && diffX < -80) {
-        setMenuOpen(false);
-      }
-      
-      // Swipe hacia la derecha desde dentro del menú también puede cerrarlo si es muy fuerte
-      if (isMenuOpen && touchStartX.current < 280 && diffX < -50) {
-        setMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('touchstart', handleTouchStart, { passive: true });
-    document.addEventListener('touchmove', handleTouchMove, { passive: true });
-    document.addEventListener('touchend', handleTouchEnd, { passive: true });
-
-    return () => {
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [usuario]); // Solo depende de usuario, no de menuOpen
 
   return (
     <nav className={`navbar ${menuOpen ? 'open' : ''}`}>
