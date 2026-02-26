@@ -1,21 +1,15 @@
 import React, { useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { CurrencyContext } from '../context/CurrencyContext';
 import './Navbar.css';
 
 export default function Navbar() {
   const { usuario, logout } = useContext(AuthContext);
+  const { formatMoney } = useContext(CurrencyContext);
   const [menuOpen, setMenuOpen] = useState(false);
   const [transactionsOpen, setTransactionsOpen] = useState(false);
   const [devMode, setDevMode] = useState(() => localStorage.getItem('adminSandboxMode') === 'true');
-
-  const formatMoney = (value) => {
-    const numberValue = Number(value);
-    if (Number.isFinite(numberValue)) {
-      return numberValue.toFixed(2);
-    }
-    return '0.00';
-  };
 
   const handleLogout = () => {
     logout();
@@ -66,7 +60,7 @@ export default function Navbar() {
                     ? `${usuario.nombre} ${usuario.apellido}`
                     : usuario.nombre || usuario.apellido || 'Usuario'}
                 </span>
-                <span className="user-balance">Balance: ${formatMoney(usuario?.saldo)}</span>
+                <span className="user-balance">Balance: {formatMoney(usuario?.saldo)}</span>
               </div>
               
               <div className="navbar-links">
