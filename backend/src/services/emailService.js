@@ -295,19 +295,7 @@ const emailService = {
         return { enviado: false, error: error.message };
       }
     },
-          text-decoration: none;
-          border-radius: 8px;
-          font-size: 18px;
-          font-weight: 600;
-          box-shadow: 0 4px 15px rgba(204, 0, 0, 0.3);
-        }
-        .verify-button:hover {
-          background: linear-gradient(135deg, #b21d2b 0%, #ff3333 100%);
-        }
-        .footer {
-          background: #f8f9fa;
-          padding: 24px;
-          text-align: center;
+    },
           border-top: 1px solid #e0e0e0;
         }
         .footer-text {
