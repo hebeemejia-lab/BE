@@ -1,0 +1,167 @@
+.mi-inversion-panel {
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #43a047 0%, #1b5e20 100%);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  color: #fff;
+}
+
+.mi-inversion-panel h2 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  text-align: center;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.inversion-controls {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.inversion-controls label {
+  font-weight: 600;
+  color: #43a047;
+  font-size: 14px;
+}
+
+.inversion-controls select {
+  padding: 10px 16px;
+  border: 2px solid #c8e6c9;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.inversion-controls select:focus {
+  outline: none;
+  border-color: #43a047;
+  box-shadow: 0 0 0 3px rgba(67, 160, 71, 0.1);
+}
+
+.inversion-recommendations {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.inversion-recommendations h3 {
+  color: #43a047;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.inversion-recommendations ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.inversion-recommendations li {
+  color: #555;
+  font-size: 14px;
+  padding: 10px 0;
+  padding-left: 24px;
+  position: relative;
+}
+
+.inversion-recommendations li::before {
+  content: '💡';
+  position: absolute;
+  left: 0;
+  font-size: 18px;
+}
+
+.inversion-recommendations .empty-message {
+  color: #888;
+  font-style: italic;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.inversion-chart-container {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inversion-chart-loading {
+  font-size: 48px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.inversion-table {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+.inversion-table h3 {
+  color: #43a047;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.inversion-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.inversion-table th {
+  background: #43a047;
+  color: #fff;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.inversion-table td {
+  padding: 12px;
+  border-bottom: 1px solid #c8e6c9;
+  color: #333;
+  font-size: 14px;
+}
+
+.inversion-table tr:last-child td {
+  border-bottom: none;
+}
+
+.inversion-table tr:hover {
+  background: #f1f8e9;
+}
+
+@media (max-width: 768px) {
+  .mi-inversion-panel {
+    padding: 20px;
+  }
+
+  .inversion-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

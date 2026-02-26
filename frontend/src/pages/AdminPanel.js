@@ -6,7 +6,6 @@ import { AuthContext } from '../context/AuthContext';
 import './AdminPanel.css';
 import EstadoCuentaPanel from '../components/EstadoCuentaPanel';
 import AnalisisInversiones from '../components/AnalisisInversiones';
-import HtmlToImage from 'html-to-image';
 
 const descargarImagenDesdeHtml = async (html, nombreArchivo) => {
   const wrapper = document.createElement('div');

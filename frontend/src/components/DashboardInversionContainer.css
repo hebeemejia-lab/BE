@@ -1,0 +1,210 @@
+.inversiones-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.inversion-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: #fff;
+}
+
+.inversion-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.inversion-card.primary {
+  border-left: 4px solid #1976d2;
+}
+
+.inversion-card.success {
+  border-left: 4px solid #43a047;
+}
+
+.inversion-card.highlight {
+  border-left: 4px solid #fbc02d;
+}
+
+.card-icon {
+  font-size: 36px;
+  min-width: 50px;
+  text-align: center;
+}
+
+.card-content {
+  flex: 1;
+}
+
+.card-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.card-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+}
+
+.card-amount.positive {
+  color: #43a047;
+}
+
+.inversiones-list {
+  margin-top: 30px;
+}
+
+.inversiones-list h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.inversiones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.inversion-item {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.inversion-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.inversion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.inversion-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1976d2;
+}
+
+.inversion-percentage {
+  font-size: 18px;
+  font-weight: 700;
+  color: #43a047;
+  background: #e8f5e9;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.inversion-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.detail-label {
+  color: #666;
+  font-weight: 600;
+}
+
+.detail-value {
+  color: #333;
+  font-weight: 600;
+}
+
+.detail-value.success {
+  color: #43a047;
+  font-weight: 700;
+}
+
+.loading-inversiones {
+  text-align: center;
+  padding: 40px 0;
+  color: #666;
+  font-size: 16px;
+}
+
+.no-inversiones {
+  text-align: center;
+  padding: 40px 20px;
+  background: #f9f9f9;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.no-inversiones p {
+  font-size: 18px;
+  color: #666;
+  margin: 10px 0;
+}
+
+.no-inversiones .sub-text {
+  font-size: 14px;
+  color: #999;
+  font-style: italic;
+}
+
+.btn-ver-mas-inversiones {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  margin: 30px auto 0;
+  padding: 16px 32px;
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+.btn-ver-mas-inversiones:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+}
+
+.btn-ver-mas-inversiones:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .inversiones-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .inversiones-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-amount {
+    font-size: 20px;
+  }
+}
