@@ -40,6 +40,7 @@ const obtenerVistaDesdeRuta = (pathname) => {
   if (segmento === 'prestamos') return 'prestamos';
   if (segmento === 'clientes') return 'clientes';
   if (segmento === 'faq') return 'faq';
+  if (segmento === 'analisis-inversiones') return 'analisisInversiones';
   return 'dashboard';
 };
 
