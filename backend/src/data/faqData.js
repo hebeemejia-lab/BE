@@ -349,7 +349,7 @@ Contacta a nuestro equipo para una recomendación ajustada a tu perfil: ${proces
 
 ⚠️ **Consideraciones:**
 - Perderás los intereses generados después del retiro
-- Es recomendable mantener la inversión el menor tiempo posible para maximizar ganancias
+- Es recomendable mantener la inversión el MAYOR tiempo posible para maximizar ganancias
 - Consulta con el administrador si tienes dudas
 
 💡 **Tip:** Revisa el análisis de tu inversión antes de retirar para tomar la mejor decisión.`,
