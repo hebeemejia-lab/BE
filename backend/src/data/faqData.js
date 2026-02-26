@@ -391,7 +391,7 @@ Siguiente herramienta te ayuda a controlar y categorizar tus gastos:
   },
   {
     id: 17,
-    keywords: ['presupuesto', 'limite gasto', 'alerta presupuesto'),
+    keywords: ['presupuesto', 'limite gasto', 'alerta presupuesto'],
     pregunta: '¿Cómo establecer un presupuesto?',
     respuesta: `🎯 **Establecer Presupuestos:**
 
