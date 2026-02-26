@@ -1,3 +1,5 @@
+import GastosPersonales from './pages/GastosPersonales';
+import MiInversionPage from './pages/MiInversionPage';
 import Perfil from './pages/Perfil';
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -47,6 +49,20 @@ function App() {
           <Route path="/reenviar-verificacion" element={<ResendVerification />} />
           
           <Route
+            path="/gastos-personales"
+            element={
+              <ProtectedRoute>
+                <GastosPersonales />
+              </ProtectedRoute>
+            }
+          />
+            path="/mi-inversion"
+            element={
+              <ProtectedRoute>
+                <MiInversionPage />
+              </ProtectedRoute>
+            }
+          />
             path="/dashboard"
             element={
               <ProtectedRoute>

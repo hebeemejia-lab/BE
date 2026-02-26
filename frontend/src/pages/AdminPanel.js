@@ -84,6 +84,8 @@ const AdminPanel = () => {
     prestamos: '/admin/prestamos',
     clientes: '/admin/clientes',
     faq: '/admin/faq',
+    analisisInversiones: '/admin/analisis-inversiones',
+  import AnalisisInversiones from '../components/AnalisisInversiones';
   };
 
   const navegarAdmin = (ruta) => {
@@ -916,39 +918,31 @@ const AdminPanel = () => {
           <button 
             className={vistaActual === 'dashboard' ? 'active' : ''}
             onClick={() => navegarAdmin(rutasAdmin.dashboard)}
-          >
-            📊 Dashboard
-          </button>
+          >📊 Dashboard</button>
           <button
             className={vistaActual === 'depositos' ? 'active' : ''}
             onClick={() => navegarAdmin(rutasAdmin.depositos)}
-          >
-            💵 Depositos en efectivo
-          </button>
+          >💵 Depositos en efectivo</button>
           <button
             className={vistaActual === 'retiros-efectivo' ? 'active' : ''}
             onClick={() => navegarAdmin(rutasAdmin.retiros)}
-          >
-            🧾 Retiros en efectivo
-          </button>
+          >🧾 Retiros en efectivo</button>
           <button 
             className={vistaActual === 'prestamos' ? 'active' : ''}
             onClick={() => navegarAdmin(rutasAdmin.prestamos)}
-          >
-            💰 Gestión Préstamos
-          </button>
+          >💰 Gestión Préstamos</button>
           <button 
             className={vistaActual === 'clientes' ? 'active' : ''}
             onClick={() => navegarAdmin(rutasAdmin.clientes)}
-          >
-            👤 Clientes
-          </button>
+          >👤 Clientes</button>
           <button 
             className={vistaActual === 'faq' ? 'active' : ''}
             onClick={() => navegarAdmin(rutasAdmin.faq)}
-          >
-            💬 Feedback FAQ
-          </button>
+          >💬 Feedback FAQ</button>
+          <button 
+            className={vistaActual === 'analisisInversiones' ? 'active' : ''}
+            onClick={() => navegarAdmin(rutasAdmin.analisisInversiones)}
+          >📈 Análisis de Inversiones</button>
         </nav>
       </div>
       {adminMenuOpen && (
@@ -1056,6 +1050,9 @@ const AdminPanel = () => {
             onCambiarHasta={setEstadoHasta}
             puedeVerEstadoMercantil={puedeVerEstadoMercantil}
           />
+        )}
+        {vistaActual === 'analisisInversiones' && (
+          <AnalisisInversiones />
         )}
 
         {vistaActual === 'depositos' && (

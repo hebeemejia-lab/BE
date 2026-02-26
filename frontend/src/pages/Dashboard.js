@@ -1,3 +1,4 @@
+import DashboardInversionContainer from '../components/DashboardInversionContainer';
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -195,6 +196,7 @@ export default function Dashboard() {
           </section>
         </>
       )}
+      <DashboardInversionContainer />
     </div>
   );
 }
