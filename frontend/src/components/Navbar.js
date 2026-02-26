@@ -9,6 +9,7 @@ export default function Navbar() {
   const { formatMoney } = useContext(CurrencyContext);
   const [menuOpen, setMenuOpen] = useState(false);
   const [transactionsOpen, setTransactionsOpen] = useState(false);
+  const [devMenuOpen, setDevMenuOpen] = useState(false);
   const [devMode, setDevMode] = useState(() => localStorage.getItem('adminSandboxMode') === 'true');
 
   const handleLogout = () => {
@@ -147,22 +148,30 @@ export default function Navbar() {
                 )}
 
                 {usuario.rol === 'admin' && (
-                  <div className="nav-dev-toggle">
-                    <div className="nav-dev-header">
-                      <span>Modo desarrollo</span>
-                      <span className={devMode ? 'nav-dev-badge on' : 'nav-dev-badge off'}>
-                        {devMode ? 'DEV' : 'LIVE'}
-                      </span>
-                    </div>
+                  <div className="nav-dropdown">
                     <button
-                      type="button"
-                      className={devMode ? 'nav-dev-switch active' : 'nav-dev-switch'}
-                      onClick={toggleDevMode}
-                      aria-pressed={devMode}
+                      className={`nav-link dropdown-toggle ${devMenuOpen ? 'active' : ''}`}
+                      onClick={() => setDevMenuOpen(!devMenuOpen)}
                     >
-                      <span className="nav-dev-dot"></span>
-                      <span className="nav-dev-text">{devMode ? 'Sandbox Stripe' : 'Produccion'}</span>
+                      Desarrolladores
                     </button>
+                    {devMenuOpen && (
+                      <div className="dropdown-menu">
+                        <button
+                          type="button"
+                          className="dropdown-item"
+                          onClick={() => {
+                            toggleDevMode();
+                            setDevMenuOpen(false);
+                          }}
+                        >
+                          {devMode ? 'Cambiar a LIVE' : 'Cambiar a DEV'}
+                        </button>
+                        <span className="dropdown-item" aria-hidden="true">
+                          Modo actual: {devMode ? 'DEV' : 'LIVE'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
                 
