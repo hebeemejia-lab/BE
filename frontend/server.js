@@ -36,6 +36,6 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Frontend Server running on port ${PORT}`);
+  console.log(`Servidor frontend escuchando en puerto ${PORT}`);
   console.log(`📍 Serving from: ${path.join(__dirname, 'build')}`);
 });
