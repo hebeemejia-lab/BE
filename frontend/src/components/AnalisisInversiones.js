@@ -47,7 +47,9 @@ const AnalisisInversiones = () => {
 
   useEffect(() => {
     // Obtener lista de clientes
-    api.get('/admin/usuarios').then(res => setClientes(res.data || [])).catch(err => console.error('Error cargando clientes:', err));
+    api.get('/admin/usuarios')
+      .then(res => setClientes(res.data?.usuarios || res.data || []))
+      .catch(err => console.error('Error cargando clientes:', err));
   }, []);
 
   useEffect(() => {
@@ -253,7 +255,7 @@ const AnalisisInversiones = () => {
             <tbody>
               {analysisData.map((f, idx) => (
                 <tr key={idx}>
-                  <td>{f.usuarioId}</td>
+                  <td>{f.usuarioId || 'Sin cliente'}</td>
                   <td>${parseFloat(f.monto).toFixed(2)}</td>
                   <td>{f.porcentaje}%</td>
                   <td>{f.fechaRegistro}</td>
