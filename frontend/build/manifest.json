@@ -1,6 +1,6 @@
 {
-  "name": "Banco Exclusivo",
-  "short_name": "Banco Exclusivo",
+  "name": "BE",
+  "short_name": "BE",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#0b1f3a",
