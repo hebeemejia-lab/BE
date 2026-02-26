@@ -1,7 +1,6 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { gastosAPI } from '../services/api';
 import AddExpenseForm from './AddExpenseForm.jsx';
-import Recharts from 'recharts';
 
 const COLORS = ['#1976d2', '#43a047', '#fbc02d', '#e53935', '#8e24aa', '#00bcd4', '#ff9800'];
 
@@ -9,10 +8,32 @@ const GastosPersonales = () => {
   const [transacciones, setTransacciones] = useState([]);
   const [resumen, setResumen] = useState({});
   const [tipoGrafico, setTipoGrafico] = useState('line');
+  const [rechartsComponents, setRechartsComponents] = useState(null);
 
   useEffect(() => {
     gastosAPI.obtenerTransacciones().then(res => setTransacciones(res.data || []));
     gastosAPI.obtenerReportes({}).then(res => setResumen(res.data.summary || {}));
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const recharts = await import('recharts');
+      setRechartsComponents({
+        LineChart: recharts.LineChart,
+        Line: recharts.Line,
+        BarChart: recharts.BarChart,
+        Bar: recharts.Bar,
+        PieChart: recharts.PieChart,
+        Pie: recharts.Pie,
+        Cell: recharts.Cell,
+        XAxis: recharts.XAxis,
+        YAxis: recharts.YAxis,
+        Tooltip: recharts.Tooltip,
+        CartesianGrid: recharts.CartesianGrid,
+        ResponsiveContainer: recharts.ResponsiveContainer,
+        Legend: recharts.Legend
+      });
+    })();
   }, []);
 
   const handleAdd = async (data) => {
@@ -31,6 +52,27 @@ const GastosPersonales = () => {
   const dataBar = Object.entries(resumen).map(([cat, monto], idx) => ({ categoria: cat, monto }));
   const dataPie = dataBar;
   const datosVacios = transacciones.length === 0;
+
+  const loadRecharts = async () => {
+    const recharts = await import('recharts');
+    return {
+      LineChart: recharts.LineChart,
+      Line: recharts.Line,
+      BarChart: recharts.BarChart,
+      Bar: recharts.Bar,
+      PieChart: recharts.PieChart,
+      Pie: recharts.Pie,
+      Cell: recharts.Cell,
+      XAxis: recharts.XAxis,
+      YAxis: recharts.YAxis,
+      Tooltip: recharts.Tooltip,
+      CartesianGrid: recharts.CartesianGrid,
+      ResponsiveContainer: recharts.ResponsiveContainer,
+      Legend: recharts.Legend
+    };
+  };
+
+  const { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } = rechartsComponents;
 
   return (
     <div className="gastos-personales-panel" style={{padding: '32px'}}>
@@ -59,31 +101,31 @@ const GastosPersonales = () => {
       <div style={{marginTop: 32}}>
         {tipoGrafico === 'line' && (
           <Suspense fallback={<div>📊</div>}>
-            <Recharts.LineChart data={datosVacios ? [{fecha:'',monto:0}] : dataLine} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+            <LineChart data={datosVacios ? [{fecha:'',monto:0}] : dataLine} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="fecha" />
               <YAxis />
               <Tooltip />
               <Legend />
               <Line type="monotone" dataKey="monto" stroke={datosVacios ? '#bbb' : '#1976d2'} name="Monto" />
-            </Recharts.LineChart>
+            </LineChart>
           </Suspense>
         )}
         {tipoGrafico === 'bar' && (
           <Suspense fallback={<div>📊</div>}>
-            <Recharts.BarChart data={datosVacios ? [{categoria:'',monto:0}] : dataBar} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+            <BarChart data={datosVacios ? [{categoria:'',monto:0}] : dataBar} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="categoria" />
               <YAxis />
               <Tooltip />
               <Legend />
               <Bar dataKey="monto" fill={datosVacios ? '#bbb' : '#43a047'} name="Monto" />
-            </Recharts.BarChart>
+            </BarChart>
           </Suspense>
         )}
         {tipoGrafico === 'pie' && (
           <Suspense fallback={<div>📊</div>}>
-            <Recharts.PieChart>
+            <PieChart>
               <Pie data={datosVacios ? [{categoria:'',monto:0}] : dataPie} dataKey="monto" nameKey="categoria" cx="50%" cy="50%" outerRadius={80} label>
                 {(datosVacios ? [{categoria:'',monto:0}] : dataPie).map((entry, idx) => (
                   <Cell key={`cell-${idx}`} fill={datosVacios ? '#bbb' : COLORS[idx % COLORS.length]} />
@@ -91,7 +133,7 @@ const GastosPersonales = () => {
               </Pie>
               <Tooltip />
               <Legend />
-            </Recharts.PieChart>
+            </PieChart>
           </Suspense>
         )}
       </div>
