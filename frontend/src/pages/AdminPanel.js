@@ -1048,6 +1048,11 @@ const AdminPanel = () => {
               }
               if (destino === 'retiros-efectivo') {
                 navegarAdmin(rutasAdmin.retiros);
+                return;
+              }
+              if (destino === 'analisisInversiones') {
+                navegarAdmin(rutasAdmin.analisisInversiones);
+                return;
               }
             }}
             onGenerarEstado={generarEstadoMercantilPdf}
@@ -1204,6 +1209,13 @@ const DashboardView = ({ dashboard, onNavigate, onGenerarEstado, estadoDesde, es
         <h3>👤 Clientes</h3>
         <p>Editar saldo, datos y crear usuarios.</p>
         <button type="button" onClick={() => onNavigate?.('clientes')}>
+          Abrir gestion
+        </button>
+      </div>
+      <div className="gestion-card">
+        <h3>📈 Inversiones</h3>
+        <p>Asignar inversiones y registrar ganancias por cliente.</p>
+        <button type="button" onClick={() => onNavigate?.('analisisInversiones')}>
           Abrir gestion
         </button>
       </div>
