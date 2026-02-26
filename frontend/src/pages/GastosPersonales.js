@@ -58,7 +58,7 @@ const GastosPersonales = () => {
       </div>
       <div style={{marginTop: 32}}>
         {tipoGrafico === 'line' && (
-          <Suspense fallback={<div>Cargando...</div>}>
+          <Suspense fallback={<div>📊</div>}>
             <Recharts.LineChart data={datosVacios ? [{fecha:'',monto:0}] : dataLine} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="fecha" />
@@ -70,7 +70,7 @@ const GastosPersonales = () => {
           </Suspense>
         )}
         {tipoGrafico === 'bar' && (
-          <Suspense fallback={<div>Cargando...</div>}>
+          <Suspense fallback={<div>📊</div>}>
             <Recharts.BarChart data={datosVacios ? [{categoria:'',monto:0}] : dataBar} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="categoria" />
@@ -82,7 +82,7 @@ const GastosPersonales = () => {
           </Suspense>
         )}
         {tipoGrafico === 'pie' && (
-          <Suspense fallback={<div>Cargando...</div>}>
+          <Suspense fallback={<div>📊</div>}>
             <Recharts.PieChart>
               <Pie data={datosVacios ? [{categoria:'',monto:0}] : dataPie} dataKey="monto" nameKey="categoria" cx="50%" cy="50%" outerRadius={80} label>
                 {(datosVacios ? [{categoria:'',monto:0}] : dataPie).map((entry, idx) => (

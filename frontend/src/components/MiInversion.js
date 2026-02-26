@@ -54,7 +54,7 @@ const MiInversion = () => {
       </div>
       <div style={{marginTop: 32}}>
         {tipoGrafico === 'line' && (
-          <Suspense fallback={<div>Cargando...</div>}>
+          <Suspense fallback={<div>📊</div>}>
             <Recharts.LineChart data={analysisData.length === 0 ? [{fechaRegistro:'',monto:0,crecimiento:0}] : analysisData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="fechaRegistro" />
@@ -67,7 +67,7 @@ const MiInversion = () => {
           </Suspense>
         )}
         {tipoGrafico === 'bar' && (
-          <Suspense fallback={<div>Cargando...</div>}>
+          <Suspense fallback={<div>📊</div>}>
             <Recharts.BarChart data={analysisData.length === 0 ? [{fechaRegistro:'',monto:0,crecimiento:0}] : analysisData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="fechaRegistro" />
@@ -80,7 +80,7 @@ const MiInversion = () => {
           </Suspense>
         )}
         {tipoGrafico === 'pie' && (
-          <Suspense fallback={<div>Cargando...</div>}>
+          <Suspense fallback={<div>📊</div>}>
             <Recharts.PieChart>
               <Pie data={analysisData.length === 0 ? [{fechaRegistro:'',monto:0}] : analysisData} dataKey="monto" nameKey="fechaRegistro" cx="50%" cy="50%" outerRadius={80} label>
                 {(analysisData.length === 0 ? [{fechaRegistro:'',monto:0}] : analysisData).map((entry, idx) => (
