@@ -295,19 +295,6 @@ const emailService = {
         return { enviado: false, error: error.message };
       }
     },
-    },
-          border-top: 1px solid #e0e0e0;
-        }
-        .footer-text {
-          font-size: 14px;
-          color: #666;
-        }
-        @media only screen and (max-width: 600px) { .container { margin: 0; border-radius: 0; } .content { padding: 18px 8px; } }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
           <div class="logo">🏦</div>
           <h1 class="header-title">Verifica tu cuenta</h1>
         </div>
