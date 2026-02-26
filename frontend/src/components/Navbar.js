@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { CurrencyContext } from '../context/CurrencyContext';
@@ -10,6 +10,12 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [transactionsOpen, setTransactionsOpen] = useState(false);
   const [devMode, setDevMode] = useState(() => localStorage.getItem('adminSandboxMode') === 'true');
+
+  // Referencias para detectar swipe
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const touchStartY = useRef(0);
+  const touchEndY = useRef(0);
 
   const handleLogout = () => {
     logout();
@@ -26,6 +32,52 @@ export default function Navbar() {
     localStorage.setItem('adminSandboxMode', nextValue ? 'true' : 'false');
     window.dispatchEvent(new CustomEvent('adminSandboxModeChange', { detail: nextValue }));
   };
+
+  // Detectar swipe gestures en móvil
+  useEffect(() => {
+    if (!usuario) return; // Solo si hay usuario logueado
+
+    const handleTouchStart = (e) => {
+      touchStartX.current = e.touches[0].clientX;
+      touchStartY.current = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e) => {
+      touchEndX.current = e.touches[0].clientX;
+      touchEndY.current = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = () => {
+      const diffX = touchEndX.current - touchStartX.current;
+      const diffY = Math.abs(touchEndY.current - touchStartY.current);
+      
+      // Solo detectar swipe horizontal (no vertical)
+      if (diffY > 50) return;
+
+      // Swipe desde el borde izquierdo hacia la derecha (abrir)
+      if (touchStartX.current < 50 && diffX > 100 && !menuOpen) {
+        setMenuOpen(true);
+      }
+      
+      // Swipe hacia la izquierda (cerrar) cuando el menú está abierto
+      if (diffX < -100 && menuOpen) {
+        setMenuOpen(false);
+      }
+    };
+
+    // Solo en dispositivos móviles (max-width: 600px)
+    if (window.innerWidth <= 600) {
+      document.addEventListener('touchstart', handleTouchStart, { passive: true });
+      document.addEventListener('touchmove', handleTouchMove, { passive: true });
+      document.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+      return () => {
+        document.removeEventListener('touchstart', handleTouchStart);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
+      };
+    }
+  }, [usuario, menuOpen]);
 
   return (
     <nav className={`navbar ${menuOpen ? 'open' : ''}`}>
@@ -180,7 +232,7 @@ export default function Navbar() {
                 </button>
               </div>
             </div>
-            {menuOpen && <div className="navbar-overlay" onClick={handleMenuClose}></div>}
+            <div className={`navbar-overlay ${menuOpen ? 'show' : ''}`} onClick={handleMenuClose}></div>
           </>
         ) : (
           <div className="navbar-links">
