@@ -2,7 +2,7 @@ import DashboardInversionContainer from '../components/DashboardInversionContain
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { transferAPI, loanAPI, depositoAPI } from '../services/api';
+import api, { transferAPI, loanAPI, depositoAPI } from '../services/api';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -12,6 +12,9 @@ export default function Dashboard() {
   const [prestamos, setPrestamos] = useState([]);
   const [paypalTotal, setPaypalTotal] = useState(0);
   const [loadingDatos, setLoadingDatos] = useState(true);
+  const [saldoInversion, setSaldoInversion] = useState(0);
+  const [gananciaInversion, setGananciaInversion] = useState(0);
+  const [cargandoInversion, setCargandoInversion] = useState(true);
 
   const getCurrencySymbol = (currency) => {
     const symbols = {
@@ -66,6 +69,35 @@ export default function Dashboard() {
     cargarDatos();
   }, []);
 
+  useEffect(() => {
+    if (!usuario?.id) {
+      setSaldoInversion(0);
+      setGananciaInversion(0);
+      setCargandoInversion(false);
+      return;
+    }
+
+    const cargarInversion = async () => {
+      try {
+        setCargandoInversion(true);
+        const response = await api.get(`/fondo-riesgo/analysis/${usuario.id}`);
+        const data = response.data || [];
+        const totalMonto = data.reduce((sum, inv) => sum + (parseFloat(inv.monto) || 0), 0);
+        const totalGanancia = data.reduce((sum, inv) => sum + (parseFloat(inv.crecimiento) || 0), 0);
+        setSaldoInversion(totalMonto);
+        setGananciaInversion(totalGanancia);
+      } catch (error) {
+        console.error('Error cargando inversiones:', error);
+        setSaldoInversion(0);
+        setGananciaInversion(0);
+      } finally {
+        setCargandoInversion(false);
+      }
+    };
+
+    cargarInversion();
+  }, [usuario]);
+
   const prestamosActivos = prestamos.filter((prestamo) => {
     const estado = (prestamo.estado || '').toLowerCase();
     return estado && estado !== 'pagado' && estado !== 'rechazado';
@@ -119,6 +151,17 @@ export default function Dashboard() {
             {simboloUsd}{formatMoney(paypalTotal)}
           </div>
           <div className="overview-meta">Saldo recargado via PayPal</div>
+        </div>
+        <div className="overview-card investment">
+          <div className="overview-label">Saldo inversion</div>
+          <div className="overview-amount">
+            {simboloUsd}{formatMoney(saldoInversion + gananciaInversion)}
+          </div>
+          <div className="overview-meta">
+            {cargandoInversion
+              ? 'Cargando inversiones...'
+              : `Ganancia: ${simboloUsd}${formatMoney(gananciaInversion)}`}
+          </div>
         </div>
       </div>
 
