@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Quiz from '../components/Quiz';
-import VideoBanco from '../components/VideoBanco';
-import AnimacionBanco from '../components/AnimacionBanco';
 
 const baseSubtemas = [
   {

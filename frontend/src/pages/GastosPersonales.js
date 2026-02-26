@@ -53,24 +53,6 @@ const GastosPersonales = () => {
   const dataPie = dataBar;
   const datosVacios = transacciones.length === 0;
 
-  const loadRecharts = async () => {
-    const recharts = await import('recharts');
-    return {
-      LineChart: recharts.LineChart,
-      Line: recharts.Line,
-      BarChart: recharts.BarChart,
-      Bar: recharts.Bar,
-      PieChart: recharts.PieChart,
-      Pie: recharts.Pie,
-      Cell: recharts.Cell,
-      XAxis: recharts.XAxis,
-      YAxis: recharts.YAxis,
-      Tooltip: recharts.Tooltip,
-      CartesianGrid: recharts.CartesianGrid,
-      ResponsiveContainer: recharts.ResponsiveContainer,
-      Legend: recharts.Legend
-    };
-  };
 
   const { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } = rechartsComponents;
 
