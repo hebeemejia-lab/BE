@@ -75,7 +75,7 @@ export default function Navbar() {
                   Dashboard
                 </Link>
                 <Link to="/mi-inversion" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
-                  <img src="/imagen/BE (18).png" alt="Mi Inversión" className="nav-icon" />
+                  <img src="/imagen/BE (24).png" alt="Mi Inversión" className="nav-icon" />
                   Mi Inversión
                 </Link>
                 <Link to="/recargas" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
@@ -83,7 +83,7 @@ export default function Navbar() {
                   Deposita
                 </Link>
                 <Link to="/gastos-personales" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
-                  <img src="/imagen/BE-gastos.png" alt="Gastos Personales" className="nav-icon" />
+                  <img src="/imagen/BE (23).png" alt="Gastos Personales" className="nav-icon" />
                   Gestión de Gastos Personales
                 </Link>
                 <Link to="/retiros" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
