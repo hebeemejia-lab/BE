@@ -8,6 +8,7 @@ const API = axios.create({
 export const retiroAPI = {
   procesar: (datos) => API.post('/retiros/procesar', datos),
   obtenerHistorial: () => API.get('/retiros/historial'),
+  obtenerCuentaPrincipal: () => API.get('/retiros/cuenta-principal'),
 };
 
 // Interceptor para agregar token a las requests
@@ -54,15 +55,15 @@ export const loanAPI = {
   rechazar: (datos) => API.post('/prestamos/rechazar', datos),
 };
 
-// Depositos
+// Depositos (rutas en /recargas en el backend)
 export const depositoAPI = {
-  crearDepositoStripe: (datos) => API.post('/depositos/crear', datos),
-  procesarDepositoTarjeta: (datos) => API.post('/depositos/procesar-tarjeta', datos),
-  procesarDepositoExitoso: (datos) => API.post('/depositos/procesar', datos),
-  obtenerDepositos: () => API.get('/depositos/historial'),
-  obtenerResumenPayPal: () => API.get('/depositos/resumen-paypal'),
-  canjearCodigo: (datos) => API.post('/depositos/canjear-codigo', datos),
-  generarCodigos: (datos) => API.post('/depositos/generar-codigos', datos),
+  crearDepositoStripe: (datos) => API.post('/recargas/crear', datos),
+  procesarDepositoTarjeta: (datos) => API.post('/recargas/procesar-tarjeta', datos),
+  procesarDepositoExitoso: (datos) => API.post('/recargas/procesar', datos),
+  obtenerDepositos: () => API.get('/recargas/historial'),
+  obtenerResumenPayPal: () => API.get('/recargas/resumen-paypal'),
+  canjearCodigo: (datos) => API.post('/recargas/canjear-codigo', datos),
+  generarCodigos: (datos) => API.post('/recargas/generar-codigos', datos),
 };
 
 // Cuentas Bancarias

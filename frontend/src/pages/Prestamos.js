@@ -167,7 +167,7 @@ export default function Prestamos() {
             </div>
             {prestamos.map((loan) => (
               <div key={loan._id} className={`table-row ${loan.estado}`}>
-                <div className="col">${loan.montoSolicitado.toFixed(2)}</div>
+                <div className="col">${Number(loan.montoSolicitado).toFixed(2)}</div>
                 <div className="col">{loan.plazo} meses</div>
                 <div className="col">{loan.tasaInteres}%</div>
                 <div className="col">
