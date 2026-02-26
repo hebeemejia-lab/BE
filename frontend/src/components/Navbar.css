@@ -78,7 +78,7 @@
   }
   
   .navbar-overlay {
-    display: block !important;
+    display: none !important;
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
@@ -86,6 +86,10 @@
     bottom: 0 !important;
     background: rgba(0, 0, 0, 0.5) !important;
     z-index: 10000 !important;
+  }
+  
+  .navbar-overlay.show {
+    display: block !important;
   }
   
   .hamburger-icon {
@@ -674,7 +678,7 @@
   }
   
   .navbar-overlay {
-    display: block !important;
+    display: none !important;
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
@@ -682,6 +686,10 @@
     bottom: 0 !important;
     background: rgba(0, 0, 0, 0.5) !important;
     z-index: 10000 !important;
+  }
+  
+  .navbar-overlay.show {
+    display: block !important;
   }
 }
 
