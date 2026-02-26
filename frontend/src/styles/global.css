@@ -58,8 +58,6 @@ html, body, #root {
     padding-bottom: 80px;
   }
 }
-  overflow-x: hidden;
-}
 
 /* Sidebar con menú hamburguesa */
 nav {
