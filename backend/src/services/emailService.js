@@ -295,29 +295,6 @@ const emailService = {
         return { enviado: false, error: error.message };
       }
     },
-        }
-        .logo {
-          font-size: 48px;
-          margin-bottom: 10px;
-        }
-        .header-title {
-          color: #ffffff;
-          font-size: 28px;
-          font-weight: 700;
-          margin: 0;
-        }
-        .content {
-          padding: 40px 30px;
-          background: #ffffff;
-        }
-        .greeting {
-          font-size: 24px;
-          color: #001a4d;
-          font-weight: 600;
-          margin-bottom: 20px;
-        }
-        .message {
-          font-size: 16px;
           color: #333333;
           line-height: 1.6;
           margin-bottom: 30px;
