@@ -62,6 +62,21 @@ const AnalisisInversiones = () => {
     api.get(`/fondo-riesgo/analysis/${clienteSeleccionado}`).then(res => setAnalysisData(res.data || []));
   };
 
+    // Destructure recharts components for JSX usage
+    const {
+      LineChart,
+      CartesianGrid,
+      XAxis,
+      YAxis,
+      Tooltip,
+      Legend,
+      Line,
+      BarChart,
+      Bar,
+      PieChart,
+      Pie,
+      Cell
+    } = rechartsComponents || {};
   return (
     <div className="analisis-inversiones-panel">
       <h2>Análisis de Inversiones</h2>
