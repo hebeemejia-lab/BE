@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, Suspense } from 'react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
-import loadRecharts from 'recharts';
+// ...existing code...
 
 const timeRanges = [
   { label: 'Diario', value: 'daily' },
