@@ -85,6 +85,7 @@ const AdminPanel = () => {
     clientes: '/admin/clientes',
     faq: '/admin/faq',
     analisisInversiones: '/admin/analisis-inversiones',
+  };
   import AnalisisInversiones from '../components/AnalisisInversiones';
   };
 

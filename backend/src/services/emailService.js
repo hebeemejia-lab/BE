@@ -296,19 +296,6 @@ const emailService = {
       }
     },
         }
-        .container {
-          max-width: 600px;
-          margin: 0 auto;
-          background: #ffffff;
-          border-radius: 16px;
-          overflow: hidden;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-        .header {
-          background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
-          padding: 40px 30px;
-          text-align: center;
-        }
         .logo {
           font-size: 48px;
           margin-bottom: 10px;
