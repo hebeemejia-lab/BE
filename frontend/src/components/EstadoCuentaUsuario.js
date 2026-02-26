@@ -45,7 +45,7 @@ const EstadoCuentaUsuario = ({ usuario }) => {
 
   const handleDescargarPNG = () => {
     if (!cuentaRef.current) return;
-    <Suspense fallback={<div>Cargando...</div>}>
+    <Suspense fallback={<div>🖼️</div>}>
       <HtmlToImage.toPng(cuentaRef.current)
         .then(dataUrl => {
           const link = document.createElement('a');
