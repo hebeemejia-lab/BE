@@ -1,5 +1,5 @@
 import React from 'react';
-import MiInversion from '../components/MiInversion';
+import MiInversion from './MiInversion';
 
 const MiInversionPage = () => {
   return (
