@@ -77,7 +77,7 @@
     overflow-y: hidden !important;
     display: flex !important;
     padding: 0 8px !important;
-  
+  }
   
   .nav-link, .nav-button, .admin-link {
     font-size: 11px !important;
