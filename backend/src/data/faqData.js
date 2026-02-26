@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Base de conocimiento del Bot FAQ - BE
 // Respuestas automáticas sin necesidad de APIs
 
