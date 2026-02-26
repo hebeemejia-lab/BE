@@ -5,6 +5,8 @@ const Loan = require('./Loan');
 const BankAccount = require('./BankAccount');
 const CuotaPrestamo = require('./CuotaPrestamo');
 const Inversion = require('./Inversion');
+const Transaction = require('./Transaction');
+const Budget = require('./Budget');
 
 // Usuario tiene muchos préstamos
 User.hasMany(Loan, {
@@ -50,11 +52,33 @@ Inversion.belongsTo(User, {
   foreignKey: 'usuarioId'
 });
 
+// Usuario tiene muchas transacciones (gastos personales)
+User.hasMany(Transaction, {
+  foreignKey: 'userId',
+  as: 'transactions'
+});
+
+Transaction.belongsTo(User, {
+  foreignKey: 'userId'
+});
+
+// Usuario tiene muchos presupuestos
+User.hasMany(Budget, {
+  foreignKey: 'userId',
+  as: 'budgets'
+});
+
+Budget.belongsTo(User, {
+  foreignKey: 'userId'
+});
+
 module.exports = {
   sequelize,
   User,
   Loan,
   BankAccount,
   CuotaPrestamo,
-  Inversion
+  Inversion,
+  Transaction,
+  Budget
 };

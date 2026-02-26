@@ -1,10 +1,35 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const BudgetSchema = new mongoose.Schema({
-  category: { type: String, required: true },
-  limit: { type: Number, required: true },
-  currentSpent: { type: Number, default: 0 },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+const Budget = sequelize.define('Budget', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  category: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  limit: {
+    type: DataTypes.FLOAT,
+    allowNull: false
+  },
+  currentSpent: {
+    type: DataTypes.FLOAT,
+    defaultValue: 0
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
+  }
+}, {
+  tableName: 'budgets',
+  timestamps: true
 });
 
-module.exports = mongoose.model('Budget', BudgetSchema);
+module.exports = Budget;
