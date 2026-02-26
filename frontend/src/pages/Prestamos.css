@@ -296,6 +296,12 @@ form {
 
 .loan-table {
   overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.loan-table::-webkit-scrollbar {
+  display: none;
 }
 
 .table-header {
