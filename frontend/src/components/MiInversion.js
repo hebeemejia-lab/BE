@@ -56,7 +56,7 @@ const MiInversion = () => {
     );
   }
 
-  const { LineChart, BarChart, PieChart, Cell, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } = rechartsComponents;
+  const { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } = rechartsComponents;
 
   return (
     <div className="mi-inversion-panel">
