@@ -11,39 +11,7 @@ const timeRanges = [
 ];
 
 const AnalisisInversiones = () => {
-    const [rechartsComponents, setRechartsComponents] = useState(null);
-
-    useEffect(() => {
-      (async () => {
-        const recharts = await import('recharts');
-        setRechartsComponents({
-          LineChart: recharts.LineChart,
-          Line: recharts.Line,
-          BarChart: recharts.BarChart,
-          Bar: recharts.Bar,
-          PieChart: recharts.PieChart,
-          Pie: recharts.Pie,
-          Cell: recharts.Cell,
-          XAxis: recharts.XAxis,
-          YAxis: recharts.YAxis,
-          Tooltip: recharts.Tooltip,
-          CartesianGrid: recharts.CartesianGrid,
-          ResponsiveContainer: recharts.ResponsiveContainer,
-          Legend: recharts.Legend
-        });
-      })();
-    }, []);
-
-    if (!rechartsComponents) {
-      return (
-        <div className="analisis-inversiones-panel">
-          <h2>Análisis de Inversiones</h2>
-          <div>📊</div>
-        </div>
-      );
-    }
-
-    const { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } = rechartsComponents;
+  const [rechartsComponents, setRechartsComponents] = useState(null);
   const [selectedRange, setSelectedRange] = useState('monthly');
   const [analysisData, setAnalysisData] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -52,6 +20,27 @@ const AnalisisInversiones = () => {
   const [porcentaje, setPorcentaje] = useState('');
   const [fechaRegistro, setFechaRegistro] = useState('');
   const [tipoGrafico, setTipoGrafico] = useState('line');
+
+  useEffect(() => {
+    (async () => {
+      const recharts = await import('recharts');
+      setRechartsComponents({
+        LineChart: recharts.LineChart,
+        Line: recharts.Line,
+        BarChart: recharts.BarChart,
+        Bar: recharts.Bar,
+        PieChart: recharts.PieChart,
+        Pie: recharts.Pie,
+        Cell: recharts.Cell,
+        XAxis: recharts.XAxis,
+        YAxis: recharts.YAxis,
+        Tooltip: recharts.Tooltip,
+        CartesianGrid: recharts.CartesianGrid,
+        ResponsiveContainer: recharts.ResponsiveContainer,
+        Legend: recharts.Legend
+      });
+    })();
+  }, []);
 
   useEffect(() => {
     // Obtener lista de clientes
