@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import AuthContext from '../context/AuthContext';
+import api from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 import './MiInversion.css';
 
 const MiInversion = () => {
@@ -49,7 +49,7 @@ const MiInversion = () => {
       
       try {
         setCargando(true);
-        const response = await axios.get(`/fondo-riesgo/analysis/${usuario.id}`);
+        const response = await api.get(`/fondo-riesgo/analysis/${usuario.id}`);
         
         if (response.data && Array.isArray(response.data)) {
           setDatos(response.data);
