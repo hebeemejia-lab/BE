@@ -295,19 +295,6 @@ const emailService = {
         return { enviado: false, error: error.message };
       }
     },
-          color: #333333;
-          line-height: 1.6;
-          margin-bottom: 30px;
-        }
-        .button-container {
-          text-align: center;
-          margin: 30px 0;
-        }
-        .verify-button {
-          display: inline-block;
-          padding: 16px 40px;
-          background: linear-gradient(135deg, #cc0000 0%, #ff3333 100%);
-          color: #ffffff !important;
           text-decoration: none;
           border-radius: 8px;
           font-size: 18px;
