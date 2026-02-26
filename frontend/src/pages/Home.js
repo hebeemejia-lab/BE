@@ -11,7 +11,7 @@ export default function Home() {
     <div className="home-container">
       <div className="hero-section">
         <div className="hero-content">
-          <h1 className="hero-title">Bienvenido a Banco Exclusivo</h1>
+          <h1 className="hero-title">Bienvenido a Banexclusivo</h1>
           <p className="hero-subtitle">Transferencias y Préstamos Seguros y Rápidos</p>
 
           {usuario ? (
