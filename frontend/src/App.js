@@ -2,7 +2,7 @@ import GastosPersonales from './pages/GastosPersonales';
 import MiInversionPage from './pages/MiInversionPage';
 import Perfil from './pages/Perfil';
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 import Navbar from './components/Navbar';
@@ -35,11 +35,50 @@ import Certificado from './pages/Certificado';
 // Estilos
 import './styles/global.css';
 
+const getTitleForPath = (pathname) => {
+  if (pathname === '/') return 'BE - Inicio';
+  if (pathname.startsWith('/login')) return 'BE - Iniciar Sesion';
+  if (pathname.startsWith('/register')) return 'BE - Registro';
+  if (pathname.startsWith('/verificar-email')) return 'BE - Verificar Email';
+  if (pathname.startsWith('/reenviar-verificacion')) return 'BE - Reenviar Verificacion';
+  if (pathname.startsWith('/dashboard')) return 'BE - Dashboard';
+  if (pathname.startsWith('/transferencias-internacionales')) return 'BE - Transferencias Internacionales';
+  if (pathname.startsWith('/transferencias-bancarias')) return 'BE - Transferencia Bancaria';
+  if (pathname.startsWith('/transferencias')) return 'BE - Transferencias';
+  if (pathname.startsWith('/mi-inversion')) return 'BE - Inversion';
+  if (pathname.startsWith('/gastos-personales')) return 'BE - Gastos Personales';
+  if (pathname.startsWith('/recargas')) return 'BE - Recargas';
+  if (pathname.startsWith('/retiros')) return 'BE - Retiros';
+  if (pathname.startsWith('/vincular-cuenta')) return 'BE - Vincular Cuenta';
+  if (pathname.startsWith('/prestamos')) return 'BE - Prestamos';
+  if (pathname.startsWith('/perfil')) return 'BE - Perfil';
+  if (pathname.startsWith('/admin')) return 'BE - Admin';
+  if (pathname.startsWith('/politica-privacidad')) return 'BE - Politica de Privacidad';
+  if (pathname.startsWith('/cursos/activos-pasivos')) return 'BE - Cursos Activos y Pasivos';
+  if (pathname.startsWith('/cursos/economia-emergente')) return 'BE - Cursos Economia Emergente';
+  if (pathname.startsWith('/cursos/beneficios-ahorro')) return 'BE - Cursos Beneficios del Ahorro';
+  if (pathname.startsWith('/cursos')) return 'BE - Cursos';
+  if (pathname.startsWith('/seleccion-curso')) return 'BE - Seleccion de Curso';
+  if (pathname.startsWith('/certificado')) return 'BE - Certificado';
+  return 'BE - Banexclusivo';
+};
+
+function TitleManager() {
+  const location = useLocation();
+
+  React.useEffect(() => {
+    document.title = getTitleForPath(location.pathname);
+  }, [location.pathname]);
+
+  return null;
+}
+
 function App() {
   const [chatbotAbierto, setChatbotAbierto] = useState(false);
 
   return (
     <Router>
+      <TitleManager />
       <CurrencyProvider>
         <AuthProvider>
           <Navbar onAbrirChatbot={() => setChatbotAbierto(true)} />
