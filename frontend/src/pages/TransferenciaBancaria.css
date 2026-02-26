@@ -182,6 +182,12 @@ form {
 
 .tabla-contenedor {
   overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.tabla-contenedor::-webkit-scrollbar {
+  display: none;
 }
 
 .historial-card table {

@@ -165,6 +165,12 @@
   width: 100%;
   overflow-x: auto;
   box-sizing: border-box;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.inversion-grafico::-webkit-scrollbar {
+  display: none;
 }
 
 /* Tabla */
@@ -177,6 +183,12 @@
   overflow-x: auto;
   width: 100%;
   box-sizing: border-box;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.inversion-tabla::-webkit-scrollbar {
+  display: none;
 }
 
 .inversion-tabla h2 {
@@ -375,6 +387,12 @@
     min-height: 300px;
     overflow-x: scroll;
     -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .inversion-grafico::-webkit-scrollbar {
+    display: none;
   }
 
   .inversion-tabla {
@@ -382,6 +400,12 @@
     font-size: 12px;
     overflow-x: scroll;
     -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .inversion-tabla::-webkit-scrollbar {
+    display: none;
   }
 
   .inversion-tabla th,

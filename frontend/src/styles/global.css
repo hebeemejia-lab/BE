@@ -70,6 +70,12 @@ nav {
   top: 0;
   z-index: 1000;
   transition: left 0.3s ease;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+nav::-webkit-scrollbar {
+  display: none;
 }
 
 nav.open {
@@ -88,6 +94,13 @@ main {
   position: relative;
   box-sizing: border-box;
   display: flex;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+main::-webkit-scrollbar {
+  display: none;
+}
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
@@ -152,6 +165,12 @@ main::-webkit-scrollbar-thumb:hover {
     padding: 20px 15px;
     overflow-x: hidden;
     overflow-y: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  main::-webkit-scrollbar {
+    display: none;
   }
 
   main > div {
@@ -266,4 +285,10 @@ main::-webkit-scrollbar-thumb:hover {
 table, .list-container {
   width: 100%;
   overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+table::-webkit-scrollbar, .list-container::-webkit-scrollbar {
+  display: none;
 }

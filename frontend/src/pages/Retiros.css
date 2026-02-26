@@ -451,6 +451,12 @@
 
 .historial-tabla {
   overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.historial-tabla::-webkit-scrollbar {
+  display: none;
 }
 
 .historial-card table {

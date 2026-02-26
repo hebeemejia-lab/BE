@@ -178,6 +178,12 @@
   width: 100%;
   overflow-x: auto;
   box-sizing: border-box;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.chart-container::-webkit-scrollbar {
+  display: none;
 }
 
 .chart-loading {
@@ -202,6 +208,12 @@
   overflow-x: auto;
   width: 100%;
   box-sizing: border-box;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.transactions-table::-webkit-scrollbar {
+  display: none;
 }
 
 .transactions-table h3 {
@@ -288,12 +300,24 @@
     min-height: 300px;
     overflow-x: scroll;
     -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .chart-container::-webkit-scrollbar {
+    display: none;
   }
 
   .transactions-table {
     padding: 12px;
     overflow-x: scroll;
     -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .transactions-table::-webkit-scrollbar {
+    display: none;
   }
 
   .transactions-table th,
