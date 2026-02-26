@@ -5,6 +5,7 @@ import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import './AdminPanel.css';
 import EstadoCuentaPanel from '../components/EstadoCuentaPanel';
+import AnalisisInversiones from '../components/AnalisisInversiones';
 
 const descargarImagenDesdeHtml = async (html, nombreArchivo) => {
   const wrapper = document.createElement('div');
@@ -85,9 +86,6 @@ const AdminPanel = () => {
     clientes: '/admin/clientes',
     faq: '/admin/faq',
     analisisInversiones: '/admin/analisis-inversiones',
-  };
-
-import AnalisisInversiones from '../components/AnalisisInversiones';
   };
 
   const navegarAdmin = (ruta) => {
