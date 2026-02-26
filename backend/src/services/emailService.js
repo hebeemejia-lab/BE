@@ -5,7 +5,6 @@ async function enviarNotificacionCursosFinanzas(usuario) {
   const config = getConfig();
   const cursosUrl = `${config.frontendUrl}/seleccion-curso`;
   const html = `...existing code...`;
-  `;
 
   // Forzar uso de Gmail SMTP (beverify@bancoexclusivo.lat)
   const transporter = crearTransporter();
@@ -184,89 +183,61 @@ const emailService = {
         const verifyUrl = `${config.frontendUrl}/verificar-email?token=${encodeURIComponent(token)}`;
         const html = `...existing code...`;
         // ...existing code...
-          </div>
-        </div>
-      </div>
-            html,
-          });
-          console.log(`✅ Email de verificación enviado con SMTP`);
-          return { enviado: true, provider: 'smtp' };
-        } catch (smtpError) {
-          console.error(`⚠️ SMTP falló: ${smtpError.message}`);
-          return { enviado: false, motivo: smtpError.message };
-        }
-      } catch (error) {
-        console.error('❌ Error enviando email de verificación:', error);
-        return { enviado: false, error: error.message };
-      }
-      },
-            
-          // ...existing code...
-
-      // Preferir SendGrid
-      if (config.sendgridApiKey) {
-        console.log('📧 Intentando con SendGrid...');
-        const resultadoSendGrid = await enviarConSendGrid({
-          to: usuario.email,
-          subject: 'Verifica tu correo - Banco Exclusivo',
-          html,
-        });
-
-        if (resultadoSendGrid.enviado) {
-          console.log(`✅ Email enviado con SendGrid a ${usuario.email}`);
-          return resultadoSendGrid;
-        }
-
-        console.warn(`⚠️ SendGrid falló: ${resultadoSendGrid.error}`);
-      }
-
-      // Fallback a SMTP
-      console.log('📧 Intentando con SMTP...');
-      const transporter = crearTransporter();
-      if (transporter) {
-        try {
-          await transporter.sendMail({
-            from: config.smtpFrom,
+        // Preferir SendGrid
+        if (config.sendgridApiKey) {
+          console.log('📧 Intentando con SendGrid...');
+          const resultadoSendGrid = await enviarConSendGrid({
             to: usuario.email,
             subject: 'Verifica tu correo - Banco Exclusivo',
             html,
           });
-
-          console.log(`✅ Email enviado con SMTP a ${usuario.email}`);
-          return { enviado: true, provider: 'smtp' };
-        } catch (smtpError) {
-          console.error(`⚠️ SMTP falló: ${smtpError.message}`);
+          if (resultadoSendGrid.enviado) {
+            console.log(`✅ Email enviado con SendGrid a ${usuario.email}`);
+            return resultadoSendGrid;
+          }
+          console.warn(`⚠️ SendGrid falló: ${resultadoSendGrid.error}`);
         }
-      }
-
-      // Fallback a Resend
-      if (config.resendApiKey) {
-        console.log('📧 Intentando con Resend...');
-        const resultadoResend = await enviarConResend({
-          to: usuario.email,
-          subject: 'Verifica tu correo - Banco Exclusivo',
-          html,
-        });
-
-        if (resultadoResend.enviado) {
-          console.log(`✅ Email enviado con Resend a ${usuario.email}`);
-          return resultadoResend;
+        // Fallback a SMTP
+        console.log('📧 Intentando con SMTP...');
+        const transporter = crearTransporter();
+        if (transporter) {
+          try {
+            await transporter.sendMail({
+              from: config.smtpFrom,
+              to: usuario.email,
+              subject: 'Verifica tu correo - Banco Exclusivo',
+              html,
+            });
+            console.log(`✅ Email enviado con SMTP a ${usuario.email}`);
+            return { enviado: true, provider: 'smtp' };
+          } catch (smtpError) {
+            console.error(`⚠️ SMTP falló: ${smtpError.message}`);
+          }
         }
-
-        console.warn(`⚠️ Resend también falló: ${resultadoResend.error}`);
+        // Fallback a Resend
+        if (config.resendApiKey) {
+          console.log('📧 Intentando con Resend...');
+          const resultadoResend = await enviarConResend({
+            to: usuario.email,
+            subject: 'Verifica tu correo - Banco Exclusivo',
+            html,
+          });
+          if (resultadoResend.enviado) {
+            console.log(`✅ Email enviado con Resend a ${usuario.email}`);
+            return resultadoResend;
+          }
+          console.warn(`⚠️ Resend también falló: ${resultadoResend.error}`);
+        }
+        console.warn('⚠️ Ningún servicio de email está configurado.');
+        console.log(`🔗 Link de verificación: ${verifyUrl}`);
+        return { enviado: false, motivo: 'Email service no configurado', verifyUrl };
+      } catch (error) {
+        console.error('❌ Error enviando email de verificación:', error);
+        return { enviado: false, error: error.message };
       }
-
-      console.warn('⚠️ Ningún servicio de email está configurado.');
-      console.log(`🔗 Link de verificación: ${verifyUrl}`);
-      return { enviado: false, motivo: 'Email service no configurado', verifyUrl };
-    } catch (error) {
-      console.error('❌ Error enviando email de verificación:', error);
-      return { enviado: false, error: error.message };
-    }
-  },
-
-  // Enviar notificación de nuevo préstamo solicitado
-  enviarNotificacionSolicitud: async (usuario, prestamo) => {
+    },
+    // Enviar notificación de nuevo préstamo solicitado
+    enviarNotificacionSolicitud: async (usuario, prestamo) => {
     try {
       // Aquí iría la lógica real con nodemailer
       console.log(`📧 Email enviado a ${process.env.ADMIN_EMAIL}`);
@@ -297,10 +268,6 @@ const emailService = {
       return { enviado: false, error: error.message };
     }
   },
-      return { enviado: false, error: error.message };
-    }
-  },
-
   // Enviar rechazo de préstamo
   enviarRechazo: async (usuario, prestamo) => {
     try {
@@ -314,7 +281,6 @@ const emailService = {
       return { enviado: false, error: error.message };
     }
   },
-
   // Enviar verificación de cuenta bancaria con microdeposits
   enviarVerificacionCuentaBancaria: async (usuario, cuenta, microdeposits) => {
     const config = getConfig();
@@ -455,7 +421,7 @@ const emailService = {
       console.error('❌ Error enviando email de verificación bancaria:', error);
       return { enviado: false, error: error.message };
     }
-  },
+  }
 };
 
 module.exports = emailService;
