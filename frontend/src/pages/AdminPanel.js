@@ -6,6 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import './AdminPanel.css';
 import EstadoCuentaPanel from '../components/EstadoCuentaPanel';
 import AnalisisInversiones from '../components/AnalisisInversiones';
+import CurrencySelector from '../components/CurrencySelector';
 
 const descargarImagenDesdeHtml = async (html, nombreArchivo) => {
   const wrapper = document.createElement('div');
@@ -41,6 +42,7 @@ const obtenerVistaDesdeRuta = (pathname) => {
   if (segmento === 'clientes') return 'clientes';
   if (segmento === 'faq') return 'faq';
   if (segmento === 'analisis-inversiones') return 'analisisInversiones';
+  if (segmento === 'divisas') return 'divisas';
   return 'dashboard';
 };
 
@@ -87,6 +89,7 @@ const AdminPanel = () => {
     clientes: '/admin/clientes',
     faq: '/admin/faq',
     analisisInversiones: '/admin/analisis-inversiones',
+    divisas: '/admin/divisas',
   };
 
   const navegarAdmin = (ruta) => {
@@ -911,6 +914,7 @@ const AdminPanel = () => {
     clientes: 'Gestion de Clientes',
     faq: 'Feedback FAQ',
     analisisInversiones: 'Analisis de Inversiones',
+    divisas: 'Configuración de Divisas',
   };
   const tituloActual = titulosVista[vistaActual] || 'Dashboard';
 
@@ -950,6 +954,10 @@ const AdminPanel = () => {
             className={vistaActual === 'analisisInversiones' ? 'active' : ''}
             onClick={() => navegarAdmin(rutasAdmin.analisisInversiones)}
           >📈 Análisis de Inversiones</button>
+          <button 
+            className={vistaActual === 'divisas' ? 'active' : ''}
+            onClick={() => navegarAdmin(rutasAdmin.divisas)}
+          >💱 Configuración de Divisas</button>
         </nav>
       </div>
       {adminMenuOpen && (
@@ -1065,6 +1073,14 @@ const AdminPanel = () => {
         )}
         {vistaActual === 'analisisInversiones' && (
           <AnalisisInversiones />
+        )}
+
+        {vistaActual === 'divisas' && (
+          <div className="admin-view">
+            <h1>💱 Configuración de Divisas</h1>
+            <p>Configura la divisa en la que se mostrarán todos los montos del sistema.</p>
+            <CurrencySelector />
+          </div>
         )}
 
         {vistaActual === 'depositos' && (
@@ -1217,6 +1233,13 @@ const DashboardView = ({ dashboard, onNavigate, onGenerarEstado, estadoDesde, es
         <p>Asignar inversiones y registrar ganancias por cliente.</p>
         <button type="button" onClick={() => onNavigate?.('analisisInversiones')}>
           Abrir gestion
+        </button>
+      </div>
+      <div className="gestion-card">
+        <h3>💱 Configuración de Divisas</h3>
+        <p>Cambiar la divisa en la que se muestran los montos (USD, EUR, GBP).</p>
+        <button type="button" onClick={() => onNavigate?.('divisas')}>
+          Abrir configuración
         </button>
       </div>
       {puedeVerEstadoMercantil && (

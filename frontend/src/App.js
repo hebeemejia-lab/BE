@@ -4,6 +4,7 @@ import Perfil from './pages/Perfil';
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { CurrencyProvider } from './context/CurrencyContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import ChatBotFAQ from './components/ChatBotFAQ';
@@ -39,9 +40,10 @@ function App() {
 
   return (
     <Router>
-      <AuthProvider>
-        <Navbar onAbrirChatbot={() => setChatbotAbierto(true)} />
-        <Routes>
+      <CurrencyProvider>
+        <AuthProvider>
+          <Navbar onAbrirChatbot={() => setChatbotAbierto(true)} />
+          <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -173,6 +175,7 @@ function App() {
           </button>
         )}
       </AuthProvider>
+      </CurrencyProvider>
     </Router>
   );
 }
