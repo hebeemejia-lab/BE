@@ -35,26 +35,26 @@ export default function Navbar() {
 
   return (
     <nav className={`navbar ${menuOpen ? 'open' : ''}`}>
+      {usuario && (
+        <button 
+          className={`hamburger ${menuOpen ? 'active' : ''}`}
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Menú"
+        >
+          <img
+            src="/imagen/BE (17).png"
+            alt="Menu"
+            className="hamburger-icon"
+          />
+        </button>
+      )}
+      
       <div className="navbar-container">
         <div className="navbar-header">
           <Link to="/" className="navbar-logo" onClick={handleMenuClose}>
             <img src="/imagen/BE (1) (1).png" alt="BE" className="logo-img" />
             <span className="logo-text">BE</span>
           </Link>
-
-          {usuario && (
-            <button 
-              className={`hamburger ${menuOpen ? 'active' : ''}`}
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Menú"
-            >
-              <img
-                src="/imagen/BE (17).png"
-                alt="Menu"
-                className="hamburger-icon"
-              />
-            </button>
-          )}
         </div>
 
         {usuario ? (
