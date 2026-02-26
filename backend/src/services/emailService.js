@@ -295,9 +295,6 @@ const emailService = {
         return { enviado: false, error: error.message };
       }
     },
-          <div class="logo">🏦</div>
-          <h1 class="header-title">Verifica tu cuenta</h1>
-        </div>
         <div class="content">
           <div class="greeting">Hola, ${usuario.nombre || 'usuario'} 👋</div>
           <div class="message">
