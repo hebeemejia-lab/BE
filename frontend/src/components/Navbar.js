@@ -12,6 +12,22 @@ export default function Navbar() {
   const [devMenuOpen, setDevMenuOpen] = useState(false);
   const [devMode, setDevMode] = useState(() => localStorage.getItem('adminSandboxMode') === 'true');
 
+  // reusable floating dropdown for any menu section that needs to pop outside
+  const FloatingDropdown = ({ label, icon, children }) => {
+    const [open, setOpen] = useState(false);
+    return (
+      <div className="nav-dropdown">
+        <button
+          className={`nav-link dropdown-toggle ${open ? 'active' : ''}`}
+          onClick={() => setOpen(!open)}
+        >
+          {icon} {label}
+        </button>
+        {open && <div className="dropdown-menu">{children}</div>}
+      </div>
+    );
+  };
+
   const handleLogout = () => {
     logout();
     setMenuOpen(false);
@@ -65,6 +81,7 @@ export default function Navbar() {
               </div>
               
               <div className="navbar-links">
+                {/* primary section */}
                 <Link to="/dashboard" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
                   <img src="/imagen/BE (17).png" alt="Dashboard" className="nav-icon" />
                   Dashboard
@@ -89,92 +106,56 @@ export default function Navbar() {
                   <img src="/imagen/BE (11).png" alt="Vincular Cuenta" className="nav-icon" />
                   Vincular Cuenta
                 </Link>
-                
-                <div className="nav-dropdown">
-                  <button 
-                    className={`nav-link dropdown-toggle ${transactionsOpen ? 'active' : ''}`}
-                    onClick={() => setTransactionsOpen(!transactionsOpen)}
-                  >
-                    💸 Transacciones
-                  </button>
-                  {transactionsOpen && (
-                    <div className="dropdown-menu">
-                      <Link to="/transferencias" className="dropdown-item" onClick={handleMenuClose}>
-                        <img src="/imagen/BE (6) (1).png" alt="Transferencias" className="nav-icon" />
-                        Transferencias
-                      </Link>
-                      <Link to="/transferencias-bancarias" className="dropdown-item" onClick={handleMenuClose}>
-                        <img src="/imagen/BE (14).png" alt="Transf. Bancaria" className="nav-icon" />
-                        Transf. Bancaria
-                      </Link>
-                      <Link to="/transferencias-internacionales" className="dropdown-item" onClick={handleMenuClose}>
-                        <img src="/imagen/Adobe Express - file (12).png" alt="Transf. Internacional" className="nav-icon" />
-                        Transf. Internacional
-                      </Link>
-                    </div>
-                  )}
-                </div>
 
-                {/* Cursos Dropdown */}
-                <div className="nav-dropdown">
-                  <button 
-                    className="nav-link dropdown-toggle"
-                    onClick={() => setMenuOpen(menuOpen === 'cursos' ? false : 'cursos')}
-                  >
-                    🎓 Cursos
-                  </button>
-                  {menuOpen === 'cursos' && (
-                    <div className="dropdown-menu">
-                      <Link to="/cursos/activos-pasivos" className="dropdown-item" onClick={handleMenuClose}>
-                        Activos y Pasivos
-                      </Link>
-                      <Link to="/cursos/economia-emergente" className="dropdown-item" onClick={handleMenuClose}>
-                        Economía Emergente
-                      </Link>
-                      <Link to="/cursos/beneficios-ahorro" className="dropdown-item" onClick={handleMenuClose}>
-                        Beneficios del Ahorro
-                      </Link>
-                    </div>
-                  )}
-                </div>
-                
+                {/* transactions floating dropdown */}
+                <FloatingDropdown label="Transacciones" icon="💸">
+                  <Link to="/transferencias" className="dropdown-item" onClick={handleMenuClose}>
+                    <img src="/imagen/BE (6) (1).png" alt="Transferencias" className="nav-icon" />
+                    Transferencias
+                  </Link>
+                  <Link to="/transferencias-bancarias" className="dropdown-item" onClick={handleMenuClose}>
+                    <img src="/imagen/BE (14).png" alt="Transf. Bancaria" className="nav-icon" />
+                    Transf. Bancaria
+                  </Link>
+                  <Link to="/transferencias-internacionales" className="dropdown-item" onClick={handleMenuClose}>
+                    <img src="/imagen/Adobe Express - file (12).png" alt="Transf. Internacional" className="nav-icon" />
+                    Transf. Internacional
+                  </Link>
+                </FloatingDropdown>
+
+                {/* divider before loans/admin */}
+                <div className="nav-divider" />
+
                 <Link to="/prestamos" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
                   <img src="/imagen/BE (15).png" alt="Préstamos" className="nav-icon" />
                   Préstamos
                 </Link>
-                
+
                 {(usuario.rol === 'admin' || usuario.rol === 'admin_lite') && (
                   <Link to="/admin" className="nav-link admin-link" onClick={handleMenuClose}>⚙️ Panel de Control</Link>
                 )}
 
                 {usuario.rol === 'admin' && (
-                  <div className="nav-dropdown">
+                  <FloatingDropdown label="Desarrolladores">
                     <button
-                      className={`nav-link dropdown-toggle ${devMenuOpen ? 'active' : ''}`}
-                      onClick={() => setDevMenuOpen(!devMenuOpen)}
+                      type="button"
+                      className="dropdown-item"
+                      onClick={() => {
+                        toggleDevMode();
+                        setDevMenuOpen(false);
+                      }}
                     >
-                      Desarrolladores
+                      {devMode ? 'Cambiar a LIVE' : 'Cambiar a DEV'}
                     </button>
-                    {devMenuOpen && (
-                      <div className="dropdown-menu">
-                        <button
-                          type="button"
-                          className="dropdown-item"
-                          onClick={() => {
-                            toggleDevMode();
-                            setDevMenuOpen(false);
-                          }}
-                        >
-                          {devMode ? 'Cambiar a LIVE' : 'Cambiar a DEV'}
-                        </button>
-                        <span className="dropdown-item" aria-hidden="true">
-                          Modo actual: {devMode ? 'DEV' : 'LIVE'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                    <span className="dropdown-item" aria-hidden="true">
+                      Modo actual: {devMode ? 'DEV' : 'LIVE'}
+                    </span>
+                  </FloatingDropdown>
                 )}
-                
+
+                {/* divider before profile/logout */}
+                <div className="nav-divider" />
+
                 <Link to="/perfil" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
                   <img src="/imagen/BE (13).png" alt="Perfil" className="nav-icon" />
                   Perfil
@@ -183,7 +164,7 @@ export default function Navbar() {
                 <Link to="/politica-privacidad" className="nav-link" onClick={handleMenuClose}>
                   🔐 Politicas de Seguridad
                 </Link>
-                
+
                 <button onClick={handleLogout} className="nav-button logout-btn">
                   🚪 Cerrar Sesión
                 </button>

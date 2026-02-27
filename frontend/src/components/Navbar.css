@@ -34,8 +34,9 @@
     display: none !important;
   }
   
+  /* keep hamburger visible on mobile now that drawer lives on right */
   .hamburger {
-    display: none !important;
+    display: flex !important;
   }
   
   .hamburger-icon {
@@ -63,6 +64,31 @@
     /* Ocultar scrollbar pero mantener funcionalidad */
     -ms-overflow-style: none !important;
     scrollbar-width: none !important;
+  }
+
+  /* when the hamburger drawer is open, convert the navbar-right into a right-side panel */
+  .navbar-right.open {
+    position: fixed !important;
+    right: 0 !important;
+    left: auto !important;
+    top: 0 !important;
+    width: 280px !important;
+    height: 100vh !important;
+    flex-direction: column !important;
+    padding: 80px 20px 20px 20px !important;
+    gap: 15px !important;
+    background: linear-gradient(135deg, #001a4d 0%, #003d99 100%) !important;
+    box-shadow: -2px 0 12px rgba(0, 0, 0, 0.3) !important;
+    overflow-y: auto !important;
+    z-index: 10001 !important;
+  }
+
+  /* hide bottom bar when drawer active */
+  .navbar.open {
+    bottom: auto !important;
+    top: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
   }
   
   /* Webkit browsers (Chrome, Safari, Edge) */
@@ -259,8 +285,21 @@
   font-size: 14px;
 }
 
+/* Always show hamburger button; will slide a drawer from the right */
 .hamburger {
-  display: none;
+  display: flex;
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 10002;
+}
+
+.hamburger.active {
+  /* optional shift when drawer opens, keeps it visible */
+  right: 292px;
 }
 
 .hamburger-icon {
@@ -296,16 +335,16 @@
   margin-left: auto;
 }
 
-.user-name {
-  font-weight: 600;
-  font-size: 13px;
-}
+  /* mobile: hide user-info unless drawer is open */
+  @media (max-width: 600px) {
+    .user-info {
+      display: none !important;
+    }
+    .navbar-right.open .user-info {
+      display: flex !important;
+    }
+  }
 
-.user-balance {
-  font-size: 12px;
-  color: #ff3333;
-  font-weight: bold;
-}
 
 .navbar-links {
   display: flex;
@@ -615,7 +654,8 @@
   .navbar-right {
     position: fixed;
     top: 0;
-    left: -280px;
+    right: -280px;
+    left: auto;
     width: 280px;
     height: 100vh;
     flex-direction: column;
@@ -623,13 +663,13 @@
     padding: 0;
     gap: 0;
     overflow-y: auto;
-    transition: left 0.3s ease;
-    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.3);
+    transition: right 0.3s ease;
+    box-shadow: -2px 0 12px rgba(0, 0, 0, 0.3);
     z-index: 10001;
   }
 
   .navbar-right.open {
-    left: 0;
+    right: 0;
     padding: 80px 20px 20px 20px;
     gap: 15px;
   }
@@ -643,6 +683,13 @@
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
     z-index: 10000;
+  }
+
+  /* Divider used to separate logical groups in drawer */
+  .nav-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.2);
+    margin: 10px 0;
   }
 
   .navbar-right.open ~ .navbar-overlay {
