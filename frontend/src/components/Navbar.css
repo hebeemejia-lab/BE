@@ -1,4 +1,4 @@
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .navbar {
     display: flex !important;
     position: fixed !important;
@@ -344,7 +344,7 @@
 }
 
   /* mobile: hide user-info unless drawer is open */
-  @media (max-width: 600px) {
+  @media (max-width: 768px) {
     .user-info {
       display: none !important;
     }
