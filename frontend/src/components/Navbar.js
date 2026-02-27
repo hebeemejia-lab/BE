@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 // Componente básico FloatingDropdown
 const FloatingDropdown = ({ label, icon, children }) => (
@@ -9,18 +10,18 @@ const FloatingDropdown = ({ label, icon, children }) => (
   </div>
 );
 
-// Variables y funciones mínimas para evitar errores
-const usuario = { nombre: 'Demo', apellido: 'User', saldo: 1000, rol: 'admin' };
-const menuOpen = false;
-const devMode = false;
-const setDevMenuOpen = () => {};
-const toggleDevMode = () => {};
-const handleMenuClose = () => {};
-const handleLogout = () => {};
 const formatMoney = (value) => `$${value}`;
 
 const Navbar = () => {
-  // ...your hooks and logic here
+  const { usuario, token, logout } = useContext(AuthContext);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [devMode, setDevMode] = useState(false);
+  const handleMenuClose = () => setMenuOpen(false);
+  const toggleDevMode = () => setDevMode((prev) => !prev);
+  const handleLogout = () => {
+    logout();
+    handleMenuClose();
+  };
 
   return (
     <React.Fragment>
@@ -32,7 +33,7 @@ const Navbar = () => {
               <span className="logo-text">BE</span>
             </Link>
           </div>
-          {usuario ? (
+          {usuario && token ? (
             <>
               <div className={`navbar-right ${menuOpen ? 'open' : ''}`}>
                 <div className="user-info">
