@@ -782,22 +782,24 @@
 
 /* Ensure drawer links render horizontally on desktop */
 @media (min-width: 769px) {
+  /* On desktop, show drawer links stacked vertically (column) */
   .navbar-right.open .navbar-links {
-    flex-direction: row;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     justify-content: flex-start;
     gap: 8px;
-    width: auto;
-    overflow-x: auto;
-    white-space: nowrap;
+    width: 100%;
+    overflow-x: visible;
+    white-space: normal;
   }
 
+  /* Each link should take full width but keep icon+label horizontal */
   .navbar-right.open .nav-link,
   .navbar-right.open .nav-button,
   .navbar-right.open .admin-link {
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
-    width: auto;
+    width: 100%;
   }
 }
