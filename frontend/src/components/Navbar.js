@@ -1,4 +1,23 @@
 import React, { useContext, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+
+// Componente básico FloatingDropdown
+const FloatingDropdown = ({ label, icon, children }) => (
+  <div className="floating-dropdown">
+    <span className="dropdown-label">{icon ? icon + ' ' : ''}{label}</span>
+    <div className="dropdown-content">{children}</div>
+  </div>
+);
+
+// Variables y funciones mínimas para evitar errores
+const usuario = { nombre: 'Demo', apellido: 'User', saldo: 1000, rol: 'admin' };
+const menuOpen = false;
+const devMode = false;
+const setDevMenuOpen = () => {};
+const toggleDevMode = () => {};
+const handleMenuClose = () => {};
+const handleLogout = () => {};
+const formatMoney = (value) => `$${value}`;
 
 const Navbar = () => {
   // ...your hooks and logic here
