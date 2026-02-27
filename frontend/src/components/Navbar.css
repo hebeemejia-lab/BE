@@ -120,13 +120,46 @@
     scrollbar-width: none !important;
   }
 
-  /* when hamburger is inside navbar-links, keep it inline and spaced */
+  /* when hamburger is inside navbar-links, keep it inline and spaced (mobile) */
   .navbar-links .hamburger {
     position: static !important;
     margin: 0 8px !important;
     padding: 6px !important;
     align-self: center !important;
     height: auto !important;
+  }
+
+  /* Desktop: move hamburger to the right edge of the navbar */
+  @media (min-width: 769px) {
+    .navbar .hamburger {
+      position: absolute !important;
+      right: 16px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      margin: 0 !important;
+      padding: 6px !important;
+      z-index: 10002 !important;
+    }
+
+    /* ensure hamburger inside .navbar-links does not affect layout on desktop */
+    .navbar-links .hamburger {
+      position: absolute !important;
+      right: 16px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      margin: 0 !important;
+    }
+  }
+
+  /* desktop: float hamburger to right edge */
+  @media (min-width: 769px) {
+    .navbar-links .hamburger {
+      position: absolute !important;
+      right: 12px !important;
+      margin: 0 !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+    }
   }
 
   /* Webkit browsers (Chrome, Safari, Edge) - Hide scrollbar for navbar-links */
