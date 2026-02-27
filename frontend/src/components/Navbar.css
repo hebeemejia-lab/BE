@@ -37,10 +37,10 @@
   /* keep hamburger visible on mobile now that drawer lives on right */
   .hamburger {
     display: flex !important;
-    position: absolute !important;
-    left: calc(50% - 160px) !important; /* sit just left of Gastos Personales */
-    top: 50% !important;
-    transform: translateY(-50%) !important;
+    position: static !important;
+    margin-left: 8px !important;
+    align-self: center !important;
+    padding: 6px !important;
   }
   
   .hamburger-icon {

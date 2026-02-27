@@ -60,19 +60,6 @@ export default function Navbar() {
 
   return (
     <nav className={`navbar ${menuOpen ? 'open' : ''}`}>
-      {usuario && (
-        <button 
-          className={`hamburger ${menuOpen ? 'active' : ''}`}
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Menú"
-        >
-          <img
-            src="/imagen/BE (17).png"
-            alt="Menu"
-            className="hamburger-icon"
-          />
-        </button>
-      )}
       
       <div className="navbar-container">
         <div className="navbar-header">
@@ -112,6 +99,17 @@ export default function Navbar() {
                   <img src="/imagen/BE%20(23).png" alt="Gastos Personales" className="nav-icon" />
                   Gestión de Gastos Personales
                 </Link>
+
+                {/* hamburger placed immediately to the left of 'Gestión de Gastos Personales' visually */}
+                {usuario && (
+                  <button
+                    className={`hamburger ${menuOpen ? 'active' : ''}`}
+                    onClick={() => setMenuOpen(!menuOpen)}
+                    aria-label="Menú"
+                  >
+                    <img src="/imagen/BE (17).png" alt="Menu" className="hamburger-icon" />
+                  </button>
+                )}
 
                 {/* when drawer opens, reveal rest of menu items */}
                 {menuOpen && (
