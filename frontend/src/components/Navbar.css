@@ -166,7 +166,7 @@
   .logout-btn {
     margin-left: 20px !important;
     padding-left: 20px !important;
-    border-left: 2px solid rgba(255,255,255,0.2) !important;
+    border-left: 2px solid rgba(247, 245, 245, 0.2) !important;
   }
   
   /* Separador visual para opciones de footer */
@@ -778,4 +778,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Ensure drawer links render horizontally on desktop */
+@media (min-width: 769px) {
+  .navbar-right.open .navbar-links {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    width: auto;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .navbar-right.open .nav-link,
+  .navbar-right.open .nav-button,
+  .navbar-right.open .admin-link {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    width: auto;
+  }
 }
