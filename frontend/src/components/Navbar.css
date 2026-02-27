@@ -361,11 +361,16 @@
 }
 
 /* position main (non-drawer) links to the left so they don't cover the centered logo */
-.navbar-links {
-  position: absolute;
-  left: 20px;
-  top: 50%;
-  transform: translateY(-50%);
+/* (esta regla ya está incluida arriba, solo cerrar correctamente) */
+
+/* Estilo para scrollbar en navegadores Webkit */
+.navbar-links::-webkit-scrollbar {
+  height: 8px;
+  background: #001a4d;
+}
+.navbar-links::-webkit-scrollbar-thumb {
+  background: #a7d8ff;
+  border-radius: 4px;
 }
 
 .nav-link {
