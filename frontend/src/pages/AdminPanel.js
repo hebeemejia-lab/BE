@@ -7,6 +7,8 @@ import './AdminPanel.css';
 import EstadoCuentaPanel from '../components/EstadoCuentaPanel';
 import AnalisisInversiones from '../components/AnalisisInversiones';
 import CurrencySelector from '../components/CurrencySelector';
+import './CurrencyCalculator.css';
+import CurrencyCalculator from '../components/CurrencyCalculator';
 
 const descargarImagenDesdeHtml = async (html, nombreArchivo) => {
   const wrapper = document.createElement('div');
@@ -400,7 +402,7 @@ const AdminPanel = () => {
           <div style="font-size: 32px; font-weight: 700; color: #0f1b3d;">RD$ ${monto}</div>
           <div style="font-size: 13px; color: #64748b;">Tasa: ${prestamo.tasaInteres}%</div>
         </div>
-        <div style="margin-top: 28px; text-align: center; font-size: 12px; color: #94a3b8;">Documento generado por Banco Exclusivo</div>
+        <div style="margin-top: 24px; text-align: center; font-size: 12px; color: #94a3b8;">Documento generado por Banco Exclusivo</div>
       </div>
     `;
 
@@ -1080,6 +1082,12 @@ const AdminPanel = () => {
             <h1>💱 Configuración de Divisas</h1>
             <p>Configura la divisa en la que se mostrarán todos los montos del sistema.</p>
             <CurrencySelector />
+            <div style={{marginTop: 32}}>
+              {/* Calculadora de divisas con 2% de ganancia */}
+              <React.Suspense fallback={<div>Cargando calculadora...</div>}>
+                {React.createElement(require('./CurrencyCalculator').default)}
+              </React.Suspense>
+            </div>
           </div>
         )}
 
