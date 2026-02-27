@@ -384,9 +384,19 @@
 
 .navbar-links {
   display: flex;
-  flex-direction: row;
-  gap: 0;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  justify-content: flex-end;
+  height: 100vh;
+  width: auto;
+  position: fixed;
+  top: 0;
+  right: 0;
+  background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
+  z-index: 11001;
+  padding: 80px 20px 20px 20px;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.3);
 }
 
 /* position main (non-drawer) links to the left so they don't cover the centered logo */
