@@ -38,7 +38,7 @@
   .hamburger {
     display: flex !important;
     position: absolute !important;
-    left: 8px !important; /* move closer to left edge */
+    right: calc(50% - 40px) !important; /* position next to third link */
     top: 50% !important;
     transform: translateY(-50%) !important;
   }
