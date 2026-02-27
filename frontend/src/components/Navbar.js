@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 const FloatingDropdown = ({ label, icon, children }) => (
   <div className="floating-dropdown">
     <span className="dropdown-label">{icon ? icon + ' ' : ''}{label}</span>
-    <div className="dropdown-content">{children}</div>
+    <div className="dropdown-content dropdown-open">{children}</div>
   </div>
 );
 
