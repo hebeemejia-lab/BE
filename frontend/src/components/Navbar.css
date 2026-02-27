@@ -188,6 +188,8 @@
     cursor: pointer !important;
   }
   
+  /* floating dropdown menu shared by FloatingDropdown component;
+     items pop out of whatever container they live in (bar or drawer) */
   .dropdown-menu {
     position: absolute !important;
     bottom: 85px !important;
@@ -251,6 +253,11 @@
   gap: 20px;
   height: 100%;
   width: 100%;
+}
+
+/* make container relative so we can position left links and right admin bar */
+.navbar-container {
+  position: relative;
 }
 
 .navbar-header {
@@ -351,6 +358,14 @@
   flex-direction: row;
   gap: 0;
   align-items: center;
+}
+
+/* position main (non-drawer) links to the left so they don't cover the centered logo */
+.navbar-links {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .nav-link {

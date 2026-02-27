@@ -68,6 +68,14 @@ export default function Navbar() {
           </Link>
         </div>
 
+        {/* Admin / Balance bar on top-right (visible on main bar) */}
+        {usuario && (
+          <div className="admin-bar">
+            {usuario.rol === 'admin' && <span className="admin-badge">Administrador</span>}
+            <span className="top-balance">Balance: {formatMoney(usuario?.saldo)}</span>
+          </div>
+        )}
+
         {usuario ? (
           <>
             <div className={`navbar-right ${menuOpen ? 'open' : ''}`}>
