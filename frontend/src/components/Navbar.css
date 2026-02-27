@@ -98,14 +98,14 @@
   }
   
   .user-info {
-    display: none !important;
+    display: flex !important;
   }
   
   .navbar-links {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: flex-start !important;
-    gap: 0 !important;
+    gap: 8px !important;
     width: auto !important;
     height: 80px !important;
     overflow-x: auto !important;
@@ -114,6 +114,8 @@
     padding: 0 8px !important;
     -ms-overflow-style: none !important;
     scrollbar-width: none !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
   /* Webkit browsers (Chrome, Safari, Edge) - Hide scrollbar for navbar-links */
