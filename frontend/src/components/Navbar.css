@@ -38,7 +38,7 @@
   .hamburger {
     display: flex !important;
     position: absolute !important;
-    right: calc(50% - 40px) !important; /* position next to third link */
+    left: calc(50% - 160px) !important; /* sit just left of Gastos Personales */
     top: 50% !important;
     transform: translateY(-50%) !important;
   }
