@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { CurrencyContext } from '../context/CurrencyContext';
@@ -8,6 +8,7 @@ export default function Navbar() {
   const { usuario, logout } = useContext(AuthContext);
   const { formatMoney } = useContext(CurrencyContext);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
   const [transactionsOpen, setTransactionsOpen] = useState(false);
   const [devMenuOpen, setDevMenuOpen] = useState(false);
   const [devMode, setDevMode] = useState(() => localStorage.getItem('adminSandboxMode') === 'true');
@@ -36,6 +37,19 @@ export default function Navbar() {
   const handleMenuClose = () => {
     setMenuOpen(false);
   };
+
+  // Close drawer automatically when switching to desktop viewport
+  useEffect(() => {
+    const onResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const toggleDevMode = () => {
     const nextValue = !devMode;
