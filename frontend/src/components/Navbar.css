@@ -120,6 +120,15 @@
     scrollbar-width: none !important;
   }
 
+  /* when hamburger is inside navbar-links, keep it inline and spaced */
+  .navbar-links .hamburger {
+    position: static !important;
+    margin: 0 8px !important;
+    padding: 6px !important;
+    align-self: center !important;
+    height: auto !important;
+  }
+
   /* Webkit browsers (Chrome, Safari, Edge) - Hide scrollbar for navbar-links */
   .navbar-links::-webkit-scrollbar {
     display: none !important;

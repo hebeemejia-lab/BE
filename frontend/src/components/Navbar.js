@@ -95,11 +95,6 @@ export default function Navbar() {
                   <img src="/imagen/BE (5) (1).png" alt="Retiros" className="nav-icon" />
                   Retiros
                 </Link>
-                <Link to="/gastos-personales" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
-                  <img src="/imagen/BE%20(23).png" alt="Gastos Personales" className="nav-icon" />
-                  Gestión de Gastos Personales
-                </Link>
-
                 {/* hamburger placed immediately to the left of 'Gestión de Gastos Personales' visually */}
                 {usuario && (
                   <button
@@ -110,6 +105,11 @@ export default function Navbar() {
                     <img src="/imagen/BE (17).png" alt="Menu" className="hamburger-icon" />
                   </button>
                 )}
+
+                <Link to="/gastos-personales" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
+                  <img src="/imagen/BE%20(23).png" alt="Gastos Personales" className="nav-icon" />
+                  Gestión de Gastos Personales
+                </Link>
 
                 {/* when drawer opens, reveal rest of menu items */}
                 {menuOpen && (
