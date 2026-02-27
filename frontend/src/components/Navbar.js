@@ -87,14 +87,16 @@ export default function Navbar() {
         {usuario ? (
           <>
             <div className={`navbar-right ${menuOpen ? 'open' : ''}`}>
-              <div className="user-info">
-                <span className="user-name">
-                  {usuario.nombre && usuario.apellido
-                    ? `${usuario.nombre} ${usuario.apellido}`
-                    : usuario.nombre || usuario.apellido || 'Usuario'}
-                </span>
-                <span className="user-balance">Balance: {formatMoney(usuario?.saldo)}</span>
-              </div>
+              {menuOpen && (
+                <div className="user-info">
+                  <span className="user-name">
+                    {usuario.nombre && usuario.apellido
+                      ? `${usuario.nombre} ${usuario.apellido}`
+                      : usuario.nombre || usuario.apellido || 'Usuario'}
+                  </span>
+                  <span className="user-balance">Balance: {formatMoney(usuario?.saldo)}</span>
+                </div>
+              )}
               
               <div className="navbar-links">
                 {/* only essential links shown when drawer is closed */}
