@@ -95,10 +95,7 @@ const Navbar = () => {
                       <button
                         type="button"
                         className="dropdown-item"
-                        onClick={() => {
-                          toggleDevMode();
-                          setDevMenuOpen(false);
-                        }}
+                        onClick={toggleDevMode}
                       >
                         {devMode ? 'Cambiar a LIVE' : 'Cambiar a DEV'}
                       </button>
