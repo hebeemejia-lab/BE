@@ -134,6 +134,7 @@
     display: none !important;
   }
   
+  /* mobile sizes (up to 768px) */
   .nav-link, .nav-button, .admin-link {
     font-size: 10px !important;
     padding: 6px 8px !important;
@@ -154,6 +155,18 @@
     box-shadow: none !important;
     transition: all 0.2s ease !important;
     white-space: nowrap !important;
+  }
+
+  @media (min-width: 769px) {
+    .nav-link, .nav-button, .admin-link {
+      font-size: 13px !important;
+      padding: 10px 15px !important;
+      border-radius: 4px !important;
+      min-width: 80px !important;
+      height: auto !important;
+      flex-direction: row !important;
+      gap: 8px !important;
+    }
   }
   
   .nav-link:hover, .nav-button:hover, .admin-link:hover,
