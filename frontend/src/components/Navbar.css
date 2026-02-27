@@ -31,7 +31,7 @@
   }
   
   .navbar-header {
-    display: none !important;
+    display: flex !important;
   }
   
   /* keep hamburger visible on mobile now that drawer lives on right */
@@ -85,10 +85,10 @@
 
   /* hide bottom bar when drawer active */
   .navbar.open {
-    bottom: auto !important;
+    bottom: 0 !important;
     top: 0 !important;
-    height: 0 !important;
-    overflow: hidden !important;
+    height: 80px !important;
+    overflow: visible !important;
   }
   
   /* Webkit browsers (Chrome, Safari, Edge) */
