@@ -1099,7 +1099,9 @@ const AdminPanel = () => {
           />
         )}
 
-        {vistaActual === 'retiros-efectivo' && (
+
+        {/* Solo el admin puede ver y usar la sección de retiros de balance */}
+        {vistaActual === 'retiros-efectivo' && usuario?.rol === 'admin' && (
           <RetirosEfectivoView
             sandboxMode={sandboxMode}
             onImprimirFacturaRetiro={imprimirFacturaRetiroPDF}
@@ -1108,7 +1110,8 @@ const AdminPanel = () => {
         )}
 
         {/* Préstamos */}
-        {vistaActual === 'prestamos' && (
+        {/* Solo el admin puede ver y usar la sección de solicitud de préstamos */}
+        {vistaActual === 'prestamos' && usuario?.rol === 'admin' && (
           <PrestamosView 
             prestamos={prestamos} 
             onRegistrarPago={registrarPago}
