@@ -8,6 +8,7 @@ import { CurrencyProvider } from './context/CurrencyContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import ChatBotFAQ from './components/ChatBotFAQ';
+import CurrencyCalculator from './pages/CurrencyCalculator';
 
 // Páginas
 import Home from './pages/Home';
@@ -31,6 +32,7 @@ import ActivosPasivos from './pages/ActivosPasivos';
 import EconomiaEmergente from './pages/EconomiaEmergente';
 import BeneficiosAhorro from './pages/BeneficiosAhorro';
 import Certificado from './pages/Certificado';
+import CurrencyCalculator from './pages/CurrencyCalculator';
 
 // Estilos
 import './styles/global.css';
@@ -185,7 +187,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
            <Route path="/cursos" element={<Cursos />} />
           <Route path="/seleccion-curso" element={<SeleccionCurso />} />
@@ -193,6 +194,7 @@ function App() {
            <Route path="/cursos/economia-emergente" element={<EconomiaEmergente />} />
            <Route path="/cursos/beneficios-ahorro" element={<BeneficiosAhorro />} />
            <Route path="/certificado" element={<Certificado />} />
+          <Route path="/currency-calculator" element={<ProtectedRoute><CurrencyCalculator /></ProtectedRoute>} />
           
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

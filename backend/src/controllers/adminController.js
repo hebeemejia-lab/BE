@@ -579,28 +579,40 @@ exports.registrarPagoCuota = async (req, res) => {
     await cuota.save();
     console.log('✅ Cuota guardada correctamente');
 
-    // Verificar si todas las cuotas están pagadas
-    const todasCuotas = await CuotaPrestamo.findAll({
-      where: { prestamoId: cuota.prestamoId }
-    });
-
-    const todasPagadas = todasCuotas.every(c => c.pagado);
-
-    if (todasPagadas) {
-      // Actualizar estado del préstamo a "pagado"
-      const prestamo = await Loan.findByPk(cuota.prestamoId);
-      if (prestamo) {
-        prestamo.estado = 'pagado';
-        await prestamo.save();
-        console.log('✅ Préstamo marcado como pagado');
+    // Actualizar saldo del usuario
+    const prestamo = await Loan.findByPk(cuota.prestamoId);
+    if (prestamo) {
+      const usuario = await User.findByPk(prestamo.usuarioId);
+      if (usuario) {
+        usuario.saldo = parseFloat(usuario.saldo || 0) - parseFloat(cuota.montoCuota || 0);
+        await usuario.save();
       }
+      // Actualizar saldo pendiente del préstamo
+      // Suponiendo que montoAprobado es el saldo inicial del préstamo
+      prestamo.montoAprobado = parseFloat(prestamo.montoAprobado || 0) - parseFloat(cuota.montoCuota || 0);
+      // Si todas las cuotas están pagadas, marcar préstamo como pagado
+      const todasCuotas = await CuotaPrestamo.findAll({ where: { prestamoId: cuota.prestamoId } });
+      const todasPagadas = todasCuotas.every(c => c.pagado);
+      if (todasPagadas) {
+        prestamo.estado = 'pagado';
+      }
+      await prestamo.save();
+    }
+
+    // Calcular saldo negativo con tasa de interés si aplica
+    let saldoNegativoConTasa = null;
+    if (prestamo && prestamo.montoAprobado < 0 && prestamo.tasaInteres) {
+      const tasa = parseFloat(prestamo.tasaInteres) / 100;
+      saldoNegativoConTasa = prestamo.montoAprobado + (prestamo.montoAprobado * tasa);
     }
 
     res.json({
       exito: true,
       mensaje: '✅ Pago registrado exitosamente',
       cuota,
-      prestamoCompletado: todasPagadas
+      prestamoCompletado: prestamo ? prestamo.estado === 'pagado' : false,
+      saldoPrestamoPendiente: prestamo ? prestamo.montoAprobado : null,
+      saldoNegativoConTasa
     });
   } catch (error) {
     console.error('❌ Error registrando pago:', error);

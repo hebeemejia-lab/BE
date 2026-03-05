@@ -1,3 +1,58 @@
+// Registrar retiro manual desde el panel de admin
+const registrarRetiroManualAdmin = async (req, res) => {
+  try {
+    const { usuarioId, monto, moneda, notas } = req.body;
+    const adminId = req.usuario?.id;
+    if (!usuarioId || !monto || !moneda) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'Faltan datos obligatorios (usuarioId, monto, moneda)'
+      });
+    }
+    const usuario = await User.findByPk(usuarioId);
+    if (!usuario) {
+      return res.status(404).json({
+        exito: false,
+        mensaje: 'Usuario no encontrado'
+      });
+    }
+    const saldoActual = parseFloat(usuario.saldo || 0);
+    const montoNumerico = parseFloat(monto);
+    if (montoNumerico > saldoActual) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'Saldo insuficiente para retiro',
+        saldoActual,
+        montoSolicitado: montoNumerico
+      });
+    }
+    usuario.saldo = saldoActual - montoNumerico;
+    await usuario.save();
+    // Registrar en Recarga como retiro manual
+    const retiro = await Recarga.create({
+      usuarioId,
+      monto: montoNumerico,
+      metodo: 'retiro_manual_admin',
+      estado: 'exitosa',
+      descripcion: notas || 'Retiro manual registrado por admin',
+      procesadoPor: adminId || null,
+      moneda
+    });
+    return res.json({
+      exito: true,
+      mensaje: 'Retiro manual registrado y saldo descontado',
+      retiro,
+      nuevoSaldo: parseFloat(usuario.saldo)
+    });
+  } catch (error) {
+    console.error('❌ Error registrando retiro manual admin:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al registrar retiro manual',
+      error: error.message
+    });
+  }
+};
 const Recarga = require('../models/Recarga');
 const BankAccount = require('../models/BankAccount');
 const User = require('../models/User');
@@ -57,6 +112,16 @@ const procesarRetiro = async (req, res) => {
 
     if (!cuenta) {
       return res.status(404).json({ mensaje: 'Cuenta bancaria no encontrada' });
+    }
+
+    // Solo permitir retiros automáticos si el saldo es de PayPal real
+    // Suponiendo que usuario.saldoPaypal indica el saldo real de PayPal
+    if (metodoRetiro !== 'transferencia_manual') {
+      if (!usuario.saldoPaypal || usuario.saldoPaypal < montoNumerico) {
+        return res.status(403).json({
+          mensaje: 'Solo puedes retirar saldo real de PayPal. Para otros retiros, contacta al admin.'
+        });
+      }
     }
 
     if (cuenta.estado !== 'verificada') {
@@ -409,4 +474,5 @@ module.exports = {
   obtenerEstadoSolicitudRetiro,
   aprobarSolicitudRetiroManual,
   rechazarSolicitudRetiroManual,
+  registrarRetiroManualAdmin,
 };

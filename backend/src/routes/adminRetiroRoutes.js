@@ -1,3 +1,4 @@
+const { registrarRetiroManualAdmin } = require('../controllers/retiroController');
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
@@ -24,5 +25,8 @@ router.post('/solicitudes-retiro/:solicitudId/aprobar', aprobarSolicitudRetiroMa
 
 // Rechazar solicitud de retiro
 router.post('/solicitudes-retiro/:solicitudId/rechazar', rechazarSolicitudRetiroManual);
+
+// Registrar retiro manual desde el panel de admin
+router.post('/registrar-retiro-manual', registrarRetiroManualAdmin);
 
 module.exports = router;

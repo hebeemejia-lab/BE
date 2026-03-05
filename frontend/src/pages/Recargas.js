@@ -1,3 +1,4 @@
+// eslint-disable-next-line react-hooks/exhaustive-deps
 import React, { useState, useEffect, useRef } from 'react';
 import GooglePayButton from '../components/GooglePayButton';
 import axios from 'axios';
