@@ -18,16 +18,51 @@ const registrarRetiroManualAdmin = async (req, res) => {
     }
     const saldoActual = parseFloat(usuario.saldo || 0);
     const montoNumerico = parseFloat(monto);
-    if (montoNumerico > saldoActual) {
+    let saldoRestante = montoNumerico;
+    let prestamosAfectados = [];
+
+    // Descontar primero del saldo positivo
+    if (saldoActual > 0) {
+      if (saldoActual >= saldoRestante) {
+        usuario.saldo = saldoActual - saldoRestante;
+        saldoRestante = 0;
+      } else {
+        usuario.saldo = 0;
+        saldoRestante -= saldoActual;
+      }
+      await usuario.save();
+    }
+
+    // Si aún queda saldo por descontar, descontar de préstamos negativos
+    if (saldoRestante > 0) {
+      const Loan = require('../models/Loan');
+      // Buscar préstamos activos con saldo negativo
+      const prestamosNegativos = await Loan.findAll({
+        where: { usuarioId, estado: 'aprobado' },
+        order: [['createdAt', 'ASC']]
+      });
+      for (const prestamo of prestamosNegativos) {
+        let saldoPrestamo = parseFloat(prestamo.montoAprobado || 0);
+        if (saldoPrestamo < 0) {
+          const aSumar = Math.min(saldoRestante, Math.abs(saldoPrestamo));
+          prestamo.montoAprobado = saldoPrestamo + aSumar;
+          saldoRestante -= aSumar;
+          await prestamo.save();
+          prestamosAfectados.push({ id: prestamo.id, nuevoSaldo: prestamo.montoAprobado });
+          if (saldoRestante <= 0) break;
+        }
+      }
+    }
+
+    if (saldoRestante > 0) {
       return res.status(400).json({
         exito: false,
-        mensaje: 'Saldo insuficiente para retiro',
+        mensaje: 'Saldo insuficiente para retiro (ni en saldo ni en préstamos negativos)',
         saldoActual,
         montoSolicitado: montoNumerico
       });
     }
-    usuario.saldo = saldoActual - montoNumerico;
-    await usuario.save();
+
     // Registrar en Recarga como retiro manual
     const retiro = await Recarga.create({
       usuarioId,
@@ -42,7 +77,8 @@ const registrarRetiroManualAdmin = async (req, res) => {
       exito: true,
       mensaje: 'Retiro manual registrado y saldo descontado',
       retiro,
-      nuevoSaldo: parseFloat(usuario.saldo)
+      nuevoSaldo: parseFloat(usuario.saldo),
+      prestamosAfectados
     });
   } catch (error) {
     console.error('❌ Error registrando retiro manual admin:', error);

@@ -579,17 +579,22 @@ exports.registrarPagoCuota = async (req, res) => {
     await cuota.save();
     console.log('✅ Cuota guardada correctamente');
 
-    // Actualizar saldo del usuario
+    // Actualizar saldo del usuario y préstamo
     const prestamo = await Loan.findByPk(cuota.prestamoId);
     if (prestamo) {
       const usuario = await User.findByPk(prestamo.usuarioId);
+      const montoPago = parseFloat(cuota.montoCuota || 0);
       if (usuario) {
-        usuario.saldo = parseFloat(usuario.saldo || 0) - parseFloat(cuota.montoCuota || 0);
+        usuario.saldo = parseFloat(usuario.saldo || 0) - montoPago;
         await usuario.save();
       }
-      // Actualizar saldo pendiente del préstamo
-      // Suponiendo que montoAprobado es el saldo inicial del préstamo
-      prestamo.montoAprobado = parseFloat(prestamo.montoAprobado || 0) - parseFloat(cuota.montoCuota || 0);
+      // Si el préstamo está en negativo, sumar el pago al saldo negativo (acercando a 0)
+      let saldoPrestamo = parseFloat(prestamo.montoAprobado || 0);
+      if (saldoPrestamo < 0) {
+        prestamo.montoAprobado = saldoPrestamo + montoPago;
+      } else {
+        prestamo.montoAprobado = saldoPrestamo - montoPago;
+      }
       // Si todas las cuotas están pagadas, marcar préstamo como pagado
       const todasCuotas = await CuotaPrestamo.findAll({ where: { prestamoId: cuota.prestamoId } });
       const todasPagadas = todasCuotas.every(c => c.pagado);
