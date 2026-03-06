@@ -4,6 +4,7 @@ import { toJpeg } from 'html-to-image';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import './AdminPanel.css';
+import { retiroAPI } from '../services/api';
 import EstadoCuentaPanel from '../components/EstadoCuentaPanel';
 import AnalisisInversiones from '../components/AnalisisInversiones';
 import CurrencySelector from '../components/CurrencySelector';
@@ -1103,14 +1104,7 @@ const AdminPanel = () => {
         )}
 
 
-        {/* Solo el admin puede ver y usar la sección de retiros de balance */}
-        {vistaActual === 'retiros-efectivo' && usuario?.rol === 'admin' && (
-          <RetirosEfectivoView
-            sandboxMode={sandboxMode}
-            onImprimirFacturaRetiro={imprimirFacturaRetiroPDF}
-            onDescargarFacturaRetiro={descargarFacturaRetiroJpg}
-          />
-        )}
+        {/* Sección de retiros de balance deshabilitada temporalmente por falta de componente RetirosEfectivoView */}
 
         {/* Préstamos */}
         {/* Solo el admin puede ver y usar la sección de solicitud de préstamos */}
