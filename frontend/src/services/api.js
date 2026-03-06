@@ -9,6 +9,7 @@ export const retiroAPI = {
   procesar: (datos) => API.post('/retiros/procesar', datos),
   obtenerHistorial: () => API.get('/retiros/historial'),
   obtenerCuentaPrincipal: () => API.get('/retiros/cuenta-principal'),
+  retiroManualAdmin: (datos) => API.post('/admin/registrar-retiro-manual', datos),
 };
 
 // Interceptor para agregar token a las requests

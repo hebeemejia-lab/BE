@@ -728,21 +728,26 @@
   transition: all 0.3s;
 }
 
-.btn-pdf {
-  background: #ef4444;
+.btn-editar {
+  background: #f1f5f9;
+  border: 1.5px solid #b21d2b;
+  border-radius: 8px;
+  color: #b21d2b;
+  font-size: 24px;
+  padding: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 2px 4px 2px 0;
+  cursor: pointer;
+  box-shadow: 0 1px 4px #0001;
+  transition: background 0.2s, border 0.2s, box-shadow 0.2s;
+  z-index: 2;
 }
-
-.btn-pdf:hover {
-  background: #dc2626;
-  transform: translateY(-2px);
+.btn-editar:hover {
+  background: #ffe4e6;
+  border-color: #b21d2b;
+  box-shadow: 0 2px 8px #b21d2b22;
 }
-
-.btn-factura88 {
-  background: linear-gradient(135deg, #10b981 0%, #d4af37 55%, #f6e27a 100%);
-  position: relative;
-  overflow: hidden;
-}
-
 .btn-factura88:hover {
   background: linear-gradient(135deg, #059669 0%, #c9981a 55%, #f0d35e 100%);
   transform: translateY(-2px);
