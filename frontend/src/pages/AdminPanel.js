@@ -82,6 +82,7 @@ const AdminPanel = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const puedeVerEstadoMercantil = usuario?.rol === 'admin';
+  const esAdmin = usuario?.rol === 'admin';
 
   const rutasAdmin = {
     dashboard: '/admin',
@@ -940,10 +941,12 @@ const AdminPanel = () => {
             className={vistaActual === 'retiros-efectivo' ? 'active' : ''}
             onClick={() => navegarAdmin(rutasAdmin.retiros)}
           >🧾 Retiros en efectivo</button>
-          <button 
-            className={vistaActual === 'prestamos' ? 'active' : ''}
-            onClick={() => navegarAdmin(rutasAdmin.prestamos)}
-          >💰 Gestión Préstamos</button>
+          {esAdmin && (
+            <button 
+              className={vistaActual === 'prestamos' ? 'active' : ''}
+              onClick={() => navegarAdmin(rutasAdmin.prestamos)}
+            >💰 Gestión Préstamos</button>
+          )}
           <button 
             className={vistaActual === 'clientes' ? 'active' : ''}
             onClick={() => navegarAdmin(rutasAdmin.clientes)}
