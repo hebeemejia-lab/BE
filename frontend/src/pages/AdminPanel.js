@@ -1801,17 +1801,16 @@ const RetirosEfectivoView = ({ sandboxMode, onImprimirFacturaRetiro, onDescargar
         </form>
         <p style={{fontSize: 13, color: '#64748b', marginTop: 8}}>
           El retiro se descuenta primero del saldo y luego de préstamos negativos.
-        </p>
-      </div>
+        </div>
+        <button type="submit" className="btn-crear" disabled={cargando}>
+          {cargando ? 'Procesando...' : 'Registrar deposito'}
+        </button>
+      </form>
+    </div>
+  );
+};
 
-      <div className="retiros-filtros">
-        {['pendiente', 'aprobada', 'rechazada', 'procesada'].map((estado) => (
-          <button
-            key={estado}
-            type="button"
-            className={filtro === estado ? 'active' : ''}
-            onClick={() => setFiltro(estado)}
-          >
+const RetirosEfectivoView = ({ sandboxMode, onImprimirFacturaRetiro, onDescargarFacturaRetiro }) => {
             {estado}
           </button>
         ))}
