@@ -138,10 +138,7 @@ export default function Navbar() {
                   )}
                 </div>
                 
-                <Link to="/prestamos" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
-                  <img src="/imagen/BE (15).png" alt="Préstamos" className="nav-icon" />
-                  Préstamos
-                </Link>
+
                 
                 {(usuario.rol === 'admin' || usuario.rol === 'admin_lite') && (
                   <Link to="/admin" className="nav-link admin-link" onClick={handleMenuClose}>⚙️ Panel de Control</Link>
