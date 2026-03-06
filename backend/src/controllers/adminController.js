@@ -127,10 +127,22 @@ exports.listarUsuarios = async (req, res) => {
       order: [['createdAt', 'DESC']]
     });
 
+    // Para cada usuario, buscar el préstamo activo (aprobado) más reciente y exponer montoAprobado como saldoNegativo
+    const usuariosConNegativo = await Promise.all(usuarios.map(async (u) => {
+      const prestamoActivo = await Loan.findOne({
+        where: { usuarioId: u.id, estado: 'aprobado' },
+        order: [['createdAt', 'DESC']]
+      });
+      return {
+        ...u.toJSON(),
+        saldoNegativo: prestamoActivo ? parseFloat(prestamoActivo.montoAprobado) : ''
+      };
+    }));
+
     res.json({
       exito: true,
-      total: usuarios.length,
-      usuarios
+      total: usuariosConNegativo.length,
+      usuarios: usuariosConNegativo
     });
   } catch (error) {
     console.error('❌ Error listando usuarios:', error);
@@ -211,7 +223,7 @@ exports.crearUsuarioAdmin = async (req, res) => {
 exports.actualizarUsuarioAdmin = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, apellido, email, cedula, telefono, direccion, saldo, emailVerificado } = req.body;
+    const { nombre, apellido, email, cedula, telefono, direccion, saldo, saldoNegativo, emailVerificado } = req.body;
 
     const usuario = await User.findByPk(id);
     if (!usuario) {
@@ -258,7 +270,20 @@ exports.actualizarUsuarioAdmin = async (req, res) => {
     if (saldo !== undefined) usuario.saldo = parseFloat(saldo);
     if (emailVerificado !== undefined) usuario.emailVerificado = emailVerificado;
 
+
     await usuario.save();
+
+    // Si se envía saldoNegativo, actualizar el préstamo activo (aprobado) más reciente
+    if (saldoNegativo !== undefined && saldoNegativo !== null && saldoNegativo !== '') {
+      const prestamoActivo = await Loan.findOne({
+        where: { usuarioId: usuario.id, estado: 'aprobado' },
+        order: [['createdAt', 'DESC']]
+      });
+      if (prestamoActivo) {
+        prestamoActivo.montoAprobado = parseFloat(saldoNegativo);
+        await prestamoActivo.save();
+      }
+    }
 
     res.json({
       exito: true,

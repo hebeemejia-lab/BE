@@ -695,7 +695,7 @@ const AdminPanel = () => {
             <h2 style="margin: 0; color: #0f1b3d;">BE</h2>
             <p style="margin: 4px 0 0; color: #64748b;">Factura de Retiro</p>
           </div>
-          <img src="${logoUrl}" alt="BE" style="width: 72px; height: 72px; object-fit: contain;" />
+          <img src="${logoUrl}" alt="BE" style="width:72px;height:72px;object-fit:contain;" />
         </div>
         <div style="margin-top: 24px; padding: 18px; border-radius: 16px; background: linear-gradient(140deg, #0f1b3d 0%, #b21d2b 120%); color: #f8fafc;">
           <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Retiro ID</div>
@@ -1323,6 +1323,7 @@ const ClientesView = ({ usuarios, cargando, onCrearUsuario }) => {
       telefono: usuario.telefono,
       direccion: usuario.direccion,
       saldo: usuario.saldo,
+      saldoNegativo: usuario.saldoNegativo || '',
       emailVerificado: usuario.emailVerificado
     });
   };
@@ -1504,7 +1505,21 @@ const ClientesView = ({ usuarios, cargando, onCrearUsuario }) => {
                               value={formEditar.saldo}
                               onChange={(e) => setFormEditar({ ...formEditar, saldo: e.target.value })}
                               className="input-editar"
+                              style={{ minWidth: 80 }}
                             />
+                            {u.saldoNegativo !== '' && (
+                              <div style={{ fontSize: 12, color: '#b21d2b', marginTop: 2 }}>
+                                <span>Negativo: </span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={formEditar.saldoNegativo}
+                                  onChange={(e) => setFormEditar({ ...formEditar, saldoNegativo: e.target.value })}
+                                  className="input-editar"
+                                  style={{ minWidth: 80 }}
+                                />
+                              </div>
+                            )}
                           </td>
                           <td>
                             <input
@@ -1513,7 +1528,7 @@ const ClientesView = ({ usuarios, cargando, onCrearUsuario }) => {
                               onChange={(e) => setFormEditar({ ...formEditar, emailVerificado: e.target.checked })}
                             />
                           </td>
-                          <td>
+                          <td style={{ minWidth: 120 }}>
                             <button
                               onClick={() => handleActualizar(u.id)}
                               className="btn-guardar"
@@ -1537,17 +1552,25 @@ const ClientesView = ({ usuarios, cargando, onCrearUsuario }) => {
                           <td>{u.email}</td>
                           <td>{u.cedula}</td>
                           <td>{u.telefono}</td>
-                          <td>${parseFloat(u.saldo || 0).toFixed(2)}</td>
+                          <td>
+                            ${parseFloat(u.saldo || 0).toFixed(2)}
+                            {u.saldoNegativo !== '' && (
+                              <div style={{ fontSize: 12, color: '#b21d2b', marginTop: 2 }}>
+                                Negativo: <strong>${parseFloat(u.saldoNegativo).toFixed(2)}</strong>
+                              </div>
+                            )}
+                          </td>
                           <td>
                             <span className={u.emailVerificado ? 'badge-verificado' : 'badge-pendiente'}>
                               {u.emailVerificado ? '✓ Verificado' : '⏳ Pendiente'}
                             </span>
                           </td>
-                          <td>
+                          <td style={{ minWidth: 120 }}>
                             <button
                               onClick={() => handleEditar(u)}
-                              className="btn-editar"
+                              className="btn-editar btn-editar-grande"
                               title="Editar"
+                              style={{ fontSize: 24, minWidth: 44, minHeight: 44, padding: 8, margin: 2, cursor: 'pointer', background: '#f1f5f9', border: '2px solid #b21d2b', borderRadius: 8, color: '#b21d2b', boxShadow: '0 1px 4px #0001', zIndex: 2 }}
                             >
                               ✏️
                             </button>
@@ -1643,10 +1666,14 @@ const DepositosEfectivoView = ({ usuarios, cargando, onActualizarSaldo }) => {
   );
 };
 
+import { retiroAPI } from '../services/api';
 const RetirosEfectivoView = ({ sandboxMode, onImprimirFacturaRetiro, onDescargarFacturaRetiro }) => {
   const [solicitudes, setSolicitudes] = useState([]);
   const [filtro, setFiltro] = useState('pendiente');
   const [cargando, setCargando] = useState(false);
+  const [usuarios, setUsuarios] = useState([]);
+  const [form, setForm] = useState({ usuarioId: '', monto: '', moneda: 'DOP', notas: '' });
+  const [procesando, setProcesando] = useState(false);
 
   useEffect(() => {
     const cargarSolicitudes = async () => {
@@ -1661,9 +1688,21 @@ const RetirosEfectivoView = ({ sandboxMode, onImprimirFacturaRetiro, onDescargar
         setCargando(false);
       }
     };
-
     cargarSolicitudes();
   }, [filtro]);
+
+  useEffect(() => {
+    // Cargar usuarios para el select
+    const cargarUsuarios = async () => {
+      try {
+        const res = await api.get('/admin/usuarios');
+        setUsuarios(res.data.usuarios || []);
+      } catch (e) {
+        setUsuarios([]);
+      }
+    };
+    cargarUsuarios();
+  }, []);
 
   const aprobarSolicitud = async (solicitudId) => {
     if (!window.confirm('Aprobar este retiro?')) return;
@@ -1690,15 +1729,80 @@ const RetirosEfectivoView = ({ sandboxMode, onImprimirFacturaRetiro, onDescargar
     }
   };
 
+  const handleRetiroManual = async (e) => {
+    e.preventDefault();
+    if (!form.usuarioId || !form.monto || !form.moneda) {
+      alert('Completa todos los campos obligatorios');
+      return;
+    }
+    setProcesando(true);
+    try {
+      const res = await retiroAPI.retiroManualAdmin(form);
+      alert(res.data.mensaje || 'Retiro realizado');
+      setForm({ usuarioId: '', monto: '', moneda: 'DOP', notas: '' });
+      setFiltro('pendiente'); // refresca solicitudes
+    } catch (err) {
+      alert(err.response?.data?.mensaje || 'Error al registrar retiro');
+    } finally {
+      setProcesando(false);
+    }
+  };
+
   return (
     <div className="retiros-view">
-    <h1>🧾 Gestion de Retiros de Balance</h1>
-    <p className="view-subtitle">Aprueba o rechaza retiros de saldo solicitados por clientes.</p>
+      <h1>🧾 Gestion de Retiros de Balance</h1>
+      <p className="view-subtitle">Aprueba o rechaza retiros de saldo solicitados por clientes o realiza un retiro manual.</p>
       {sandboxMode && (
         <div className="sandbox-note">
           Sandbox activo: usa este panel para pruebas sin tocar configuracion real.
         </div>
       )}
+
+      {/* Formulario de retiro manual admin */}
+      <div className="retiro-manual-admin" style={{marginBottom: 32, border: '1px solid #e2e8f0', borderRadius: 12, padding: 16, background: '#f8fafc'}}>
+        <h3>Retiro manual (admin)</h3>
+        <form className="movimiento-form" onSubmit={handleRetiroManual}>
+          <select
+            value={form.usuarioId}
+            onChange={e => setForm({ ...form, usuarioId: e.target.value })}
+            required
+          >
+            <option value="">Selecciona usuario</option>
+            {usuarios.map(u => (
+              <option key={u.id} value={u.id}>{u.nombre} {u.apellido} - {u.email}</option>
+            ))}
+          </select>
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Monto a retirar"
+            value={form.monto}
+            onChange={e => setForm({ ...form, monto: e.target.value })}
+            required
+          />
+          <select
+            value={form.moneda}
+            onChange={e => setForm({ ...form, moneda: e.target.value })}
+            required
+          >
+            <option value="DOP">DOP</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+          <input
+            type="text"
+            placeholder="Notas internas (opcional)"
+            value={form.notas}
+            onChange={e => setForm({ ...form, notas: e.target.value })}
+          />
+          <button type="submit" className="btn-crear" disabled={procesando}>
+            {procesando ? 'Procesando...' : 'Retirar saldo/préstamo'}
+          </button>
+        </form>
+        <p style={{fontSize: 13, color: '#64748b', marginTop: 8}}>
+          El retiro se descuenta primero del saldo y luego de préstamos negativos.
+        </p>
+      </div>
 
       <div className="retiros-filtros">
         {['pendiente', 'aprobada', 'rechazada', 'procesada'].map((estado) => (
