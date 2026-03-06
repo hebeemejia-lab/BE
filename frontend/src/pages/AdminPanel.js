@@ -8,7 +8,7 @@ import EstadoCuentaPanel from '../components/EstadoCuentaPanel';
 import AnalisisInversiones from '../components/AnalisisInversiones';
 import CurrencySelector from '../components/CurrencySelector';
 import './CurrencyCalculator.css';
-import CurrencyCalculator from '../components/CurrencyCalculator';
+import CurrencyCalculator from './CurrencyCalculator.jsx';
 
 const descargarImagenDesdeHtml = async (html, nombreArchivo) => {
   const wrapper = document.createElement('div');
