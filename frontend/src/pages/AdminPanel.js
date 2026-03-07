@@ -1581,7 +1581,7 @@ const ClientesView = ({ usuarios, cargando, onCrearUsuario }) => {
                             ${parseFloat(u.saldo || 0).toFixed(2)}
                             {u.capitalPrestamo !== '' && (
                               <div style={{ fontSize: 12, color: '#0f1b3d', marginTop: 2 }}>
-                                Depósitos + préstamos: <strong>${parseFloat(u.saldo || 0 + u.capitalPrestamo).toFixed(2)}</strong>
+                                Depósitos + préstamos: <strong>{(parseFloat(u.saldo || 0) + parseFloat(u.capitalPrestamo || 0)).toFixed(2)}</strong>
                               </div>
                             )}
                             {u.saldoNegativo !== '' && (
