@@ -35,8 +35,22 @@ const EstadoCuentaUsuario = ({ usuario }) => {
 
   const handleImprimir = () => {
     const printContents = cuentaRef.current.innerHTML;
+    const styles = `
+      <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; color: #222; background: #fff; margin: 0; padding: 32px; }
+        h2 { color: #0f1b3d; font-weight: 700; font-size: 28px; margin: 0 0 8px 0; }
+        .estado-header { display: flex; align-items: center; gap: 16px; }
+        .estado-user { color: #64748b; font-size: 16px; margin: 8px 0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 15px; }
+        th, td { padding: 10px; border: 1px solid #e2e8f0; }
+        thead tr { background: #f8fafc; color: #0f1b3d; }
+        tr:nth-child(even) { background: #f6f8fa; }
+        .estado-panel { background: #fff; padding: 32px; border-radius: 18px; box-shadow: 0 4px 24px #e2e8f0; border: 1.5px solid #e2e8f0; min-width: 320px; }
+        .estado-logo { width: 60px; height: 60px; border-radius: 50%; box-shadow: 0 2px 8px #eee; }
+      </style>
+    `;
     const win = window.open('', '', 'height=700,width=900');
-    win.document.write('<html><head><title>Estado de cuenta</title></head><body>' + printContents + '</body></html>');
+    win.document.write('<html><head><title>Estado de cuenta</title>' + styles + '</head><body>' + printContents + '</body></html>');
     win.document.close();
     win.print();
   };
@@ -131,12 +145,12 @@ const EstadoCuentaUsuario = ({ usuario }) => {
                 estado: t.estado
               })),
             ].map((row, idx) => (
-              <tr key={idx} style={{ background: idx % 2 === 0 ? '#f8fafc' : '#fff' }}>
-                <td style={{ padding: 8, border: '1px solid #e2e8f0' }}>{row.fecha}</td>
-                <td style={{ padding: 8, border: '1px solid #e2e8f0' }}>{row.tipo}</td>
-                <td style={{ padding: 8, border: '1px solid #e2e8f0', fontWeight: 600 }}>{row.monto}</td>
-                <td style={{ padding: 8, border: '1px solid #e2e8f0' }}>{row.detalle}</td>
-                <td style={{ padding: 8, border: '1px solid #e2e8f0' }}>{row.estado}</td>
+              <tr key={idx}>
+                <td>{row.fecha}</td>
+                <td>{row.tipo}</td>
+                <td style={{ fontWeight: 600 }}>{row.monto}</td>
+                <td>{row.detalle}</td>
+                <td>{row.estado}</td>
               </tr>
             ))}
           </tbody>
