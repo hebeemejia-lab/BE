@@ -1,6 +1,7 @@
 import React, { useState, useContext, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { bankAccountAPI, retiroAPI } from '../services/api';
+import API from '../services/api';
 import './Retiros.css';
 
 export default function Retiros() {
