@@ -133,9 +133,18 @@ exports.listarUsuarios = async (req, res) => {
         where: { usuarioId: u.id, estado: 'aprobado' },
         order: [['createdAt', 'DESC']]
       });
+      let saldoNegativo = '';
+      let capitalPrestamo = '';
+      if (prestamoActivo) {
+        const capital = parseFloat(prestamoActivo.montoAprobado);
+        const interes = parseFloat(prestamoActivo.interes || 0);
+        saldoNegativo = capital + interes;
+        capitalPrestamo = capital;
+      }
       return {
         ...u.toJSON(),
-        saldoNegativo: prestamoActivo ? parseFloat(prestamoActivo.montoAprobado) : ''
+        saldoNegativo,
+        capitalPrestamo
       };
     }));
 
@@ -458,11 +467,12 @@ exports.crearPrestamoAdmin = async (req, res) => {
       return res.status(404).json({ exito: false, mensaje: 'Usuario no encontrado' });
     }
 
+    const interesFijo = Number(req.body.interes) || 0;
     const prestamo = await Loan.create({
       usuarioId: usuario.id,
       montoSolicitado: montoNumero,
-      montoAprobado: montoNumero,
-      tasaInteres: tasaNumero,
+      montoAprobado: montoNumero + interesFijo,
+      interes: interesFijo,
       plazo: plazoNumero,
       estado: 'aprobado',
       bancoDespositante: process.env.BANCO_NOMBRE,

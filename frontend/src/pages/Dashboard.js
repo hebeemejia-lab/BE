@@ -108,7 +108,8 @@ export default function Dashboard() {
     return sum + (Number.isFinite(monto) ? monto : 0);
   }, 0);
 
-  const saldoDisponible = (Number(usuario?.saldo) || 0) + saldoPrestamos;
+  // Solo mostrar saldo de depósitos en Dashboard
+  const saldoDepositos = Number(usuario?.saldo) || 0;
   const simboloDop = getCurrencySymbol('DOP');
   const simboloUsd = getCurrencySymbol('USD');
 
@@ -123,9 +124,9 @@ export default function Dashboard() {
         <div className="overview-card highlight">
           <div className="overview-label">Depositos + prestamos</div>
           <div className="overview-amount">
-            {simboloDop}{formatMoney(saldoDisponible)}
+            {simboloDop}{formatMoney(saldoDepositos)}
           </div>
-          <div className="overview-meta">Disponible para uso interno</div>
+          <div className="overview-meta">Saldo de depósitos disponible</div>
         </div>
         <div className="overview-card debt">
           <div className="overview-label">Prestamos en negativo</div>

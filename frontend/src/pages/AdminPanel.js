@@ -351,8 +351,8 @@ const AdminPanel = () => {
             <span>${prestamo.plazo} cuotas</span>
           </div>
           <div class="info-row">
-            <span><strong>Tasa:</strong></span>
-            <span>${prestamo.tasaInteres}%</span>
+            <span><strong>Interés pactado:</strong></span>
+            <span>${prestamo.interes ? `$${parseFloat(prestamo.interes).toFixed(2)}` : 'N/A'}</span>
           </div>
         </div>
         
@@ -402,7 +402,7 @@ const AdminPanel = () => {
         <div style="margin-top: 20px; background: white; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
           <div style="font-size: 12px; color: #64748b;">Monto del prestamo</div>
           <div style="font-size: 32px; font-weight: 700; color: #0f1b3d;">RD$ ${monto}</div>
-          <div style="font-size: 13px; color: #64748b;">Tasa: ${prestamo.tasaInteres}%</div>
+          <div style="font-size: 13px; color: #64748b;">Interés pactado: ${prestamo.interes ? `$${parseFloat(prestamo.interes).toFixed(2)}` : 'N/A'}</div>
         </div>
         <div style="margin-top: 24px; text-align: center; font-size: 12px; color: #94a3b8;">Documento generado por Banco Exclusivo</div>
       </div>
@@ -453,8 +453,8 @@ const AdminPanel = () => {
           <span>${prestamo.plazo}</span>
         </div>
         <div class="row">
-          <span>Tasa:</span>
-          <span>${prestamo.tasaInteres}%</span>
+          <span>Interés pactado:</span>
+          <span>${prestamo.interes ? `$${parseFloat(prestamo.interes).toFixed(2)}` : 'N/A'}</span>
         </div>
         <div class="line"></div>
         <div class="row total">
@@ -1579,6 +1579,11 @@ const ClientesView = ({ usuarios, cargando, onCrearUsuario }) => {
                           <td>{u.telefono}</td>
                           <td>
                             ${parseFloat(u.saldo || 0).toFixed(2)}
+                            {u.capitalPrestamo !== '' && (
+                              <div style={{ fontSize: 12, color: '#0f1b3d', marginTop: 2 }}>
+                                Depósitos + préstamos: <strong>${parseFloat(u.saldo || 0 + u.capitalPrestamo).toFixed(2)}</strong>
+                              </div>
+                            )}
                             {u.saldoNegativo !== '' && (
                               <div style={{ fontSize: 12, color: '#b21d2b', marginTop: 2 }}>
                                 Negativo: <strong>${parseFloat(u.saldoNegativo).toFixed(2)}</strong>
@@ -1701,7 +1706,7 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
     usuarioId: '',
     monto: '',
     plazo: '',
-    tasaInteres: '5',
+    interes: '',
     fechaPrimerVencimiento: ''
   });
   const [creandoPrestamo, setCreandoPrestamo] = useState(false);
@@ -1715,14 +1720,14 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
       usuarioId: nuevoPrestamo.usuarioId,
       monto: nuevoPrestamo.monto,
       plazo: nuevoPrestamo.plazo,
-      tasaInteres: nuevoPrestamo.tasaInteres,
+      interes: nuevoPrestamo.interes,
       fechaPrimerVencimiento: nuevoPrestamo.fechaPrimerVencimiento || null
     });
     setNuevoPrestamo({
       usuarioId: '',
       monto: '',
       plazo: '',
-      tasaInteres: '5',
+      interes: '',
       fechaPrimerVencimiento: ''
     });
     setCreandoPrestamo(false);
@@ -1807,9 +1812,10 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
           <input
             type="number"
             step="0.01"
-            placeholder="Tasa (%)"
-            value={nuevoPrestamo.tasaInteres}
-            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, tasaInteres: e.target.value })}
+            placeholder="Interés (monto)"
+            value={nuevoPrestamo.interes}
+            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, interes: e.target.value })}
+            required
           />
           <input
             type="date"
@@ -1875,6 +1881,7 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
         </div>
         <div className="prestamo-monto">
           <span className="monto">${parseFloat(prestamo.montoAprobado || prestamo.montoSolicitado).toFixed(2)}</span>
+          <span className="interes">Interés: {prestamo.interes ? `$${parseFloat(prestamo.interes).toFixed(2)}` : 'N/A'}</span>
           <span className="estado">{prestamo.estado}</span>
         </div>
       </div>

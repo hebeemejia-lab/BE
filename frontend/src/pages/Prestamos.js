@@ -33,31 +33,10 @@ export default function Prestamos() {
     return cuota.toFixed(2);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    setLoading(true);
-
-    try {
-      await loanAPI.solicitar({
-        montoSolicitado: parseFloat(monto),
-        plazo: parseInt(plazo),
-      });
-
-      setSuccess('Solicitud de préstamo enviada exitosamente');
-      setMonto('');
-      setPlazo('12');
-      cargarPrestamos();
-    } catch (err) {
-      setError(err.response?.data?.mensaje || 'Error en la solicitud');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="prestamos-container">
+      {/* Sección de solicitud de préstamo eliminada */}
       <div className="prestamos-header">
         <h1>Solicitar Préstamo</h1>
         <p>Obtén el crédito que necesitas con tasas justas</p>
