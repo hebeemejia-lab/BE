@@ -617,7 +617,9 @@ exports.registrarPagoCuota = async (req, res) => {
       // Solo modificar el saldo del préstamo si está en negativo
       let saldoPrestamo = parseFloat(prestamo.montoAprobado || 0);
       if (saldoPrestamo < 0) {
-        prestamo.montoAprobado = saldoPrestamo + montoPago;
+        let nuevoSaldo = saldoPrestamo + montoPago;
+        // Si el pago excede el saldo negativo, dejarlo en 0
+        prestamo.montoAprobado = nuevoSaldo > 0 ? 0 : nuevoSaldo;
       }
       // Si el préstamo no es negativo, no modificar montoAprobado
       // Si todas las cuotas están pagadas, marcar préstamo como pagado
