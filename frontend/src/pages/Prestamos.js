@@ -22,35 +22,31 @@ export default function Prestamos() {
 
   return (
     <div className="prestamos-container">
-
       {/* Sección de solicitud de préstamo eliminada */}
-
-        <div className="loan-info-card">
-          <div className="info-section">
-            <h3>Ventajas</h3>
-            <ul>
-              <li>✓ Aprobación en 24 horas</li>
-              <li>✓ Tasas desde 5% anual</li>
-              <li>✓ Plazo flexible de 6 a 60 meses</li>
-              <li>✓ Sin requisitos adicionales</li>
-              <li>✓ Desembolso inmediato</li>
-            </ul>
-          </div>
-
-          {prestamos.length > 0 && (
-            <div className="info-section">
-              <h3>Mis Solicitudes</h3>
-              <div className="loan-list-small">
-                {prestamos.slice(0, 3).map((loan) => (
-                  <div key={loan._id} className={`loan-badge ${loan.estado}`}>
-                    <span className="badge-amount">${loan.montoSolicitado}</span>
-                    <span className="badge-status">{loan.estado}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+      <div className="loan-info-card">
+        <div className="info-section">
+          <h3>Ventajas</h3>
+          <ul>
+            <li>✓ Aprobación en 24 horas</li>
+            <li>✓ Tasas desde 5% anual</li>
+            <li>✓ Plazo flexible de 6 a 60 meses</li>
+            <li>✓ Sin requisitos adicionales</li>
+            <li>✓ Desembolso inmediato</li>
+          </ul>
         </div>
+        {prestamos.length > 0 && (
+          <div className="info-section">
+            <h3>Mis Solicitudes</h3>
+            <div className="loan-list-small">
+              {prestamos.slice(0, 3).map((loan) => (
+                <div key={loan._id} className={`loan-badge ${loan.estado}`}>
+                  <span className="badge-amount">${loan.montoSolicitado}</span>
+                  <span className="badge-status">{loan.estado}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {prestamos.length > 0 && (
