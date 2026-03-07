@@ -1357,19 +1357,41 @@ const ClientesView = ({ usuarios, cargando, onCrearUsuario }) => {
     }
   };
 
+
+  // Opciones para el dropdown
+  const opcionesDropdown = [
+    { value: '', label: 'Selecciona una opción' },
+    { value: 'ver', label: 'Ver usuarios' },
+    { value: 'crear', label: 'Crear usuario' },
+    { value: 'exportar', label: 'Exportar usuarios' },
+    // Agrega más opciones según necesidad
+  ];
+  const [opcionSeleccionada, setOpcionSeleccionada] = useState('');
+
   return (
     <div className="clientes-view">
       <h1>👤 Gestión de Clientes</h1>
 
-      <div className="clientes-toggle">
-        <button
-          type="button"
-          className={`clientes-toggle-btn ${crearAbierto ? 'open' : ''}`}
-          onClick={() => setCrearAbierto((prev) => !prev)}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+        <div className="clientes-toggle">
+          <button
+            type="button"
+            className={`clientes-toggle-btn ${crearAbierto ? 'open' : ''}`}
+            onClick={() => setCrearAbierto((prev) => !prev)}
+          >
+            Gestion de usuarios
+            <span className="clientes-toggle-icon">{crearAbierto ? '−' : '+'}</span>
+          </button>
+        </div>
+        <select
+          value={opcionSeleccionada}
+          onChange={e => setOpcionSeleccionada(e.target.value)}
+          style={{ padding: 8, borderRadius: 6, border: '1px solid #b21d2b', minWidth: 180 }}
         >
-          Gestion de usuarios
-          <span className="clientes-toggle-icon">{crearAbierto ? '−' : '+'}</span>
-        </button>
+          {opcionesDropdown.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
       </div>
 
       <div className={`cliente-crear ${crearAbierto ? 'open' : 'collapsed'}`}>
