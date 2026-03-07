@@ -471,7 +471,7 @@ exports.crearPrestamoAdmin = async (req, res) => {
     const prestamo = await Loan.create({
       usuarioId: usuario.id,
       montoSolicitado: montoNumero,
-      montoAprobado: -(montoNumero + interesFijo), // El saldo del préstamo es negativo
+      montoAprobado: montoNumero + interesFijo, // El saldo del préstamo es positivo
       interes: interesFijo,
       plazo: plazoNumero,
       estado: 'aprobado',
@@ -619,9 +619,9 @@ exports.registrarPagoCuota = async (req, res) => {
     if (prestamo) {
       const montoPago = parseFloat(cuota.montoCuota || 0);
       let saldoPrestamo = parseFloat(prestamo.montoAprobado || 0);
-      if (saldoPrestamo < 0) {
-        let nuevoSaldo = saldoPrestamo + montoPago;
-        prestamo.montoAprobado = nuevoSaldo > 0 ? 0 : nuevoSaldo;
+      if (saldoPrestamo > 0) {
+        let nuevoSaldo = saldoPrestamo - montoPago;
+        prestamo.montoAprobado = nuevoSaldo < 0 ? 0 : nuevoSaldo;
       }
       // Si todas las cuotas están pagadas, marcar préstamo como pagado
       const todasCuotas = await CuotaPrestamo.findAll({ where: { prestamoId: cuota.prestamoId } });

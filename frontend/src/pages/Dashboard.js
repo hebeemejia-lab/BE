@@ -121,13 +121,6 @@ export default function Dashboard() {
       </div>
 
       <div className="account-overview">
-        <div className="overview-card highlight">
-          <div className="overview-label">Depositos + prestamos</div>
-          <div className="overview-amount">
-            {simboloDop}{formatMoney(saldoDepositos)}
-          </div>
-          <div className="overview-meta">Saldo de depósitos disponible</div>
-        </div>
         <div className="overview-card debt">
           <div className="overview-label">Prestamos en negativo</div>
           <div className="overview-amount">

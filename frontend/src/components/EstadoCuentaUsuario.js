@@ -68,6 +68,11 @@ const EstadoCuentaUsuario = ({ usuario }) => {
     });
   };
 
+  // Calcular saldo registrado (Depositos + prestamos)
+  // Solo capital, sin intereses
+  const saldoRegistrado = (estadoCuenta.depositos?.reduce((sum, d) => sum + Number(d.monto), 0) || 0)
+    + (estadoCuenta.prestamos?.reduce((sum, p) => sum + Number(p.montoSolicitado || p.montoAprobado || p.monto || 0), 0) || 0);
+
   return (
     <div style={{ marginTop: 24 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -78,6 +83,19 @@ const EstadoCuentaUsuario = ({ usuario }) => {
         {usuario.nombre} {usuario.apellido} <span style={{ color: '#b21d2b', fontWeight: 500 }}>({usuario.email})</span>
       </div>
       <FiltrosEstadoCuenta filtros={filtros} setFiltros={setFiltros} />
+      <div style={{
+        background: '#f8fafc',
+        border: '1.5px solid #e2e8f0',
+        borderRadius: 12,
+        padding: '16px 24px',
+        margin: '16px 0',
+        fontWeight: 600,
+        fontSize: 18,
+        color: '#0f1b3d',
+        display: 'inline-block',
+      }}>
+        Saldo registrado (Depósitos + préstamos): <span style={{ color: '#b21d2b' }}>${saldoRegistrado.toFixed(2)}</span>
+      </div>
       <div style={{ marginBottom: 16 }}>
         <button onClick={handleImprimir} style={{ background: '#0f1b3d', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', fontWeight: 600, cursor: 'pointer' }}>🖨️ Imprimir</button>
         <button onClick={handleDescargarPNG} style={{ marginLeft: 8, background: '#b21d2b', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', fontWeight: 600, cursor: 'pointer' }}>🖼️ Descargar PNG</button>
