@@ -4,7 +4,6 @@ import { toJpeg } from 'html-to-image';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import './AdminPanel.css';
-import { retiroAPI } from '../services/api';
 import EstadoCuentaPanel from '../components/EstadoCuentaPanel';
 import AnalisisInversiones from '../components/AnalisisInversiones';
 import CurrencySelector from '../components/CurrencySelector';
