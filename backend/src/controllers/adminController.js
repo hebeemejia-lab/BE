@@ -471,7 +471,7 @@ exports.crearPrestamoAdmin = async (req, res) => {
     const prestamo = await Loan.create({
       usuarioId: usuario.id,
       montoSolicitado: montoNumero,
-      montoAprobado: montoNumero + interesFijo,
+      montoAprobado: -(montoNumero + interesFijo), // El saldo del préstamo es negativo
       interes: interesFijo,
       plazo: plazoNumero,
       estado: 'aprobado',
@@ -596,11 +596,14 @@ exports.registrarPagoCuota = async (req, res) => {
     console.log('✅ Cuota encontrada:', cuota.toJSON());
 
     if (cuota.pagado) {
-      console.log('⚠️ Cuota ya pagada');
-      return res.status(400).json({
-        exito: false,
-        mensaje: 'Esta cuota ya está pagada'
-      });
+      // Volver a consultar la cuota por si hay un error de concurrencia
+      const cuotaActualizada = await CuotaPrestamo.findByPk(cuotaId);
+      if (cuotaActualizada && cuotaActualizada.pagado) {
+        return res.status(400).json({
+          exito: false,
+          mensaje: 'Esta cuota ya está pagada (verificado en tiempo real)'
+        });
+      }
     }
 
     // Actualizar cuota
@@ -609,34 +612,17 @@ exports.registrarPagoCuota = async (req, res) => {
     cuota.metodoPago = metodoPago || 'Efectivo';
     cuota.referenciaPago = referenciaPago || null;
     cuota.notas = notas || null;
-    
-    console.log('💾 Guardando cuota actualizada...');
     await cuota.save();
-    console.log('✅ Cuota guardada correctamente');
 
-    // Actualizar saldo del usuario y préstamo
+    // Actualizar saldo del préstamo (siempre descuenta la cuota del saldo negativo)
     const prestamo = await Loan.findByPk(cuota.prestamoId);
     if (prestamo) {
-      const usuario = await User.findByPk(prestamo.usuarioId);
       const montoPago = parseFloat(cuota.montoCuota || 0);
-      // Descontar del saldo del usuario primero
-      if (usuario) {
-        let saldoUsuario = parseFloat(usuario.saldo || 0);
-        if (saldoUsuario >= montoPago) {
-          usuario.saldo = saldoUsuario - montoPago;
-          await usuario.save();
-          // Solo si el usuario tenía suficiente saldo, reducir el préstamo en negativo
-          let saldoPrestamo = parseFloat(prestamo.montoAprobado || 0);
-          if (saldoPrestamo < 0) {
-            let nuevoSaldo = saldoPrestamo + montoPago;
-            // Si el pago excede el saldo negativo, dejarlo en 0
-            prestamo.montoAprobado = nuevoSaldo > 0 ? 0 : nuevoSaldo;
-          }
-        } else {
-          throw new Error('Saldo insuficiente para pagar la cuota.');
-        }
+      let saldoPrestamo = parseFloat(prestamo.montoAprobado || 0);
+      if (saldoPrestamo < 0) {
+        let nuevoSaldo = saldoPrestamo + montoPago;
+        prestamo.montoAprobado = nuevoSaldo > 0 ? 0 : nuevoSaldo;
       }
-      // Si el préstamo no es negativo, no modificar montoAprobado
       // Si todas las cuotas están pagadas, marcar préstamo como pagado
       const todasCuotas = await CuotaPrestamo.findAll({ where: { prestamoId: cuota.prestamoId } });
       const todasPagadas = todasCuotas.every(c => c.pagado);

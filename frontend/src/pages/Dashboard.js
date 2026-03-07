@@ -109,7 +109,7 @@ export default function Dashboard() {
   }, 0);
 
   // Solo mostrar saldo de depósitos en Dashboard
-  const saldoDepositos = Number(usuario?.saldo) || 0;
+  const saldoDepositos = Math.max(Number(usuario?.saldo) || 0, 0);
   const simboloDop = getCurrencySymbol('DOP');
   const simboloUsd = getCurrencySymbol('USD');
 
