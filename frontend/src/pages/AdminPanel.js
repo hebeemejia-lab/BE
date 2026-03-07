@@ -1,3 +1,4 @@
+import { retiroAPI } from '../services/api';
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toJpeg } from 'html-to-image';
@@ -1662,7 +1663,6 @@ const DepositosEfectivoView = ({ usuarios, cargando, onActualizarSaldo }) => {
   );
 };
 
-import { retiroAPI } from '../services/api';
 
 
 

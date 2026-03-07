@@ -1,10 +1,16 @@
+
+import axios from 'axios';
+
+const API = axios.create({
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
+});
+
 export const retiroAPI = {
   procesar: (datos) => API.post('/retiros/procesar', datos),
   obtenerHistorial: () => API.get('/retiros/historial'),
   obtenerCuentaPrincipal: () => API.get('/retiros/cuenta-principal'),
   retiroManualAdmin: (datos) => API.post('/admin/registrar-retiro-manual', datos),
 };
-import axios from 'axios';
 
 const API = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
