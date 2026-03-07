@@ -20,9 +20,9 @@ export default function Home() {
                 <span className="button-icon">💸</span>
                 <span>Realizar Transferencia</span>
               </button>
-              <button onClick={() => navigate('/prestamos')} className="feature-button prestamos">
-                <span className="button-icon">💰</span>
-                <span>Solicitar Préstamo</span>
+              <button onClick={() => navigate('/gastos-personales')} className="feature-button gastos">
+                <span className="button-icon">💸</span>
+                <span>Gestión de Gastos</span>
               </button>
               <button onClick={() => navigate('/dashboard')} className="feature-button dashboard">
                 <span className="button-icon">📊</span>

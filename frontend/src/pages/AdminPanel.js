@@ -943,10 +943,16 @@ const AdminPanel = () => {
             onClick={() => navegarAdmin(rutasAdmin.retiros)}
           >🧾 Retiros en efectivo</button>
           {esAdmin && (
-            <button 
-              className={vistaActual === 'prestamos' ? 'active' : ''}
-              onClick={() => navegarAdmin(rutasAdmin.prestamos)}
-            >💰 Gestión Préstamos</button>
+            <>
+              <button 
+                className={vistaActual === 'gastos-personales' ? 'active' : ''}
+                onClick={() => navegarAdmin(rutasAdmin['gastos-personales'])}
+              >💸 Gestión de Gastos</button>
+              <button 
+                className={vistaActual === 'prestamos' ? 'active' : ''}
+                onClick={() => navegarAdmin(rutasAdmin.prestamos)}
+              >💰 Gestión Préstamos</button>
+            </>
           )}
           <button 
             className={vistaActual === 'clientes' ? 'active' : ''}
