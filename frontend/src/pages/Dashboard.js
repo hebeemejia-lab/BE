@@ -160,6 +160,22 @@ export default function Dashboard() {
               : `Ganancia: ${simboloUsd}${formatMoney(gananciaInversion)}`}
           </div>
         </div>
+        <div className="overview-card group">
+          <div className="overview-label">Tu grupo</div>
+          <div className="overview-amount">
+            👥
+          </div>
+          <div className="overview-meta">
+            Ahorro comunitario
+          </div>
+          <button
+            className="btn-ver-grupo"
+            style={{marginTop: 8, padding: '6px 18px', borderRadius: 8, background: '#1976d2', color: '#fff', border: 'none', fontWeight: 600, cursor: 'pointer' }}
+            onClick={() => navigate('/circulos')}
+          >
+            Ver grupo
+          </button>
+        </div>
       </div>
 
       <div className="dashboard-grid">

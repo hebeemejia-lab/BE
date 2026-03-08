@@ -924,7 +924,7 @@ const AdminPanel = () => {
     faq: 'Feedback FAQ',
     analisisInversiones: 'Analisis de Inversiones',
     divisas: 'Configuración de Divisas',
-    circulos: 'Círculos de Ahorro',
+    circulos: 'Tu grupo',
   };
   const tituloActual = titulosVista[vistaActual] || 'Dashboard';
 
@@ -948,10 +948,10 @@ const AdminPanel = () => {
             className={vistaActual === 'retiros-efectivo' ? 'active' : ''}
             onClick={() => navegarAdmin(rutasAdmin.retiros)}
           >🧾 Retiros en efectivo</button>
-          {/* <button
+          <button
             className={vistaActual === 'circulos' ? 'active' : ''}
-            onClick={() => navegarAdmin('circulos')}
-          >🔄 Círculos de Ahorro</button> */}
+            onClick={() => navegarAdmin(rutasAdmin.circulos)}
+          >👥 Tu grupo</button>
           {esAdmin && (
             <>
               <button 
@@ -1248,10 +1248,10 @@ const DashboardView = ({ dashboard, onNavigate, onGenerarEstado, estadoDesde, es
         </button>
       </div>
       <div className="gestion-card">
-        <h3>🔄 Círculos de Ahorro</h3>
+        <h3>👥 Tu grupo</h3>
         <p>Grupos de ahorro comunitario, turnos y aportes colaborativos.</p>
         <button type="button" onClick={() => onNavigate?.('circulos')}>
-          Ver círculos
+          Ver grupo
         </button>
       </div>
       <div className="gestion-card">

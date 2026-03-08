@@ -7,6 +7,8 @@ const CuotaPrestamo = require('./CuotaPrestamo');
 const Inversion = require('./Inversion');
 const Transaction = require('./Transaction');
 const Budget = require('./Budget');
+const CirculoAhorro = require('./CirculoAhorro');
+const CirculoMiembro = require('./CirculoMiembro');
 
 // Usuario tiene muchos préstamos
 User.hasMany(Loan, {
@@ -72,6 +74,8 @@ Budget.belongsTo(User, {
   foreignKey: 'userId'
 });
 
+// Las relaciones ya están definidas en CirculoMiembro.js
+
 module.exports = {
   sequelize,
   User,
@@ -80,5 +84,7 @@ module.exports = {
   CuotaPrestamo,
   Inversion,
   Transaction,
-  Budget
+  Budget,
+  CirculoAhorro,
+  CirculoMiembro
 };
