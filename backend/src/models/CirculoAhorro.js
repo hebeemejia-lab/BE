@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('./index');
+const { sequelize } = require('../config/database');
 
 const CirculoAhorro = sequelize.define('CirculoAhorro', {
   nombre: { type: DataTypes.STRING, allowNull: false },
