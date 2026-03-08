@@ -8,7 +8,7 @@ import { CurrencyProvider } from './context/CurrencyContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import ChatBotFAQ from './components/ChatBotFAQ';
-// ...existing code...
+import Circulos from './pages/Circulos';
 
 // Páginas
 import Home from './pages/Home';
@@ -32,7 +32,7 @@ import ActivosPasivos from './pages/ActivosPasivos';
 import EconomiaEmergente from './pages/EconomiaEmergente';
 import BeneficiosAhorro from './pages/BeneficiosAhorro';
 import Certificado from './pages/Certificado';
-// ...existing code...
+import Circulos from './pages/Circulos';
 
 // Estilos
 import './styles/global.css';
@@ -194,6 +194,7 @@ function App() {
            <Route path="/cursos/economia-emergente" element={<EconomiaEmergente />} />
            <Route path="/cursos/beneficios-ahorro" element={<BeneficiosAhorro />} />
            <Route path="/certificado" element={<Certificado />} />
+          <Route path="/circulos" element={<Circulos />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
 
