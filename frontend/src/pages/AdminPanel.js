@@ -1928,15 +1928,20 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
                 onImprimirPrestamo(prestamo, 'pdf');
               }}
             >
-              📄 Factura PDF
-            </button>
-            <button
-              className="btn-imprimir btn-jpg"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDescargarPrestamoJpg(prestamo);
-              }}
-            >
+                        {prestamo.cuotas.map((cuota) => {
+                          const pagado = Number(cuota.montoPagado) >= Number(cuota.montoCuota);
+                          const parcial = !pagado && Number(cuota.montoPagado) > 0;
+                          const porcentaje = Math.min(100, Math.round((Number(cuota.montoPagado) / Number(cuota.montoCuota)) * 100));
+                          return (
+                            <div
+                              key={cuota.id}
+                              className={`cuota-item ${pagado ? 'pagada' : parcial ? 'parcial' : 'pendiente'}`}
+                              style={{ marginBottom: 6, padding: 6, borderRadius: 4, background: pagado ? '#e0ffe0' : parcial ? '#fffbe0' : '#ffe0e0' }}
+                            >
+                              {/* ...existing code... */}
+                            </div>
+                          );
+                        })}
               🖼️ Factura JPG
             </button>
             <button
@@ -2056,7 +2061,7 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
                     )}
                   </div>
                 </div>
-            })}
+            )})}
           </div>
         </div>
       )}
