@@ -8,7 +8,6 @@ import { CurrencyProvider } from './context/CurrencyContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import ChatBotFAQ from './components/ChatBotFAQ';
-import Circulos from './pages/Circulos';
 
 // Páginas
 import Home from './pages/Home';
