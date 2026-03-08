@@ -94,6 +94,7 @@ const AdminPanel = () => {
     faq: '/admin/faq',
     analisisInversiones: '/admin/analisis-inversiones',
     divisas: '/admin/divisas',
+    circulos: '/admin/circulos',
   };
 
   const navegarAdmin = (ruta) => {
@@ -208,6 +209,10 @@ const AdminPanel = () => {
     }
     if (vistaRuta === 'analisisInversiones') {
       setVistaActual('analisisInversiones');
+      return;
+    }
+    if (vistaRuta === 'circulos') {
+      setVistaActual('circulos');
       return;
     }
   }, [location.pathname, cargarDashboard, cargarUsuariosParaVista, cargarPrestamos, cargarUsuarios]);
@@ -1077,6 +1082,10 @@ const AdminPanel = () => {
               }
               if (destino === 'analisisInversiones') {
                 navegarAdmin(rutasAdmin.analisisInversiones);
+                return;
+              }
+              if (destino === 'circulos') {
+                navegarAdmin(rutasAdmin.circulos);
                 return;
               }
             }}
