@@ -1934,95 +1934,113 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
           </div>
           <h4>Cuotas:</h4>
           <div className="cuotas-lista">
-            {prestamo.cuotas.map(cuota => (
-              <div key={cuota.id} className={`cuota-item ${cuota.pagado ? 'pagada' : 'pendiente'}`}>
-                <div className="cuota-info">
-                  <span className="cuota-numero">Cuota #{cuota.numero}</span>
-                  <span className="cuota-monto">${parseFloat(cuota.monto).toFixed(2)}</span>
-                  <span className="cuota-fecha">
-                    {cuota.pagado 
-                      ? `Pagada: ${new Date(cuota.fechaPago).toLocaleDateString()}`
-                      : `Vence: ${new Date(cuota.fechaVencimiento).toLocaleDateString()}`
-                    }
-                  </span>
-                </div>
-                
-                <div className="cuota-acciones">
-                  {cuota.pagado ? (
-                    <>
-                      <button 
-                        className="btn-imprimir btn-pdf"
-                        onClick={() => onImprimirRecibo(cuota.id, 'pdf')}
-                        title="Imprimir en PDF"
-                      >
-                        📄 PDF
-                      </button>
-                      <button 
-                        className="btn-imprimir btn-jpg"
-                        onClick={() => onDescargarReciboJpg(cuota.id)}
-                        title="Descargar JPG"
-                      >
-                        🖼️ JPG
-                      </button>
-                      <button 
-                        className="btn-imprimir btn-factura88"
-                        onClick={() => onImprimirRecibo(cuota.id, 'factura88')}
-                        title="Imprimir factura 88mm"
-                      >
-                        🧾 Factura 88
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      {mostrarFormularioPago === cuota.id ? (
-                        <div className="formulario-pago">
-                          <select 
-                            value={metodoPago} 
-                            onChange={(e) => setMetodoPago(e.target.value)}
-                          >
-                            <option>Efectivo</option>
-                            <option>Transferencia</option>
-                            <option>Tarjeta</option>
-                            <option>Cheque</option>
-                          </select>
-                          <input 
-                            type="text"
-                            placeholder="Referencia (opcional)"
-                            value={referencia}
-                            onChange={(e) => setReferencia(e.target.value)}
-                          />
-                          <input 
-                            type="text"
-                            placeholder="Notas (opcional)"
-                            value={notas}
-                            onChange={(e) => setNotas(e.target.value)}
-                          />
-                          <button 
-                            className="btn-confirmar"
-                            onClick={() => handlePagar(cuota.id)}
-                          >
-                            ✓ Confirmar
-                          </button>
-                          <button 
-                            className="btn-cancelar"
-                            onClick={() => setMostrarFormularioPago(null)}
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ) : (
-                        <button 
-                          className="btn-pagar"
-                          onClick={() => setMostrarFormularioPago(cuota.id)}
-                        >
-                          💳 Registrar Pago
-                        </button>
-                      )}
-                    </>
+            {prestamo.cuotas.map(cuota => {
+              const pagado = Number(cuota.montoPagado) >= Number(cuota.montoCuota);
+              const parcial = !pagado && Number(cuota.montoPagado) > 0;
+              const porcentaje = Math.min(100, Math.round((Number(cuota.montoPagado) / Number(cuota.montoCuota)) * 100));
+              return (
+                <div key={cuota.id} className={`cuota-item ${pagado ? 'pagada' : parcial ? 'parcial' : 'pendiente'}`} style={{marginBottom: 6, padding: 6, borderRadius: 4, background: pagado ? '#e0ffe0' : parcial ? '#fffbe0' : '#ffe0e0'}}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                    <span style={{textDecoration: pagado ? 'line-through' : 'none', fontWeight: pagado ? 600 : 400}}>
+                      Cuota #{cuota.numeroCuota}: ${parseFloat(cuota.montoCuota).toFixed(2)}
+                    </span>
+                    {pagado ? (
+                      <span style={{color: '#2e7d32', fontWeight: 500}}>Pagada</span>
+                    ) : parcial ? (
+                      <span style={{color: '#bfa100', fontWeight: 500}}>Abonada: ${parseFloat(cuota.montoPagado).toFixed(2)}</span>
+                    ) : (
+                      <span style={{color: '#b21d2b', fontWeight: 500}}>Pendiente</span>
+                    )}
+                  </div>
+                  {parcial && (
+                    <div style={{marginTop: 2, width: 120, height: 8, background: '#eee', borderRadius: 4, overflow: 'hidden'}}>
+                      <div style={{width: `${porcentaje}%`, height: '100%', background: '#ffe066'}}></div>
+                    </div>
                   )}
+                  <div style={{fontSize: 11, color: '#888', marginTop: 2}}>
+                    {cuota.fechaVencimiento && (
+                      pagado
+                        ? `Pagada: ${cuota.fechaPago ? new Date(cuota.fechaPago).toLocaleDateString('es-ES') : ''}`
+                        : `Vence: ${new Date(cuota.fechaVencimiento).toLocaleDateString('es-ES')}`
+                    )}
+                  </div>
+                  <div className="cuota-acciones">
+                    {pagado ? (
+                      <>
+                        <button 
+                          className="btn-imprimir btn-pdf"
+                          onClick={() => onImprimirRecibo(cuota.id, 'pdf')}
+                          title="Imprimir en PDF"
+                        >
+                          📄 PDF
+                        </button>
+                        <button 
+                          className="btn-imprimir btn-jpg"
+                          onClick={() => onDescargarReciboJpg(cuota.id)}
+                          title="Descargar JPG"
+                        >
+                          🖼️ JPG
+                        </button>
+                        <button 
+                          className="btn-imprimir btn-factura88"
+                          onClick={() => onImprimirRecibo(cuota.id, 'factura88')}
+                          title="Imprimir factura 88mm"
+                        >
+                          🧾 Factura 88
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {mostrarFormularioPago === cuota.id ? (
+                          <div className="formulario-pago">
+                            <select 
+                              value={metodoPago} 
+                              onChange={(e) => setMetodoPago(e.target.value)}
+                            >
+                              <option>Efectivo</option>
+                              <option>Transferencia</option>
+                              <option>Tarjeta</option>
+                              <option>Cheque</option>
+                            </select>
+                            <input 
+                              type="text"
+                              placeholder="Referencia (opcional)"
+                              value={referencia}
+                              onChange={(e) => setReferencia(e.target.value)}
+                            />
+                            <input 
+                              type="text"
+                              placeholder="Notas (opcional)"
+                              value={notas}
+                              onChange={(e) => setNotas(e.target.value)}
+                            />
+                            <button
+                              className="btn-confirmar"
+                              onClick={() => handlePagar(cuota.id)}
+                            >
+                              ✓ Confirmar
+                            </button>
+                            <button 
+                              className="btn-cancelar"
+                              onClick={() => setMostrarFormularioPago(null)}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <button 
+                            className="btn-pagar"
+                            onClick={() => setMostrarFormularioPago(cuota.id)}
+                          >
+                            💳 Registrar Pago
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
