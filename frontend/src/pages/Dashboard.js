@@ -98,14 +98,17 @@ export default function Dashboard() {
     cargarInversion();
   }, [usuario]);
 
+
+  // Solo prestamos activos (no pagados ni rechazados)
   const prestamosActivos = prestamos.filter((prestamo) => {
     const estado = (prestamo.estado || '').toLowerCase();
     return estado && estado !== 'pagado' && estado !== 'rechazado';
   });
 
+  // Sumar saldoNegativo real de todos los prestamos activos
   const saldoPrestamos = prestamosActivos.reduce((sum, prestamo) => {
-    const monto = Number(prestamo.montoAprobado ?? prestamo.montoSolicitado ?? prestamo.monto ?? 0);
-    return sum + (Number.isFinite(monto) ? monto : 0);
+    const saldoNegativo = Number(prestamo.saldoNegativo ?? 0);
+    return sum + (Number.isFinite(saldoNegativo) ? saldoNegativo : 0);
   }, 0);
 
   // Solo mostrar saldo de depósitos en Dashboard
@@ -131,7 +134,7 @@ export default function Dashboard() {
               prestamosActivos.map((prestamo) => (
                 <div key={prestamo.id || prestamo._id} className="debt-item">
                   <span className="debt-id">ID #{prestamo.id || prestamo._id}</span>
-                  <span className="debt-amount">{simboloDop}{formatMoney(prestamo.montoAprobado ?? prestamo.montoSolicitado ?? prestamo.monto)}</span>
+                  <span className="debt-amount">{simboloDop}{formatMoney(prestamo.saldoNegativo ?? 0)}</span>
                 </div>
               ))
             ) : (
@@ -215,7 +218,7 @@ export default function Dashboard() {
             <div className="loan-list">
               {prestamos.length > 0 ? (
                 prestamos.map((prestamo) => (
-                  <div key={prestamo._id} className={`loan-item ${prestamo.estado}`}>
+                  <div key={prestamo.id || prestamo._id} className={`loan-item ${prestamo.estado}`}>
                     <div className="loan-header">
                       <span className="loan-amount">${formatMoney(prestamo.montoSolicitado)}</span>
                       <span className={`loan-status ${prestamo.estado}`}>{prestamo.estado.toUpperCase()}</span>
@@ -224,6 +227,44 @@ export default function Dashboard() {
                       <span>Plazo: {prestamo.plazo} meses</span>
                       <span>Tasa: {prestamo.tasaInteres}% anual</span>
                     </div>
+                    {prestamo.cuotas && prestamo.cuotas.length > 0 && (
+                      <div className="cuotas-lista-dashboard">
+                        <h4 style={{margin: '8px 0 4px 0', fontSize: 14}}>Cuotas:</h4>
+                        {prestamo.cuotas.map((cuota) => {
+                          const pagado = Number(cuota.montoPagado) >= Number(cuota.montoCuota);
+                          const parcial = !pagado && Number(cuota.montoPagado) > 0;
+                          const porcentaje = Math.min(100, Math.round((Number(cuota.montoPagado) / Number(cuota.montoCuota)) * 100));
+                          return (
+                            <div key={cuota.id} className={`cuota-item-dashboard ${pagado ? 'pagada' : parcial ? 'parcial' : 'pendiente'}`} style={{marginBottom: 6, padding: 6, borderRadius: 4, background: pagado ? '#e0ffe0' : parcial ? '#fffbe0' : '#ffe0e0'}}>
+                              <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                                <span style={{textDecoration: pagado ? 'line-through' : 'none', fontWeight: pagado ? 600 : 400}}>
+                                  Cuota #{cuota.numeroCuota}: ${formatMoney(cuota.montoCuota)}
+                                </span>
+                                {pagado ? (
+                                  <span style={{color: '#2e7d32', fontWeight: 500}}>Pagada</span>
+                                ) : parcial ? (
+                                  <span style={{color: '#bfa100', fontWeight: 500}}>Abonada: ${formatMoney(cuota.montoPagado)}</span>
+                                ) : (
+                                  <span style={{color: '#b21d2b', fontWeight: 500}}>Pendiente</span>
+                                )}
+                              </div>
+                              {parcial && (
+                                <div style={{marginTop: 2, width: 120, height: 8, background: '#eee', borderRadius: 4, overflow: 'hidden'}}>
+                                  <div style={{width: `${porcentaje}%`, height: '100%', background: '#ffe066'}}></div>
+                                </div>
+                              )}
+                              <div style={{fontSize: 11, color: '#888', marginTop: 2}}>
+                                {cuota.fechaVencimiento && (
+                                  pagado
+                                    ? `Pagada: ${new Date(cuota.fechaPago).toLocaleDateString('es-ES')}`
+                                    : `Vence: ${new Date(cuota.fechaVencimiento).toLocaleDateString('es-ES')}`
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 ))
               ) : (

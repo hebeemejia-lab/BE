@@ -606,28 +606,58 @@ exports.registrarPagoCuota = async (req, res) => {
       }
     }
 
-    // Actualizar cuota
-    cuota.pagado = true;
-    cuota.fechaPago = new Date();
+    // ABONO PARCIAL: Sumar el abono a montoPagado
+    const abono = parseFloat(req.body.abono || cuota.montoCuota); // Si no se especifica abono, se asume pago completo
+    if (!Number.isFinite(abono) || abono <= 0) {
+      return res.status(400).json({ exito: false, mensaje: 'Abono inválido' });
+    }
+
+    cuota.montoPagado = parseFloat(cuota.montoPagado || 0) + abono;
     cuota.metodoPago = metodoPago || 'Efectivo';
     cuota.referenciaPago = referenciaPago || null;
     cuota.notas = notas || null;
+
+    // Si el montoPagado cubre la cuota, marcar como pagada y registrar fecha
+    if (cuota.montoPagado + 0.009 >= parseFloat(cuota.montoCuota)) { // margen para redondeo
+      cuota.pagado = true;
+      cuota.fechaPago = new Date();
+      cuota.montoPagado = parseFloat(cuota.montoCuota); // forzar exacto
+    }
     await cuota.save();
 
-    // Actualizar saldo del préstamo (siempre descuenta la cuota del saldo negativo)
+    // Actualizar saldo del préstamo (descontar el abono)
     const prestamo = await Loan.findByPk(cuota.prestamoId);
+    let usuario = null;
     if (prestamo) {
-      const montoPago = parseFloat(cuota.montoCuota || 0);
       let saldoPrestamo = parseFloat(prestamo.montoAprobado || 0);
-      if (saldoPrestamo > 0) {
-        let nuevoSaldo = saldoPrestamo - montoPago;
-        prestamo.montoAprobado = nuevoSaldo < 0 ? 0 : nuevoSaldo;
-      }
+      let nuevoSaldo = saldoPrestamo - abono;
+      prestamo.montoAprobado = nuevoSaldo < 0.009 ? 0 : nuevoSaldo; // margen para redondeo
       // Si todas las cuotas están pagadas, marcar préstamo como pagado
       const todasCuotas = await CuotaPrestamo.findAll({ where: { prestamoId: cuota.prestamoId } });
       const todasPagadas = todasCuotas.every(c => c.pagado);
-      if (todasPagadas) {
+      if (todasPagadas || prestamo.montoAprobado === 0) {
         prestamo.estado = 'pagado';
+        // Al marcar el préstamo como pagado, actualizar saldoNegativo del usuario a 0
+        usuario = await User.findByPk(prestamo.usuarioId);
+        if (usuario) {
+          usuario.saldoNegativo = 0;
+          await usuario.save();
+        }
+      } else {
+        // Si no está pagado, actualizar saldoNegativo del usuario con la suma de cuotas pendientes
+        usuario = await User.findByPk(prestamo.usuarioId);
+        if (usuario) {
+          // Sumar todas las cuotas no pagadas (montoCuota - montoPagado)
+          let saldoNegativo = 0;
+          for (const c of todasCuotas) {
+            if (!c.pagado) {
+              saldoNegativo += parseFloat(c.montoCuota) - parseFloat(c.montoPagado || 0);
+            }
+          }
+          // Evitar residuos menores a 0.01
+          usuario.saldoNegativo = saldoNegativo < 0.009 ? 0 : parseFloat(saldoNegativo.toFixed(2));
+          await usuario.save();
+        }
       }
       await prestamo.save();
     }

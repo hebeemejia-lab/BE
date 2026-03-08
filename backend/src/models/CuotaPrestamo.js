@@ -27,6 +27,12 @@ const CuotaPrestamo = sequelize.define('CuotaPrestamo', {
     defaultValue: false,
     comment: 'true si está pagada, false si está pendiente'
   },
+  montoPagado: {
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0,
+    allowNull: false,
+    comment: 'Monto acumulado abonado a la cuota'
+  },
   fechaVencimiento: {
     type: DataTypes.DATE,
     allowNull: false,

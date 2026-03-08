@@ -48,6 +48,7 @@ const solicitarPrestamo = async (req, res) => {
 };
 
 // Obtener préstamos del usuario
+const CuotaPrestamo = require('../models/CuotaPrestamo');
 const obtenerMisPrestamos = async (req, res) => {
   try {
     const usuarioId = req.usuario.id;
@@ -57,7 +58,35 @@ const obtenerMisPrestamos = async (req, res) => {
       order: [['createdAt', 'DESC']],
     });
 
-    res.json(prestamos);
+    // Para cada préstamo, incluir cuotas y calcular saldoNegativo
+    const resultado = await Promise.all(prestamos.map(async (prestamo) => {
+      const cuotas = await CuotaPrestamo.findAll({
+        where: { prestamoId: prestamo.id },
+        order: [['numeroCuota', 'ASC']]
+      });
+      // saldoNegativo = suma de (montoCuota - montoPagado) de cuotas no pagadas
+      let saldoNegativo = 0;
+      cuotas.forEach(cuota => {
+        if (!cuota.pagado) {
+          saldoNegativo += parseFloat(cuota.montoCuota) - parseFloat(cuota.montoPagado || 0);
+        }
+      });
+      return {
+        ...prestamo.toJSON(),
+        saldoNegativo: saldoNegativo > 0 ? saldoNegativo : 0,
+        cuotas: cuotas.map(c => ({
+          id: c.id,
+          numeroCuota: c.numeroCuota,
+          montoCuota: c.montoCuota,
+          pagado: c.pagado,
+          montoPagado: c.montoPagado,
+          fechaVencimiento: c.fechaVencimiento,
+          fechaPago: c.fechaPago
+        }))
+      };
+    }));
+
+    res.json(resultado);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
