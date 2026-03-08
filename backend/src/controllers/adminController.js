@@ -375,60 +375,70 @@ exports.eliminarUsuarioAdmin = async (req, res) => {
 // Listar todos los préstamos con información del cliente
 exports.listarPrestamos = async (req, res) => {
   try {
+    console.log('🔎 [listarPrestamos] Iniciando consulta de préstamos...');
     // Obtener todos los préstamos
     const prestamos = await Loan.findAll({
       order: [['createdAt', 'DESC']]
     });
+    console.log(`🔎 [listarPrestamos] Préstamos encontrados: ${prestamos.length}`);
 
     // Obtener usuarios por separado y agregar manualmente
     const prestamosConInfo = await Promise.all(
-      prestamos.map(async (prestamo) => {
-        // Obtener usuario
-        const usuario = await User.findByPk(prestamo.usuarioId, {
-          attributes: ['id', 'nombre', 'apellido', 'email']
-        });
+      (prestamos || []).map(async (prestamo) => {
+        try {
+          // Obtener usuario
+          const usuario = await User.findByPk(prestamo.usuarioId, {
+            attributes: ['id', 'nombre', 'apellido', 'email']
+          });
 
-        // Obtener cuotas
-        const cuotas = await CuotaPrestamo.findAll({
-          where: { prestamoId: prestamo.id },
-          order: [['numeroCuota', 'ASC']]
-        });
+          // Obtener cuotas
+          const cuotas = await CuotaPrestamo.findAll({
+            where: { prestamoId: prestamo.id },
+            order: [['numeroCuota', 'ASC']]
+          });
 
-        const totalCuotas = cuotas.length;
-        const cuotasPagadas = cuotas.filter(c => c.pagado).length;
-        const progreso = totalCuotas > 0 ? ((cuotasPagadas / totalCuotas) * 100).toFixed(1) : 0;
+          const totalCuotas = cuotas.length;
+          const cuotasPagadas = cuotas.filter(c => c.pagado).length;
+          const progreso = totalCuotas > 0 ? ((cuotasPagadas / totalCuotas) * 100).toFixed(1) : 0;
 
-        return {
-          ...prestamo.toJSON(),
-          User: usuario ? usuario.toJSON() : null,
-          cuotas: cuotas.map(c => ({
-            id: c.id,
-            numero: c.numeroCuota,
-            monto: c.montoCuota,
-            pagado: c.pagado,
-            fechaVencimiento: c.fechaVencimiento,
-            fechaPago: c.fechaPago
-          })),
-          totalCuotas,
-          cuotasPagadas,
-          cuotasPendientes: totalCuotas - cuotasPagadas,
-          progreso: `${progreso}%`,
-          progresoNumero: parseFloat(progreso)
-        };
+          return {
+            ...prestamo.toJSON(),
+            User: usuario ? usuario.toJSON() : null,
+            cuotas: cuotas.map(c => ({
+              id: c.id,
+              numero: c.numeroCuota,
+              monto: c.montoCuota,
+              pagado: c.pagado,
+              fechaVencimiento: c.fechaVencimiento,
+              fechaPago: c.fechaPago
+            })),
+            totalCuotas,
+            cuotasPagadas,
+            cuotasPendientes: totalCuotas - cuotasPagadas,
+            progreso: `${progreso}%`,
+            progresoNumero: parseFloat(progreso)
+          };
+        } catch (err) {
+          console.error(`[listarPrestamos] Error mapeando préstamo ID ${prestamo.id}:`, err);
+          return null;
+        }
       })
     );
 
-    res.json({
-      exito: true,
-      total: prestamosConInfo.length,
-      prestamos: prestamosConInfo
+    // Filtrar nulos por errores puntuales
+    const prestamosFinal = (prestamosConInfo || []).filter(p => !!p);
+    console.log(`🔎 [listarPrestamos] Préstamos procesados: ${prestamosFinal.length}`);
+
+    res.status(200).json({
+      prestamos: prestamosFinal,
+      total: prestamosFinal.length
     });
   } catch (error) {
-    console.error('❌ Error listando préstamos:', error);
+    console.error('❌ [listarPrestamos] Error general:', error);
     res.status(500).json({
-      exito: false,
       mensaje: 'Error al listar préstamos',
-      error: error.message
+      detalle: error.message || error.toString(),
+      stack: error.stack
     });
   }
 };

@@ -919,6 +919,7 @@ const AdminPanel = () => {
     faq: 'Feedback FAQ',
     analisisInversiones: 'Analisis de Inversiones',
     divisas: 'Configuración de Divisas',
+    circulos: 'Círculos de Ahorro',
   };
   const tituloActual = titulosVista[vistaActual] || 'Dashboard';
 
@@ -942,6 +943,10 @@ const AdminPanel = () => {
             className={vistaActual === 'retiros-efectivo' ? 'active' : ''}
             onClick={() => navegarAdmin(rutasAdmin.retiros)}
           >🧾 Retiros en efectivo</button>
+          {/* <button
+            className={vistaActual === 'circulos' ? 'active' : ''}
+            onClick={() => navegarAdmin('circulos')}
+          >🔄 Círculos de Ahorro</button> */}
           {esAdmin && (
             <>
               <button 
@@ -1153,6 +1158,11 @@ const AdminPanel = () => {
         {vistaActual === 'faq' && (
           <FAQFeedbackView />
         )}
+
+        {/* Círculos de Ahorro Comunitario */}
+        {vistaActual === 'circulos' && (
+          <CirculosAhorroView />
+        )}
       </div>
     </div>
   );
@@ -1226,6 +1236,13 @@ const DashboardView = ({ dashboard, onNavigate, onGenerarEstado, estadoDesde, es
         <p>Aprueba o rechaza solicitudes de retiro de saldo.</p>
         <button type="button" onClick={() => onNavigate?.('retiros-efectivo')}>
           Abrir gestion
+        </button>
+      </div>
+      <div className="gestion-card">
+        <h3>🔄 Círculos de Ahorro</h3>
+        <p>Grupos de ahorro comunitario, turnos y aportes colaborativos.</p>
+        <button type="button" onClick={() => onNavigate?.('circulos')}>
+          Ver círculos
         </button>
       </div>
       <div className="gestion-card">
@@ -2039,11 +2056,31 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
                     )}
                   </div>
                 </div>
-              );
             })}
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+
+// Componente Círculos de Ahorro (placeholder inicial)
+const CirculosAhorroView = () => {
+  return (
+    <div className="circulos-ahorro-view">
+      <h1>🔄 Círculos de Ahorro Comunitario</h1>
+      <p>¡Próximamente! Aquí podrás crear y unirte a grupos de ahorro colectivo, ver el progreso de los aportes y turnos, y acceder a recursos de educación financiera.</p>
+      <ul>
+        <li>Crear grupo de ahorro</li>
+        <li>Unirse a un grupo existente</li>
+        <li>Visualizar aportes y turnos</li>
+        <li>Panel de transparencia y gamificación</li>
+        <li>Educación financiera</li>
+      </ul>
+      <div style={{marginTop: 32, color: '#b21d2b'}}>
+        Si tienes sugerencias para esta sección, ¡compártelas con el equipo!
+      </div>
     </div>
   );
 };
