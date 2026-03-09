@@ -52,42 +52,56 @@ const CuotaPrestamo = require('../models/CuotaPrestamo');
 const obtenerMisPrestamos = async (req, res) => {
   try {
     const usuarioId = req.usuario.id;
+    console.log('Obteniendo préstamos para usuario:', usuarioId);
 
     const prestamos = await Loan.findAll({
       where: { usuarioId },
       order: [['createdAt', 'DESC']],
     });
+    console.log('Préstamos encontrados:', prestamos.length);
 
     // Para cada préstamo, incluir cuotas y calcular saldoNegativo
     const resultado = await Promise.all(prestamos.map(async (prestamo) => {
-      const cuotas = await CuotaPrestamo.findAll({
-        where: { prestamoId: prestamo.id },
-        order: [['numeroCuota', 'ASC']]
-      });
-      // saldoNegativo = suma de (montoCuota - montoPagado) de cuotas no pagadas
-      let saldoNegativo = 0;
-      cuotas.forEach(cuota => {
-        if (!cuota.pagado) {
-          saldoNegativo += parseFloat(cuota.montoCuota) - parseFloat(cuota.montoPagado || 0);
-        }
-      });
-      return {
-        ...prestamo.toJSON(),
-        saldoNegativo: saldoNegativo > 0 ? saldoNegativo : 0,
-        cuotas: cuotas.map(c => ({
-          id: c.id,
-          numeroCuota: c.numeroCuota,
-          montoCuota: c.montoCuota,
-          pagado: c.pagado,
-          montoPagado: c.montoPagado,
-          fechaVencimiento: c.fechaVencimiento,
-          fechaPago: c.fechaPago
-        }))
-      };
+      try {
+        const cuotas = await CuotaPrestamo.findAll({
+          where: { prestamoId: prestamo.id },
+          order: [['numeroCuota', 'ASC']]
+        });
+        console.log(`Cuotas encontradas para préstamo ${prestamo.id}:`, cuotas.length);
+        // saldoNegativo = suma de (montoCuota - montoPagado) de cuotas no pagadas
+        let saldoNegativo = 0;
+        cuotas.forEach(cuota => {
+          if (!cuota.pagado) {
+            saldoNegativo += parseFloat(cuota.montoCuota) - parseFloat(cuota.montoPagado || 0);
+          }
+        });
+        return {
+          ...prestamo.toJSON(),
+          saldoNegativo: saldoNegativo > 0 ? saldoNegativo : 0,
+          cuotas: cuotas.map(c => ({
+            id: c.id,
+            numeroCuota: c.numeroCuota,
+            montoCuota: c.montoCuota,
+            pagado: c.pagado,
+            montoPagado: c.montoPagado,
+            fechaVencimiento: c.fechaVencimiento,
+            fechaPago: c.fechaPago
+          }))
+        };
+      } catch (cuotaError) {
+        console.error('Error obteniendo cuotas para préstamo', prestamo.id, cuotaError);
+        return {
+          ...prestamo.toJSON(),
+          saldoNegativo: 0,
+          cuotas: [],
+          errorCuotas: cuotaError.message
+        };
+      }
     }));
 
     res.json(resultado);
   } catch (error) {
+    console.error('Error en obtenerMisPrestamos:', error);
     res.status(500).json({ error: error.message });
   }
 };
