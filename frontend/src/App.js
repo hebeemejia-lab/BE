@@ -27,7 +27,8 @@ import AdminPanel from './pages/AdminPanel';
 import PoliticaPrivacidad from './pages/PoliticaPrivacidad';
 import Cursos from './pages/Cursos';
 import SeleccionCurso from './pages/SeleccionCurso';
-import ActivosPasivos from './pages/ActivosPasivos';
+
+import EconomiaEmergente from './pages/EconomiaEmergente';
 
 import BeneficiosAhorro from './pages/BeneficiosAhorro';
 
