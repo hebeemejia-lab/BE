@@ -172,7 +172,7 @@ export default function Dashboard() {
           <button
             className="btn-ver-grupo"
             style={{marginTop: 8, padding: '6px 18px', borderRadius: 8, background: '#1976d2', color: '#fff', border: 'none', fontWeight: 600, cursor: 'pointer' }}
-            onClick={() => navigate('/circulos')}
+            onClick={() => navigate('/tu-grupo')}
           >
             Ver grupo
           </button>

@@ -52,8 +52,9 @@ import PoliticaPrivacidad from './pages/PoliticaPrivacidad';
 
 import Cursos from './pages/Cursos';
 import SeleccionCurso from './pages/SeleccionCurso';
-// ...existing code...
-
+import ArticuloAhorro from './pages/educacion/ArticuloAhorro';
+import InclusionFinanciera from './pages/educacion/InclusionFinanciera';
+import SimuladorAhorro from './pages/educacion/SimuladorAhorro';
 import ActivosPasivos from './pages/ActivosPasivos';
 
 import EconomiaEmergente from './pages/EconomiaEmergente';
@@ -236,6 +237,9 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/educacion/articulo-ahorro" element={<ArticuloAhorro />} />
+            <Route path="/educacion/inclusion-financiera" element={<InclusionFinanciera />} />
+            <Route path="/educacion/simulador-ahorro" element={<SimuladorAhorro />} />
             <Route path="*" element={<Navigate to="/" />} />
         </Routes>
 
