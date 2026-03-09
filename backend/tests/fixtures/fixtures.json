@@ -1,0 +1,55 @@
+{
+  "usuarios": [
+    {
+      "id": 1,
+      "nombre": "Ana",
+      "apellido": "Pérez",
+      "email": "ana@test.com",
+      "password": "test1234"
+    },
+    {
+      "id": 2,
+      "nombre": "Luis",
+      "apellido": "García",
+      "email": "luis@test.com",
+      "password": "test1234"
+    },
+    {
+      "id": 3,
+      "nombre": "Sofía",
+      "apellido": "Martínez",
+      "email": "sofia@test.com",
+      "password": "test1234"
+    }
+  ],
+  "grupos": [
+    {
+      "id": 101,
+      "nombre": "Ahorro Semanal",
+      "montoAporte": 100,
+      "frecuencia": "semanal",
+      "miembrosMax": 3,
+      "miembros": [1, 2]
+    },
+    {
+      "id": 102,
+      "nombre": "Fondo Mensual",
+      "montoAporte": 500,
+      "frecuencia": "mensual",
+      "miembrosMax": 2,
+      "miembros": [2, 3]
+    }
+  ],
+  "aportes": [
+    { "grupoId": 101, "usuarioId": 1, "monto": 100, "fecha": "2026-03-01" },
+    { "grupoId": 101, "usuarioId": 2, "monto": 100, "fecha": "2026-03-01" },
+    { "grupoId": 101, "usuarioId": 1, "monto": 100, "fecha": "2026-03-08" },
+    { "grupoId": 101, "usuarioId": 2, "monto": 100, "fecha": "2026-03-08" },
+    { "grupoId": 102, "usuarioId": 2, "monto": 500, "fecha": "2026-03-01" },
+    { "grupoId": 102, "usuarioId": 3, "monto": 500, "fecha": "2026-03-01" }
+  ],
+  "retiros": [
+    { "grupoId": 101, "usuarioId": 1, "monto": 200, "fecha": "2026-03-09", "turno": 1 },
+    { "grupoId": 102, "usuarioId": 2, "monto": 1000, "fecha": "2026-03-02", "turno": 1 }
+  ]
+}

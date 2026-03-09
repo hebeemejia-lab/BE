@@ -1,0 +1,75 @@
+name: CI - Banco Exclusivo Backend
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: testuser
+      DB_PASSWORD: testpass
+      DB_NAME: testdb
+      JWT_SECRET: testsecret
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Install dependencies
+        run: npm install --prefix backend
+      - name: Wait for DB
+        run: |
+          for i in {1..20}; do
+            nc -z localhost 5432 && echo "DB is up" && break
+            sleep 2
+          done
+      - name: Run migrations (si aplica)
+        run: npm run migrate --prefix backend || true
+      - name: Run tests with coverage
+        run: npm test --prefix backend -- --coverage
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: backend/coverage
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: backend/coverage/lcov.info
+          flags: backend
+          name: codecov-coverage
+          fail_ci_if_error: false
+      - name: Generar mapa de cobertura Markdown
+        run: node backend/scripts/generateCoverageMap.js
+      - name: Commit y push del mapa de cobertura actualizado
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add COVERAGE_MAP_TU_GRUPO.md
+          git commit -m "ci: update coverage map [skip ci]" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

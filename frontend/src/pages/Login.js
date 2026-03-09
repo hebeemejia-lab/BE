@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+
 import { AuthContext } from '../context/AuthContext';
 import { authAPI } from '../services/api';
 import './Auth.css';
@@ -14,7 +14,7 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
-  const { executeRecaptcha } = useGoogleReCaptcha();
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,15 +23,8 @@ function LoginContent() {
     setLoading(true);
 
     try {
-      // Ejecutar reCAPTCHA
-      if (!executeRecaptcha) {
-        throw new Error('reCAPTCHA no está disponible');
-      }
-
-      const recaptchaToken = await executeRecaptcha('login');
-      
-      // Enviar login con token de reCAPTCHA
-      await login(email, password, recaptchaToken);
+      // Enviar login sin reCAPTCHA
+      await login(email, password);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.mensaje || err.message || 'Error en el login');
@@ -102,11 +95,7 @@ function LoginContent() {
             </div>
           </div>
 
-          <div className="recaptcha-notice">
-            Este sitio está protegido por reCAPTCHA y se aplican la
-            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer"> Política de Privacidad</a> y
-            <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer"> Términos de Servicio</a> de Google.
-          </div>
+
 
           <button type="submit" className="btn-submit" disabled={loading}>
             {loading ? 'Cargando...' : 'Iniciar Sesión'}
@@ -130,23 +119,5 @@ function LoginContent() {
 }
 
 export default function Login() {
-  const recaptchaSiteKey = process.env.REACT_APP_RECAPTCHA_SITE_KEY;
-
-  if (!recaptchaSiteKey) {
-    console.error('⚠️ reCAPTCHA Site Key no está configurado');
-    return (
-      <div className="auth-container">
-        <div className="auth-card" style={{ color: '#e53e3e' }}>
-          <h2>⚠️ Error de Configuración</h2>
-          <p>reCAPTCHA no está configurado correctamente. Por favor, contacta al administrador.</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <GoogleReCaptchaProvider reCaptchaKey={recaptchaSiteKey}>
-      <LoginContent />
-    </GoogleReCaptchaProvider>
-  );
+  return <LoginContent />;
 }

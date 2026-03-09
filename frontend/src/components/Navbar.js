@@ -31,7 +31,7 @@ export default function Navbar() {
   return (
     <nav className={`navbar ${menuOpen ? 'open' : ''}`}>
       {usuario && (
-        <button 
+        <button
           className={`hamburger ${menuOpen ? 'active' : ''}`}
           onClick={() => setMenuOpen(!menuOpen)}
           aria-label="Menú"
@@ -43,7 +43,6 @@ export default function Navbar() {
           />
         </button>
       )}
-      
       <div className="navbar-container">
         <div className="navbar-header">
           <Link to="/" className="navbar-logo" onClick={handleMenuClose}>
@@ -51,10 +50,12 @@ export default function Navbar() {
             <span className="logo-text">BE</span>
           </Link>
         </div>
-
         {usuario ? (
           <>
             <div className={`navbar-right ${menuOpen ? 'open' : ''}`}>
+              <Link to="/tu-grupo" className="navbar-link" onClick={handleMenuClose} style={{marginRight: 18, fontWeight: 600}}>
+                Tu grupo
+              </Link>
               <div className="user-info">
                 <span className="user-name">
                   {usuario.nombre && usuario.apellido
@@ -63,7 +64,6 @@ export default function Navbar() {
                 </span>
                 <span className="user-balance">Balance: {formatMoney(usuario?.saldo)}</span>
               </div>
-              
               <div className="navbar-links">
                 <Link to="/dashboard" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
                   <img src="/imagen/BE (17).png" alt="Dashboard" className="nav-icon" />

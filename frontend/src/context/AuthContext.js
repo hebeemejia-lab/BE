@@ -37,11 +37,11 @@ export const AuthProvider = ({ children }) => {
     cargarUsuario();
   }, [token]);
 
-  const login = async (email, password, recaptchaToken) => {
+  const login = async (email, password) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await authAPI.login({ email, password, recaptchaToken });
+      const response = await authAPI.login({ email, password });
       const { token, usuario } = response.data;
       localStorage.setItem('token', token);
       setToken(token);

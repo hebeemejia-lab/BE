@@ -194,7 +194,16 @@ function App() {
            <Route path="/cursos/beneficios-ahorro" element={<BeneficiosAhorro />} />
            <Route path="/certificado" element={<Certificado />} />
           <Route path="/circulos" element={<Circulos />} />
-          <Route path="*" element={<Navigate to="/" />} />
+            {/* Agregar la ruta protegida para /tu-grupo */}
+            <Route
+              path="/tu-grupo"
+              element={
+                <ProtectedRoute>
+                  <TuGrupo />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" />} />
         </Routes>
 
         {/* Chatbot FAQ */}
@@ -219,4 +228,5 @@ function App() {
   );
 }
 
+  import TuGrupo from './pages/TuGrupo';
 export default App;
