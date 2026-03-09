@@ -38,12 +38,7 @@ const verificarRecaptcha = async (req, res, next) => {
       }
     });
 
-    const { success, score, action } = response.data;
-    const threshold = parseFloat(process.env.RECAPTCHA_THRESHOLD) || 0.5;
-
-    console.log(`🤖 reCAPTCHA - Score: ${score}, Action: ${action}, Threshold: ${threshold}`);
-
-    // Validar respuesta
+    const { success } = response.data;
     if (!success) {
       console.warn('⚠️ reCAPTCHA falló: Token inválido o expirado');
       return res.status(400).json({
@@ -51,28 +46,8 @@ const verificarRecaptcha = async (req, res, next) => {
         mensaje: 'Verificación de reCAPTCHA fallida. Por favor, intenta de nuevo.'
       });
     }
-
-    // Validar puntuación (0 = bot, 1 = humano)
-    // reCAPTCHA v3 retorna una puntuación, no un desafío
-    if (score < threshold) {
-      console.warn(`⚠️ reCAPTCHA Score bajo (${score}). Posible bot o actividad sospechosa.`);
-      return res.status(403).json({
-        exito: false,
-        mensaje: 'No pudimos verificar que eres humano. Por favor, intenta de nuevo.'
-      });
-    }
-
-    // Validar que la acción sea correcta (en este caso 'login')
-    if (action !== 'login') {
-      console.warn(`⚠️ Acción de reCAPTCHA incorrecta: ${action}`);
-      return res.status(400).json({
-        exito: false,
-        mensaje: 'Validación de reCAPTCHA fallida. Por favor, intenta de nuevo.'
-      });
-    }
-
     // ✅ reCAPTCHA válido, continuar con la siguiente función
-    console.log(`✅ reCAPTCHA válido - Score: ${score}`);
+    console.log(`✅ reCAPTCHA v2 válido`);
     next();
 
   } catch (error) {
