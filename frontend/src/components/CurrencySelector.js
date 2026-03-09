@@ -3,6 +3,7 @@ import { CurrencyContext } from '../context/CurrencyContext';
 import './CurrencySelector.css';
 
 const CurrencySelector = () => {
+  // eslint-disable-next-line no-unused-vars
   const { 
     currency, 
     changeCurrency, 

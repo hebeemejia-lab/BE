@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import { retiroAPI } from '../services/api';
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -9,6 +10,7 @@ import EstadoCuentaPanel from '../components/EstadoCuentaPanel';
 import AnalisisInversiones from '../components/AnalisisInversiones';
 import CurrencySelector from '../components/CurrencySelector';
 import './CurrencyCalculator.css';
+// eslint-disable-next-line no-unused-vars
 import CurrencyCalculator from './CurrencyCalculator.jsx';
 
 const descargarImagenDesdeHtml = async (html, nombreArchivo) => {
@@ -612,6 +614,7 @@ const AdminPanel = () => {
     ventana.print();
   };
 
+  // eslint-disable-next-line no-unused-vars
   const imprimirFacturaRetiroPDF = (solicitud) => {
     const ventana = window.open('', '_blank');
     const nombre = solicitud?.nombreUsuario || solicitud?.usuarioEmail || 'Cliente';
@@ -682,6 +685,7 @@ const AdminPanel = () => {
     ventana.print();
   };
 
+  // eslint-disable-next-line no-unused-vars
   const descargarFacturaRetiroJpg = async (solicitud) => {
     const logoUrl = `${window.location.origin}/imagen/BE%20(1)%20(1).png`;
     const nombre = solicitud?.nombreUsuario || solicitud?.usuarioEmail || 'Cliente';
@@ -1940,6 +1944,7 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
                         {prestamo.cuotas.map((cuota) => {
                           const pagado = Number(cuota.montoPagado) >= Number(cuota.montoCuota);
                           const parcial = !pagado && Number(cuota.montoPagado) > 0;
+                          // eslint-disable-next-line no-unused-vars
                           const porcentaje = Math.min(100, Math.round((Number(cuota.montoPagado) / Number(cuota.montoCuota)) * 100));
                           return (
                             <div
