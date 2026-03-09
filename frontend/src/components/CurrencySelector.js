@@ -4,6 +4,7 @@ import './CurrencySelector.css';
 
 const CurrencySelector = () => {
   // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   const { 
     currency, 
     changeCurrency, 
