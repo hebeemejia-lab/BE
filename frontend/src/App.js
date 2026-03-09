@@ -1,31 +1,59 @@
 import GastosPersonales from './pages/GastosPersonales';
+
 import MiInversionPage from './pages/MiInversionPage';
+
 import Perfil from './pages/Perfil';
+
 import React, { useState } from 'react';
+
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+
 import { AuthProvider } from './context/AuthContext';
+
 import { CurrencyProvider } from './context/CurrencyContext';
+
 import Navbar from './components/Navbar';
+
 import ProtectedRoute from './components/ProtectedRoute';
+
 import ChatBotFAQ from './components/ChatBotFAQ';
 
 // Páginas
 import Home from './pages/Home';
+
 import Login from './pages/Login';
+
 import Register from './pages/Register';
+
 import VerifyEmail from './pages/VerifyEmail';
+
+
 import ResendVerification from './pages/ResendVerification';
+
 import Dashboard from './pages/Dashboard';
+
 import Transferencias from './pages/Transferencias';
+
 import TransferenciaBancaria from './pages/TransferenciaBancaria';
+
 import TransferenciasInternacionales from './pages/TransferenciasInternacionales';
+
 import Recargas from './pages/Recargas';
+
 import Retiros from './pages/Retiros';
+
 import VincularCuenta from './pages/VincularCuenta';
+
 import Prestamos from './pages/Prestamos';
+
 import AdminPanel from './pages/AdminPanel';
+
 import PoliticaPrivacidad from './pages/PoliticaPrivacidad';
-import Cursos from './pages/Cursos';
+
+
+import SeleccionCurso from './pages/SeleccionCurso';
+
+import SeleccionCurso from './pages/SeleccionCurso';
 
 import ActivosPasivos from './pages/ActivosPasivos';
 
