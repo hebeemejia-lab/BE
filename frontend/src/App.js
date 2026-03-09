@@ -228,5 +228,5 @@ function App() {
   );
 }
 
-import TuGrupo from './pages/TuGrupo';
+
 export default App;
