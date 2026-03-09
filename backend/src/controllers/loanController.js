@@ -68,11 +68,11 @@ const obtenerMisPrestamos = async (req, res) => {
           order: [['numeroCuota', 'ASC']]
         });
         console.log(`Cuotas encontradas para préstamo ${prestamo.id}:`, cuotas.length);
-        // saldoNegativo = suma de (montoCuota - montoPagado) de cuotas no pagadas
+        // saldoNegativo = suma de la cuota completa (incluyendo intereses) pendiente de pago
         let saldoNegativo = 0;
         cuotas.forEach(cuota => {
           if (!cuota.pagado) {
-            saldoNegativo += parseFloat(cuota.montoCuota) - parseFloat(cuota.montoPagado || 0);
+            saldoNegativo += parseFloat(cuota.montoCuota);
           }
         });
         return {
