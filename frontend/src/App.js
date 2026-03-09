@@ -50,10 +50,9 @@ import AdminPanel from './pages/AdminPanel';
 
 import PoliticaPrivacidad from './pages/PoliticaPrivacidad';
 
-
+import Cursos from './pages/Cursos';
 import SeleccionCurso from './pages/SeleccionCurso';
-
-import SeleccionCurso from './pages/SeleccionCurso';
+// ...existing code...
 
 import ActivosPasivos from './pages/ActivosPasivos';
 
