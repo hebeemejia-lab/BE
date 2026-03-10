@@ -18,6 +18,9 @@ function LoginContent() {
   const navigate = useNavigate();
   const RECAPTCHA_SITE_KEY = process.env.REACT_APP_RECAPTCHA_SITE_KEY || '';
 
+  // Log temporal para depuración de sitekey
+  console.log('RECAPTCHA_SITE_KEY:', RECAPTCHA_SITE_KEY);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
