@@ -16,8 +16,9 @@ function LoginContent() {
   const [recaptchaToken, setRecaptchaToken] = useState('');
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
-  const RECAPTCHA_SITE_KEY = process.env.REACT_APP_RECAPTCHA_SITE_KEY || '';
 
+  // Limpiar sitekey y validar
+  const RECAPTCHA_SITE_KEY = (process.env.REACT_APP_RECAPTCHA_SITE_KEY || '').trim();
   // Log temporal para depuración de sitekey
   console.log('RECAPTCHA_SITE_KEY:', RECAPTCHA_SITE_KEY);
 
@@ -110,14 +111,21 @@ function LoginContent() {
             </div>
           </div>
 
+
           <div className="form-group">
             <label>reCAPTCHA</label>
             <div className="captcha-field">
-              <ReCAPTCHA
-                siteKey={RECAPTCHA_SITE_KEY}
-                onVerify={(token) => handleRecaptchaChange(token)}
-                onExpired={() => console.log('reCAPTCHA expired')}
-              />
+              {RECAPTCHA_SITE_KEY ? (
+                <ReCAPTCHA
+                  siteKey={RECAPTCHA_SITE_KEY}
+                  onVerify={(token) => handleRecaptchaChange(token)}
+                  onExpired={() => console.log('reCAPTCHA expired')}
+                />
+              ) : (
+                <div style={{ color: 'red', fontWeight: 'bold' }}>
+                  Error: Falta la clave de sitio de reCAPTCHA. Contacta al administrador.
+                </div>
+              )}
             </div>
           </div>
 
