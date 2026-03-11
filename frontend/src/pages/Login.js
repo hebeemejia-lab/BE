@@ -1,6 +1,10 @@
 
+import React, { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import jwt_decode from 'jwt-decode';
+import { AuthContext } from '../context/AuthContext';
+import { authAPI } from '../services/api';
 
 function LoginContent() {
   const [email, setEmail] = useState('');
