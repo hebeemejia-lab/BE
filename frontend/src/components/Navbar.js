@@ -53,9 +53,16 @@ export default function Navbar() {
         {usuario ? (
           <>
             <div className={`navbar-right ${menuOpen ? 'open' : ''}`}>
-              <Link to="/tu-grupo" className="navbar-link" onClick={handleMenuClose} style={{marginRight: 18, fontWeight: 600}}>
+              <a
+                href="https://bancoexclusivo.lat/TuGrupo"
+                className="navbar-link"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleMenuClose}
+                style={{marginRight: 18, fontWeight: 600}}
+              >
                 Tu grupo
-              </Link>
+              </a>
               <div className="user-info">
                 <span className="user-name">
                   {usuario.nombre && usuario.apellido
@@ -135,26 +142,7 @@ export default function Navbar() {
                   <span role="img" aria-label="Transacciones">💸</span>
                   Transacciones
                 </a>
-                <Link to="/mi-inversion" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
-                  <img src="/imagen/BE%20(24).png" alt="Mi Inversión" className="nav-icon" />
-                  Mi Inversión
-                </Link>
-                <Link to="/recargas" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
-                  <img src="/imagen/BE (4) (1).png" alt="Deposita" className="nav-icon" />
-                  Deposita
-                </Link>
-                <Link to="/gastos-personales" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
-                  <img src="/imagen/BE%20(23).png" alt="Gastos Personales" className="nav-icon" />
-                  Gestión de Gastos Personales
-                </Link>
-                <Link to="/retiros" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
-                  <img src="/imagen/BE (5) (1).png" alt="Retiros" className="nav-icon" />
-                  Retiros
-                </Link>
-                <Link to="/vincular-cuenta" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
-                  <img src="/imagen/BE (11).png" alt="Vincular Cuenta" className="nav-icon" />
-                  Vincular Cuenta
-                </Link>
+                {/* Todos los enlaces principales ya están como <a> externos arriba */}
                 
                 <div className="nav-dropdown">
                   <button 
@@ -165,18 +153,18 @@ export default function Navbar() {
                   </button>
                   {transactionsOpen && (
                     <div className="dropdown-menu">
-                      <Link to="/transferencias" className="dropdown-item" onClick={handleMenuClose}>
+                      <a href="https://bancoexclusivo.lat/Transferencias" className="dropdown-item" target="_blank" rel="noopener noreferrer" onClick={handleMenuClose}>
                         <img src="/imagen/BE (6) (1).png" alt="Transferencias" className="nav-icon" />
                         Transferencias
-                      </Link>
-                      <Link to="/transferencias-bancarias" className="dropdown-item" onClick={handleMenuClose}>
+                      </a>
+                      <a href="https://bancoexclusivo.lat/TransferenciasBancarias" className="dropdown-item" target="_blank" rel="noopener noreferrer" onClick={handleMenuClose}>
                         <img src="/imagen/BE (14).png" alt="Transf. Bancaria" className="nav-icon" />
                         Transf. Bancaria
-                      </Link>
-                      <Link to="/transferencias-internacionales" className="dropdown-item" onClick={handleMenuClose}>
+                      </a>
+                      <a href="https://bancoexclusivo.lat/TransferenciasInternacionales" className="dropdown-item" target="_blank" rel="noopener noreferrer" onClick={handleMenuClose}>
                         <img src="/imagen/Adobe Express - file (12).png" alt="Transf. Internacional" className="nav-icon" />
                         Transf. Internacional
-                      </Link>
+                      </a>
                     </div>
                   )}
                 </div>
@@ -191,61 +179,59 @@ export default function Navbar() {
                   </button>
                   {menuOpen === 'cursos' && (
                     <div className="dropdown-menu">
-                      <Link to="/cursos/activos-pasivos" className="dropdown-item" onClick={handleMenuClose}>
+                      <a href="https://bancoexclusivo.lat/Cursos/ActivosPasivos" className="dropdown-item" target="_blank" rel="noopener noreferrer" onClick={handleMenuClose}>
                         Activos y Pasivos
-                      </Link>
-                      <Link to="/cursos/economia-emergente" className="dropdown-item" onClick={handleMenuClose}>
+                      </a>
+                      <a href="https://bancoexclusivo.lat/Cursos/EconomiaEmergente" className="dropdown-item" target="_blank" rel="noopener noreferrer" onClick={handleMenuClose}>
                         Economía Emergente
-                      </Link>
-                      <Link to="/cursos/beneficios-ahorro" className="dropdown-item" onClick={handleMenuClose}>
+                      </a>
+                      <a href="https://bancoexclusivo.lat/Cursos/BeneficiosAhorro" className="dropdown-item" target="_blank" rel="noopener noreferrer" onClick={handleMenuClose}>
                         Beneficios del Ahorro
-                      </Link>
+                      </a>
                     </div>
                   )}
                 </div>
                 
 
                 
-                {(usuario.rol === 'admin' || usuario.rol === 'admin_lite') && (
-                  <Link to="/admin" className="nav-link admin-link" onClick={handleMenuClose}>⚙️ Panel de Control</Link>
-                )}
+                <a
+                  href="https://bancoexclusivo.lat/Admin"
+                  className="nav-link admin-link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleMenuClose}
+                >⚙️ Panel de Control</a>
 
                 {usuario.rol === 'admin' && (
-                  <div className="nav-dropdown">
-                    <button
-                      className={`nav-link dropdown-toggle ${devMenuOpen ? 'active' : ''}`}
-                      onClick={() => setDevMenuOpen(!devMenuOpen)}
-                    >
-                      Desarrolladores
-                    </button>
-                    {devMenuOpen && (
-                      <div className="dropdown-menu">
-                        <button
-                          type="button"
-                          className="dropdown-item"
-                          onClick={() => {
-                            toggleDevMode();
-                            setDevMenuOpen(false);
-                          }}
-                        >
-                          {devMode ? 'Cambiar a LIVE' : 'Cambiar a DEV'}
-                        </button>
-                        <span className="dropdown-item" aria-hidden="true">
-                          Modo actual: {devMode ? 'DEV' : 'LIVE'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                  <a
+                    href="https://bancoexclusivo.lat/Desarrolladores"
+                    className="nav-link admin-link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={handleMenuClose}
+                  >Desarrolladores</a>
                 )}
-                
-                <Link to="/perfil" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
+
+                <a
+                  href="https://bancoexclusivo.lat/Perfil"
+                  className="nav-link nav-link-with-img"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleMenuClose}
+                >
                   <img src="/imagen/BE (13).png" alt="Perfil" className="nav-icon" />
                   Perfil
-                </Link>
+                </a>
 
-                <Link to="/politica-privacidad" className="nav-link" onClick={handleMenuClose}>
+                <a
+                  href="https://bancoexclusivo.lat/PoliticaDePrivacidad"
+                  className="nav-link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleMenuClose}
+                >
                   🔐 Politicas de Seguridad
-                </Link>
+                </a>
                 
                 <button onClick={handleLogout} className="nav-button logout-btn">
                   🚪 Cerrar Sesión
