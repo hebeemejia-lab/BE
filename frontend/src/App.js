@@ -32,6 +32,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import ResendVerification from './pages/ResendVerification';
 
 import Dashboard from './pages/Dashboard';
+import SalaDeSaldos from './pages/SalaDeSaldos';
 
 import Transferencias from './pages/Transferencias';
 
@@ -121,13 +122,13 @@ function App() {
           <AuthProvider>
             <Navbar onAbrirChatbot={() => setChatbotAbierto(true)} />
             <Routes>
-              {/* ...existing code... */}
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/verificar-email" element={<VerifyEmail />} />
               <Route path="/reenviar-verificacion" element={<ResendVerification />} />
-              {/* ...existing code... */}
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/sala-saldos" element={<SalaDeSaldos />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
             {/* Chatbot FAQ */}

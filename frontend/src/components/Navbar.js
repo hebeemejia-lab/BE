@@ -65,7 +65,7 @@ export default function Navbar() {
                 <span className="user-balance">Balance: {formatMoney(usuario?.saldo)}</span>
               </div>
               <div className="navbar-links">
-                <Link to="/dashboard" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
+                <Link to="/sala-saldos" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
                   <img src="/imagen/BE (17).png" alt="Dashboard" className="nav-icon" />
                   Dashboard
                 </Link>
