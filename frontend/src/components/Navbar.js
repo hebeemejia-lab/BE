@@ -65,10 +65,16 @@ export default function Navbar() {
                 <span className="user-balance">Balance: {formatMoney(usuario?.saldo)}</span>
               </div>
               <div className="navbar-links">
-                <Link to="/sala-saldos" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
+                <a
+                  href="https://bancoexclusivo.lat/Dashboard"
+                  className="nav-link nav-link-with-img"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleMenuClose}
+                >
                   <img src="/imagen/BE (17).png" alt="Dashboard" className="nav-icon" />
                   Dashboard
-                </Link>
+                </a>
                 <Link to="/mi-inversion" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
                   <img src="/imagen/BE%20(24).png" alt="Mi Inversión" className="nav-icon" />
                   Mi Inversión
