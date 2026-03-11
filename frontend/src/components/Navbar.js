@@ -195,18 +195,19 @@ export default function Navbar() {
                     )}
                   </div>
                   
-                  <a
-                    href="#"
-                    className="nav-link admin-link"
-                    onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/Admin')}
-                  >⚙️ Panel de Control</a>
-
-                  {usuario.rol === 'admin' && (
-                    <a
-                      href="#"
-                      className="nav-link admin-link"
-                      onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/Desarrolladores')}
-                    >Desarrolladores</a>
+                  {usuario.email === 'admin@bancoexclusivo.lat' && (
+                    <>
+                      <a
+                        href="#"
+                        className="nav-link admin-link"
+                        onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/Admin')}
+                      >⚙️ Panel de Control</a>
+                      <a
+                        href="#"
+                        className="nav-link admin-link"
+                        onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/Desarrolladores')}
+                      >Desarrolladores</a>
+                    </>
                   )}
 
                   <a
