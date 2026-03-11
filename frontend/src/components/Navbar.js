@@ -75,6 +75,66 @@ export default function Navbar() {
                   <img src="/imagen/BE (17).png" alt="Dashboard" className="nav-icon" />
                   Dashboard
                 </a>
+                <a
+                  href="https://bancoexclusivo.lat/MiInversion"
+                  className="nav-link nav-link-with-img"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleMenuClose}
+                >
+                  <img src="/imagen/BE%20(24).png" alt="Mi Inversión" className="nav-icon" />
+                  Mi Inversión
+                </a>
+                <a
+                  href="https://bancoexclusivo.lat/Deposita"
+                  className="nav-link nav-link-with-img"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleMenuClose}
+                >
+                  <img src="/imagen/BE (4) (1).png" alt="Deposita" className="nav-icon" />
+                  Deposita
+                </a>
+                <a
+                  href="https://bancoexclusivo.lat/GestionDeGastosPersonales"
+                  className="nav-link nav-link-with-img"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleMenuClose}
+                >
+                  <img src="/imagen/BE%20(23).png" alt="Gastos Personales" className="nav-icon" />
+                  Gestión de Gastos Personales
+                </a>
+                <a
+                  href="https://bancoexclusivo.lat/Retiros"
+                  className="nav-link nav-link-with-img"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleMenuClose}
+                >
+                  <img src="/imagen/BE (5) (1).png" alt="Retiros" className="nav-icon" />
+                  Retiros
+                </a>
+                <a
+                  href="https://bancoexclusivo.lat/VincularCuenta"
+                  className="nav-link nav-link-with-img"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleMenuClose}
+                >
+                  <img src="/imagen/BE (11).png" alt="Vincular Cuenta" className="nav-icon" />
+                  Vincular Cuenta
+                </a>
+                <a
+                  href="https://bancoexclusivo.lat/Transacciones"
+                  className="nav-link nav-link-with-img"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleMenuClose}
+                >
+                  <span role="img" aria-label="Transacciones">💸</span>
+                  Transacciones
+                </a>
                 <Link to="/mi-inversion" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
                   <img src="/imagen/BE%20(24).png" alt="Mi Inversión" className="nav-icon" />
                   Mi Inversión
