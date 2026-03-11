@@ -1,8 +1,10 @@
+
 import DashboardInversionContainer from '../components/DashboardInversionContainer';
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api, { transferAPI, loanAPI, depositoAPI } from '../services/api';
+import SalaDeSaldos from './SalaDeSaldos';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -15,6 +17,7 @@ export default function Dashboard() {
   const [saldoInversion, setSaldoInversion] = useState(0);
   const [gananciaInversion, setGananciaInversion] = useState(0);
   const [cargandoInversion, setCargandoInversion] = useState(true);
+  const [mostrarSalaSaldos, setMostrarSalaSaldos] = useState(false);
 
   const getCurrencySymbol = (currency) => {
     const symbols = {
@@ -117,11 +120,36 @@ export default function Dashboard() {
   const simboloDop = getCurrencySymbol('DOP');
   const simboloUsd = getCurrencySymbol('USD');
 
+  if (mostrarSalaSaldos) {
+    // Suma depósito + préstamo
+    const saldoPrestamos = prestamos.filter((prestamo) => {
+      const estado = (prestamo.estado || '').toLowerCase();
+      return estado && estado !== 'pagado' && estado !== 'rechazado';
+    }).reduce((sum, prestamo) => sum + (Number(prestamo.saldoNegativo ?? 0)), 0);
+    const depositoPrestamo = (Number(usuario?.saldo) || 0) + saldoPrestamos;
+    return (
+      <SalaDeSaldos
+        saldoPrestamos={saldoPrestamos}
+        saldoPaypal={paypalTotal}
+        saldoInversion={saldoInversion + gananciaInversion}
+        depositoPrestamo={depositoPrestamo}
+        onTuGrupoClick={() => navigate('/tu-grupo')}
+      />
+    );
+  }
+
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
         <h1>Bienvenido, <span className="user-nombre">{usuario?.nombre}</span> <span className="user-apellido">{usuario?.apellido}</span>!</h1>
         <p>Aquí está el resumen de tu cuenta</p>
+        <button
+          className="btn-dashboard-sala"
+          style={{ marginTop: 16, padding: '8px 24px', borderRadius: 8, background: '#1976d2', color: '#fff', border: 'none', fontWeight: 700, fontSize: 18, cursor: 'pointer' }}
+          onClick={() => setMostrarSalaSaldos(true)}
+        >
+          Dashboard
+        </button>
       </div>
 
       <div className="account-overview">
