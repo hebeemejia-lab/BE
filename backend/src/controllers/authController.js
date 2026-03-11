@@ -302,4 +302,27 @@ const getPerfil = async (req, res) => {
   }
 };
 
+// Actualizar perfil del usuario autenticado
+const updatePerfil = async (req, res) => {
+  try {
+    const usuario = await User.findByPk(req.usuario.id);
+    if (!usuario) {
+      return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+    }
+
+    // Solo permitir actualizar ciertos campos
+    const { nombre, apellido, telefono, direccion } = req.body;
+    if (nombre !== undefined) usuario.nombre = nombre;
+    if (apellido !== undefined) usuario.apellido = apellido;
+    if (telefono !== undefined) usuario.telefono = telefono;
+    if (direccion !== undefined) usuario.direccion = direccion;
+
+    await usuario.save();
+    res.json({ mensaje: 'Perfil actualizado', usuario });
+  } catch (error) {
+    console.error('❌ Error actualizando perfil:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = { register, login, getPerfil, updatePerfil, verifyEmail, resendVerification };
