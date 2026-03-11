@@ -129,6 +129,22 @@ function App() {
               <Route path="/reenviar-verificacion" element={<ResendVerification />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/sala-saldos" element={<SalaDeSaldos />} />
+              <Route path="/mi-inversion" element={<MiInversionPage />} />
+              <Route path="/recargas" element={<Recargas />} />
+              <Route path="/gastos-personales" element={<GastosPersonales />} />
+              <Route path="/retiros" element={<Retiros />} />
+              <Route path="/vincular-cuenta" element={<VincularCuenta />} />
+              <Route path="/transferencias" element={<Transferencias />} />
+              <Route path="/transferencias-bancarias" element={<TransferenciaBancaria />} />
+              <Route path="/transferencias-internacionales" element={<TransferenciasInternacionales />} />
+              <Route path="/cursos" element={<Cursos />} />
+              <Route path="/cursos/activos-pasivos" element={<ActivosPasivos />} />
+              <Route path="/cursos/economia-emergente" element={<EconomiaEmergente />} />
+              <Route path="/cursos/beneficios-ahorro" element={<BeneficiosAhorro />} />
+              <Route path="/perfil" element={<Perfil />} />
+              <Route path="/tu-grupo" element={<TuGrupo />} />
+              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
             {/* Chatbot FAQ */}
