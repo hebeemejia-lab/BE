@@ -20,21 +20,6 @@ const googleLogin = async (req, res) => {
       return res.status(401).json({ mensaje: 'Token de Google inválido' });
     }
 
-      return res.status(400).json({ mensaje: 'Token de Google requerido' });
-    }
-
-    const client = new OAuth2Client();
-    let ticket;
-    try {
-      ticket = await client.verifyIdToken({
-        idToken: credential,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-    } catch (err) {
-      console.error('❌ Error verificando token de Google:', err.message);
-      return res.status(401).json({ mensaje: 'Token de Google inválido' });
-    }
-
     const payload = ticket.getPayload();
     const email = payload.email;
     const nombre = payload.given_name || '';
