@@ -90,71 +90,57 @@ export default function Navbar() {
                 </div>
                 <div className="navbar-links">
                   <a
-                    href="https://bancoexclusivo.lat/Dashboard"
+                    href="#"
                     className="nav-link nav-link-with-img"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleMenuClose}
+                    onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/Dashboard')}
                   >
                     <img src="/imagen/BE (17).png" alt="Dashboard" className="nav-icon" />
                     Dashboard
                   </a>
                   <a
-                    href="https://bancoexclusivo.lat/MiInversion"
+                    href="#"
                     className="nav-link nav-link-with-img"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleMenuClose}
+                    onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/MiInversion')}
                   >
                     <img src="/imagen/BE%20(24).png" alt="Mi Inversión" className="nav-icon" />
                     Mi Inversión
                   </a>
                   <a
-                    href="https://bancoexclusivo.lat/Deposita"
+                    href="#"
                     className="nav-link nav-link-with-img"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleMenuClose}
+                    onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/Deposita')}
                   >
                     <img src="/imagen/BE (4) (1).png" alt="Deposita" className="nav-icon" />
                     Deposita
                   </a>
                   <a
-                    href="https://bancoexclusivo.lat/GestionDeGastosPersonales"
+                    href="#"
                     className="nav-link nav-link-with-img"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleMenuClose}
+                    onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/GestionDeGastosPersonales')}
                   >
                     <img src="/imagen/BE%20(23).png" alt="Gastos Personales" className="nav-icon" />
                     Gestión de Gastos Personales
                   </a>
                   <a
-                    href="https://bancoexclusivo.lat/Retiros"
+                    href="#"
                     className="nav-link nav-link-with-img"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleMenuClose}
+                    onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/Retiros')}
                   >
                     <img src="/imagen/BE (5) (1).png" alt="Retiros" className="nav-icon" />
                     Retiros
                   </a>
                   <a
-                    href="https://bancoexclusivo.lat/VincularCuenta"
+                    href="#"
                     className="nav-link nav-link-with-img"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleMenuClose}
+                    onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/VincularCuenta')}
                   >
                     <img src="/imagen/BE (11).png" alt="Vincular Cuenta" className="nav-icon" />
                     Vincular Cuenta
                   </a>
                   <a
-                    href="https://bancoexclusivo.lat/Transacciones"
+                    href="#"
                     className="nav-link nav-link-with-img"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleMenuClose}
+                    onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/Transacciones')}
                   >
                     <span role="img" aria-label="Transacciones">💸</span>
                     Transacciones
@@ -196,13 +182,13 @@ export default function Navbar() {
                     </button>
                     {menuOpen === 'cursos' && (
                       <div className="dropdown-menu">
-                        <a href="https://bancoexclusivo.lat/Cursos/ActivosPasivos" className="dropdown-item" target="_blank" rel="noopener noreferrer" onClick={handleMenuClose}>
+                        <a href="#" className="dropdown-item" onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/Cursos/ActivosPasivos')}>
                           Activos y Pasivos
                         </a>
-                        <a href="https://bancoexclusivo.lat/Cursos/EconomiaEmergente" className="dropdown-item" target="_blank" rel="noopener noreferrer" onClick={handleMenuClose}>
+                        <a href="#" className="dropdown-item" onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/Cursos/EconomiaEmergente')}>
                           Economía Emergente
                         </a>
-                        <a href="https://bancoexclusivo.lat/Cursos/BeneficiosAhorro" className="dropdown-item" target="_blank" rel="noopener noreferrer" onClick={handleMenuClose}>
+                        <a href="#" className="dropdown-item" onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/Cursos/BeneficiosAhorro')}>
                           Beneficios del Ahorro
                         </a>
                       </div>
@@ -210,40 +196,32 @@ export default function Navbar() {
                   </div>
                   
                   <a
-                    href="https://bancoexclusivo.lat/Admin"
+                    href="#"
                     className="nav-link admin-link"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleMenuClose}
+                    onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/Admin')}
                   >⚙️ Panel de Control</a>
 
                   {usuario.rol === 'admin' && (
                     <a
-                      href="https://bancoexclusivo.lat/Desarrolladores"
+                      href="#"
                       className="nav-link admin-link"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={handleMenuClose}
+                      onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/Desarrolladores')}
                     >Desarrolladores</a>
                   )}
 
                   <a
-                    href="https://bancoexclusivo.lat/Perfil"
+                    href="#"
                     className="nav-link nav-link-with-img"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleMenuClose}
+                    onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/Perfil')}
                   >
                     <img src="/imagen/BE (13).png" alt="Perfil" className="nav-icon" />
                     Perfil
                   </a>
 
                   <a
-                    href="https://bancoexclusivo.lat/PoliticaDePrivacidad"
+                    href="#"
                     className="nav-link"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleMenuClose}
+                    onClick={e => handleExternalNav(e, 'https://bancoexclusivo.lat/PoliticaDePrivacidad')}
                   >
                     🔐 Politicas de Seguridad
                   </a>
