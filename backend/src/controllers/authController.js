@@ -325,4 +325,4 @@ const updatePerfil = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getPerfil, updatePerfil, verifyEmail, resendVerification };
+module.exports = { register, login, getPerfil, updatePerfil, verifyEmail, resendVerification, googleLogin };
