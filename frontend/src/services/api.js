@@ -28,6 +28,7 @@ API.interceptors.request.use((config) => {
 export const authAPI = {
   register: (datos) => API.post('/auth/register', datos),
   login: (datos) => API.post('/auth/login', datos),
+  googleLogin: (credential) => API.post('/auth/google-login', { credential }),
   getPerfil: () => API.get('/auth/perfil'),
   verifyEmail: (token) => API.get(`/auth/verify-email?token=${encodeURIComponent(token)}`),
   resendVerification: (email) => API.post('/auth/resend-verification', { email }),

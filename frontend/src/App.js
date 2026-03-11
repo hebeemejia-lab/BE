@@ -110,158 +110,44 @@ function TitleManager() {
 
 function App() {
   const [chatbotAbierto, setChatbotAbierto] = useState(false);
+  const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
   return (
-    <Router>
-      <TitleManager />
-      <CurrencyProvider>
-        <AuthProvider>
-          <Navbar onAbrirChatbot={() => setChatbotAbierto(true)} />
-          <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/verificar-email" element={<VerifyEmail />} />
-          <Route path="/reenviar-verificacion" element={<ResendVerification />} />
-          
-          <Route
-            path="/gastos-personales"
-            element={
-              <ProtectedRoute>
-                <GastosPersonales />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/mi-inversion"
-            element={
-              <ProtectedRoute>
-                <MiInversionPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/transferencias"
-            element={
-              <ProtectedRoute>
-                <Transferencias />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/transferencias-bancarias"
-            element={
-              <ProtectedRoute>
-                <TransferenciaBancaria />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/transferencias-internacionales"
-            element={
-              <ProtectedRoute>
-                <TransferenciasInternacionales />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/perfil"
-            element={
-              <ProtectedRoute>
-                <Perfil />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/recargas"
-            element={
-              <ProtectedRoute>
-                <Recargas />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/retiros"
-            element={
-              <ProtectedRoute>
-                <Retiros />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vincular-cuenta"
-            element={
-              <ProtectedRoute>
-                <VincularCuenta />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/prestamos"
-            element={
-              <ProtectedRoute>
-                <Prestamos />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/*"
-            element={
-              <ProtectedRoute>
-                <AdminPanel />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
-           <Route path="/cursos" element={<Cursos />} />
-          <Route path="/seleccion-curso" element={<SeleccionCurso />} />
-           <Route path="/cursos/activos-pasivos" element={<ActivosPasivos />} />
-           <Route path="/cursos/economia-emergente" element={<EconomiaEmergente />} />
-           <Route path="/cursos/beneficios-ahorro" element={<BeneficiosAhorro />} />
-           <Route path="/certificado" element={<Certificado />} />
-          <Route path="/circulos" element={<Circulos />} />
-            {/* Agregar la ruta protegida para /tu-grupo */}
-            <Route
-              path="/tu-grupo"
-              element={
-                <ProtectedRoute>
-                  <TuGrupo />
-                </ProtectedRoute>
-              }
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <Router>
+        <TitleManager />
+        <CurrencyProvider>
+          <AuthProvider>
+            <Navbar onAbrirChatbot={() => setChatbotAbierto(true)} />
+            <Routes>
+              {/* ...existing code... */}
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/verificar-email" element={<VerifyEmail />} />
+              <Route path="/reenviar-verificacion" element={<ResendVerification />} />
+              {/* ...existing code... */}
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+            {/* Chatbot FAQ */}
+            <ChatBotFAQ 
+              isOpen={chatbotAbierto} 
+              onClose={() => setChatbotAbierto(false)} 
             />
-            <Route path="/educacion/articulo-ahorro" element={<ArticuloAhorro />} />
-            <Route path="/educacion/inclusion-financiera" element={<InclusionFinanciera />} />
-            <Route path="/educacion/simulador-ahorro" element={<SimuladorAhorro />} />
-            <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-
-        {/* Chatbot FAQ */}
-        <ChatBotFAQ 
-          isOpen={chatbotAbierto} 
-          onClose={() => setChatbotAbierto(false)} 
-        />
-
-        {/* Botón flotante para abrir el chatbot */}
-        {!chatbotAbierto && (
-          <button
-            className="chatbot-fab"
-            onClick={() => setChatbotAbierto(true)}
-            title="¿Necesitas ayuda?"
-          >
-            💬
-          </button>
-        )}
-      </AuthProvider>
-      </CurrencyProvider>
-    </Router>
+            {/* Botón flotante para abrir el chatbot */}
+            {!chatbotAbierto && (
+              <button
+                className="chatbot-fab"
+                onClick={() => setChatbotAbierto(true)}
+                title="¿Necesitas ayuda?"
+              >
+                💬
+              </button>
+            )}
+          </AuthProvider>
+        </CurrencyProvider>
+      </Router>
+    </GoogleOAuthProvider>
   );
 }
 

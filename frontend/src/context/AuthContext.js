@@ -37,11 +37,16 @@ export const AuthProvider = ({ children }) => {
     cargarUsuario();
   }, [token]);
 
-  const login = async (email, password, recaptchaToken) => {
+  const login = async (email, password, credential, provider) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await authAPI.login({ email, password, recaptchaToken });
+      let response;
+      if (provider === 'google' && credential) {
+        response = await authAPI.googleLogin(credential);
+      } else {
+        response = await authAPI.login({ email, password });
+      }
       const { token, usuario } = response.data;
       localStorage.setItem('token', token);
       setToken(token);

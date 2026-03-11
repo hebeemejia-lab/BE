@@ -1,3 +1,75 @@
+// Login con Google
+const { OAuth2Client } = require('google-auth-library');
+
+const googleLogin = async (req, res) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      return res.status(400).json({ mensaje: 'Token de Google requerido' });
+    }
+
+    const client = new OAuth2Client();
+    let ticket;
+    try {
+      ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+    } catch (err) {
+      console.error('❌ Error verificando token de Google:', err.message);
+      return res.status(401).json({ mensaje: 'Token de Google inválido' });
+    }
+
+    const payload = ticket.getPayload();
+    const email = payload.email;
+    const nombre = payload.given_name || '';
+    const apellido = payload.family_name || '';
+    if (!email) {
+      return res.status(400).json({ mensaje: 'No se pudo obtener el email de Google' });
+    }
+
+    let usuario = await User.findOne({ where: { email } });
+    if (!usuario) {
+      // Crear usuario nuevo con email verificado
+      usuario = await User.create({
+        nombre,
+        apellido,
+        email,
+        password: crypto.randomBytes(16).toString('hex'), // Contraseña aleatoria
+        cedula: 'GOOGLE-' + Date.now(),
+        telefono: '',
+        direccion: '',
+        saldo: 0,
+        emailVerificado: true,
+        rol: 'cliente',
+      });
+      console.log('✅ Usuario creado por Google:', usuario.id);
+    }
+
+    // Generar token JWT
+    const token = jwt.sign(
+      { id: usuario.id, email: usuario.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      mensaje: 'Inicio de sesión con Google exitoso',
+      usuario: {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        email: usuario.email,
+        saldo: parseFloat(usuario.saldo),
+        rol: usuario.rol || 'cliente',
+        emailVerificado: usuario.emailVerificado,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error('❌ Error en googleLogin:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
 // Actualizar perfil del usuario autenticado
 const updatePerfil = async (req, res) => {
   try {

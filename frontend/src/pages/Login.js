@@ -1,10 +1,6 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import ReCAPTCHA from 'react-google-recaptcha';
 
-import { AuthContext } from '../context/AuthContext';
-import { authAPI } from '../services/api';
-import './Auth.css';
+import { GoogleLogin } from '@react-oauth/google';
+import jwt_decode from 'jwt-decode';
 
 function LoginContent() {
   const [email, setEmail] = useState('');
@@ -13,30 +9,16 @@ function LoginContent() {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
-  const [recaptchaToken, setRecaptchaToken] = useState('');
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
-
-  // Limpiar sitekey y validar
-  const RECAPTCHA_SITE_KEY = (process.env.REACT_APP_RECAPTCHA_SITE_KEY || '').trim();
-  // Log temporal para depuración de sitekey
-  console.log('RECAPTCHA_SITE_KEY:', RECAPTCHA_SITE_KEY);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setInfo('');
     setLoading(true);
-
-    if (!recaptchaToken) {
-      setError('Por favor, completa el reCAPTCHA.');
-      setLoading(false);
-      return;
-    }
-
     try {
-      // Enviar login con reCAPTCHA
-      await login(email, password, recaptchaToken);
+      await login(email, password);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.mensaje || err.message || 'Error en el login');
@@ -45,8 +27,22 @@ function LoginContent() {
     }
   };
 
-  const handleRecaptchaChange = (token) => {
-    setRecaptchaToken(token);
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError('');
+    setInfo('');
+    setLoading(true);
+    try {
+      await login(null, null, credentialResponse.credential, 'google');
+      navigate('/dashboard');
+    } catch (err) {
+      setError('No se pudo iniciar sesión con Google');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Error al iniciar sesión con Google');
   };
 
   const handleResendVerification = async () => {
@@ -56,7 +52,6 @@ function LoginContent() {
       setError('Ingresa tu email para reenviar la verificación');
       return;
     }
-
     try {
       const response = await authAPI.resendVerification(email);
       setInfo(response.data?.mensaje || 'Se envió un nuevo enlace de verificación');
@@ -72,10 +67,8 @@ function LoginContent() {
           <h1>Iniciar Sesión</h1>
           <p>Accede a tu cuenta de Banco Exclusivo</p>
         </div>
-
         {error && <div className="error-message">{error}</div>}
         {info && <div className="success-message">{info}</div>}
-
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Email</label>
@@ -88,7 +81,6 @@ function LoginContent() {
               autoComplete="username"
             />
           </div>
-
           <div className="form-group">
             <label>Contraseña</label>
             <div className="password-field">
@@ -110,30 +102,18 @@ function LoginContent() {
               </button>
             </div>
           </div>
-
-
-          <div className="form-group">
-            <label>reCAPTCHA</label>
-            <div className="captcha-field">
-              {RECAPTCHA_SITE_KEY ? (
-                <ReCAPTCHA
-                  siteKey={RECAPTCHA_SITE_KEY}
-                  onVerify={(token) => handleRecaptchaChange(token)}
-                  onExpired={() => console.log('reCAPTCHA expired')}
-                />
-              ) : (
-                <div style={{ color: 'red', fontWeight: 'bold' }}>
-                  Error: Falta la clave de sitio de reCAPTCHA. Contacta al administrador.
-                </div>
-              )}
-            </div>
-          </div>
-
           <button type="submit" className="btn-submit" disabled={loading}>
             {loading ? 'Cargando...' : 'Iniciar Sesión'}
           </button>
         </form>
-
+        <div style={{ margin: '24px 0', textAlign: 'center' }}>
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            width="100%"
+            useOneTap
+          />
+        </div>
         <div className="auth-footer">
           <p>¿No tienes cuenta? <a href="/register">Regístrate aquí</a></p>
           <p>

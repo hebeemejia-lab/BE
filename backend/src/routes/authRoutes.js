@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getPerfil, updatePerfil, verifyEmail, resendVerification } = require('../controllers/authController');
+const { register, login, getPerfil, updatePerfil, verifyEmail, resendVerification, googleLogin } = require('../controllers/authController');
+router.post('/google-login', googleLogin);
 const verificarToken = require('../middleware/authMiddleware');
-const verificarRecaptcha = require('../middleware/recaptchaMiddleware');
+
 
 // Rutas públicas
 router.post('/register', register);
-router.post('/login', verificarRecaptcha, login);
+router.post('/login', login);
 router.get('/verify-email', verifyEmail);
 router.post('/resend-verification', resendVerification);
 
