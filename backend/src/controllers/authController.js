@@ -154,17 +154,7 @@ const googleLogin = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-        id: usuario.id,
-        nombre: usuario.nombre,
-        apellido: usuario.apellido,
-        email: usuario.email,
-        saldo: parseFloat(usuario.saldo),
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+// ...existing code...
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { Op } = require('sequelize');
