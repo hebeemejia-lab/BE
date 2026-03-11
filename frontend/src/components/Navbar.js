@@ -70,14 +70,6 @@ export default function Navbar() {
           {usuario ? (
             <>
               <div className={`navbar-right ${menuOpen ? 'open' : ''}`}>
-                <Link
-                  to="/tu-grupo"
-                  className="navbar-link"
-                  onClick={handleMenuClose}
-                  style={{ marginRight: 18, fontWeight: 600 }}
-                >
-                  Tu grupo
-                </Link>
                 <div className="user-info">
                   <span className="user-name">
                     {usuario.nombre && usuario.apellido
