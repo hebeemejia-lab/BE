@@ -5,6 +5,7 @@ import MiInversionPage from './pages/MiInversionPage';
 import Perfil from './pages/Perfil';
 
 import React, { useState } from 'react';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
