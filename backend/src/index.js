@@ -24,6 +24,7 @@ const adminRetiroRoutes = require('./routes/adminRetiroRoutes');
 const inversionesRoutes = require('./routes/inversionesRoutes');
 const expensesRoutes = require('./routes/expenses');
 const circulosRoutes = require('./routes/circulosRoutes');
+const transactionsRoutes = require('./transactionsRoutes');
 
 const app = express();
 
@@ -87,7 +88,7 @@ const fondoRiesgoRoutes = require('./routes/fondoRiesgoRoutes'); // Importar las
 app.use('/fondo-riesgo', fondoRiesgoRoutes); // Agregar fondoRiesgoRoutes a las rutas principales
 app.use('/', expensesRoutes); // Montar rutas de gastos personales
 app.use('/circulos', circulosRoutes); // Montar rutas de círculos de ahorro
-
+app.use('/transacciones', transactionsRoutes); // Montar rutas de transacciones
 
 // Ruta de prueba
 app.get('/health', (req, res) => {

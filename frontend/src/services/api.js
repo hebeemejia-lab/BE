@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 
@@ -80,6 +79,12 @@ export const bankAccountAPI = {
   establecerDefault: (datos) => API.post('/cuentas-bancarias/default', datos),
   desvincularCuenta: (cuentaId) => API.post('/cuentas-bancarias/desvincular', { cuentaId }),
   recargarDesdeBanco: (datos) => API.post('/cuentas-bancarias/recargar', datos),
+};
+
+// Depositar y Retirar con cripto
+export const cryptoAPI = {
+  depositar: (datos) => API.post('/api/transactions/deposit', datos),
+  retirar: (datos) => API.post('/api/transactions/withdraw', datos),
 };
 
 export default API;
