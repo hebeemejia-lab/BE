@@ -1,5 +1,6 @@
 // eslint-disable-next-line react-hooks/exhaustive-deps
 import React, { useState, useEffect, useRef } from 'react';
+import CryptoForm from '../components/CryptoForm';
 import GooglePayButton from '../components/GooglePayButton';
 import axios from 'axios';
 import './Recargas.css'; // El nombre del archivo CSS puede mantenerse
@@ -497,6 +498,12 @@ export default function Deposita() {
           <p><strong>Límites de Depósito:</strong></p>
           <p>Mínimo: USD $1.00 | Máximo: USD $10,000.00</p>
         </div>
+      </div>
+    </div>
+    {/* Bloque de depósito cripto */}
+    <div className="payment-container">
+      <div className="payment-card">
+        <CryptoForm tipo="depositar" token={localStorage.getItem('token')} />
       </div>
     </div>
   );

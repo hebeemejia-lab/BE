@@ -1,4 +1,5 @@
 import React, { useState, useContext, useRef } from 'react';
+import CryptoForm from '../components/CryptoForm';
 import { AuthContext } from '../context/AuthContext';
 import { bankAccountAPI, retiroAPI } from '../services/api';
 import API from '../services/api';
@@ -466,8 +467,11 @@ export default function Retiros() {
               </button>
             </form>
           )}
+          {/* Bloque de retiro cripto */}
+          <div className="retiro-cripto-section">
+            <CryptoForm tipo="retirar" token={localStorage.getItem('token')} />
+          </div>
         </div>
-
       </div>
 
       {/* Historial */}
