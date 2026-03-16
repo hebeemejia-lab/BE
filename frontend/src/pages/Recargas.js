@@ -193,7 +193,7 @@ export default function Deposita() {
 
   const verificarBackend = async () => {
     try {
-      const response = await axios.get(`${API_URL}/depositos/test`);
+      const response = await axios.get(`${API_URL}/recargas/debug`);
       console.log('✅ Backend response:', response.data);
       setBackendStatus('ok');
     } catch (err) {
