@@ -1,5 +1,6 @@
 import React, { useState, useContext, useRef } from 'react';
 import CryptoForm from '../components/CryptoForm';
+import { QRCodeSVG } from 'qrcode.react';
 import { AuthContext } from '../context/AuthContext';
 import { bankAccountAPI, retiroAPI } from '../services/api';
 import API from '../services/api';
@@ -468,7 +469,27 @@ export default function Retiros() {
             </form>
           )}
           {/* Bloque de retiro cripto */}
-          <div className="retiro-cripto-section">
+          <div className="retiro-cripto-section" style={{marginTop: 32, marginBottom: 32}}>
+            <h3 style={{marginBottom: 8}}>Retiro vía Crypto Wallet</h3>
+            <p style={{marginBottom: 16}}>Puedes retirar fondos a tu wallet cripto registrada. Usa tu ID wallet único para recibir transferencias.</p>
+            {usuario?.walletId ? (
+              <div style={{textAlign: 'center', marginBottom: 24}}>
+                <div style={{fontWeight: 'bold', fontSize: 16, marginBottom: 8}}>Tu ID Wallet:</div>
+                <div style={{display: 'inline-flex', alignItems: 'center', background: '#f3f3f3', borderRadius: 8, padding: '8px 16px', fontSize: 15, letterSpacing: 1}}>
+                  <span id="wallet-id">{usuario.walletId}</span>
+                  <button style={{marginLeft: 8, padding: '2px 8px', border: 'none', background: '#1976d2', color: '#fff', borderRadius: 4, cursor: 'pointer'}} onClick={() => {navigator.clipboard.writeText(usuario.walletId)}}>Copiar</button>
+                </div>
+                <div style={{margin: '24px 0'}}>
+                  <QRCodeSVG value={usuario.walletId} size={128} />
+                  <div style={{fontSize: 13, color: '#888', marginTop: 8}}>Escanea este código QR para transferir a tu wallet desde apps compatibles.</div>
+                </div>
+                <div style={{marginTop: 12, color: '#555', fontSize: 14}}>
+                  Usa este ID para recibir transferencias desde Binance, Bybit, u otras plataformas compatibles.
+                </div>
+              </div>
+            ) : (
+              <div style={{color: '#b00', fontWeight: 500, marginBottom: 16}}>No tienes una wallet cripto registrada. Solicítala al soporte.</div>
+            )}
             <CryptoForm tipo="retirar" token={localStorage.getItem('token')} />
           </div>
         </div>

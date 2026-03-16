@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import CryptoForm from '../components/CryptoForm';
-import { QRCode } from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 import GooglePayButton from '../components/GooglePayButton';
 import axios from 'axios';
 import './Recargas.css'; // El nombre del archivo CSS puede mantenerse
@@ -437,7 +437,7 @@ export default function Deposita() {
                     <button style={{marginLeft: 8, padding: '2px 8px', border: 'none', background: '#1976d2', color: '#fff', borderRadius: 4, cursor: 'pointer'}} onClick={() => {navigator.clipboard.writeText(usuario.walletId)}}>Copiar</button>
                   </div>
                   <div style={{margin: '24px 0'}}>
-                    <QRCode value={usuario.walletId} size={128} />
+                    <QRCodeSVG value={usuario.walletId} size={128} />
                     <div style={{fontSize: 13, color: '#888', marginTop: 8}}>Escanea este código QR para transferir a tu wallet desde apps compatibles.</div>
                   </div>
                   <div style={{marginTop: 12, color: '#555', fontSize: 14}}>
