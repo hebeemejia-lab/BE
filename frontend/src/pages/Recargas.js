@@ -500,12 +500,8 @@ export default function Deposita() {
         </div>
       </div>
     </div>
-    {/* Bloque de depósito cripto */}
-    <div className="payment-container">
-      <div className="payment-card">
-        <CryptoForm tipo="depositar" token={localStorage.getItem('token')} />
-      </div>
-    </div>
   );
 }
+
+// Bloque de depósito cripto debe ir dentro del return principal, no después del cierre del componente.
 
