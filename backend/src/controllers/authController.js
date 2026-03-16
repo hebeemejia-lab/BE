@@ -288,6 +288,8 @@ const resendVerification = async (req, res) => {
 };
 
 // Obtener perfil del usuario autenticado
+const { v4: uuidv4 } = require('uuid');
+
 const getPerfil = async (req, res) => {
   try {
     const usuario = await User.findByPk(req.usuario.id, {
@@ -296,7 +298,13 @@ const getPerfil = async (req, res) => {
     if (!usuario) {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     }
-    res.json(usuario);
+    // Si el usuario no tiene walletId, generarlo y guardarlo
+    if (!usuario.walletId) {
+      usuario.walletId = uuidv4().replace(/-/g, '').slice(0, 32); // 32 chars, sin guiones
+      await usuario.save();
+    }
+    const usuarioObj = usuario.toJSON();
+    res.json({ ...usuarioObj, walletId: usuarioObj.walletId });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
