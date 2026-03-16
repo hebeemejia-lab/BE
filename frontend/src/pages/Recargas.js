@@ -114,9 +114,8 @@ export default function Deposita() {
         return actions.resolve();
       }
     }).render(paypalButtonRef.current);
-  };
-
-
+  } // <- cierre correcto de renderButtons
+  // End of renderButtons
   // (Duplicated) const verificarBackend removed to avoid redeclaration error
 
 
@@ -188,8 +187,9 @@ export default function Deposita() {
       } finally {
         setLoading(false);
       }
+
     }
-  };
+  }
 
   const verificarBackend = async () => {
     try {
@@ -451,6 +451,9 @@ export default function Deposita() {
           </div>
         </div>
       )}
+
+      {/* TAB: Canjear Código de Depósito */}
+      {activeTab === 'codigo' && (
         <div className="payment-container">
           <div className="payment-card">
             <div className="card-title">
@@ -539,8 +542,6 @@ export default function Deposita() {
         </div>
       </div>
     </div>
-  );
+  ); // End of Deposita component
 }
-
-// Bloque de depósito cripto debe ir dentro del return principal, no después del cierre del componente.
-
+}

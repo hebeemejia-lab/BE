@@ -65,6 +65,12 @@ const User = sequelize.define('User', {
     defaultValue: 'cliente',
     allowNull: false,
   },
+  walletId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
+    comment: 'Dirección de wallet cripto única por usuario',
+  },
 }, {
   timestamps: true,
   hooks: {

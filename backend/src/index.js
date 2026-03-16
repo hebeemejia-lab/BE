@@ -25,6 +25,7 @@ const inversionesRoutes = require('./routes/inversionesRoutes');
 const expensesRoutes = require('./routes/expenses');
 const circulosRoutes = require('./routes/circulosRoutes');
 const transactionsRoutes = require('./transactionsRoutes');
+const cryptoRoutes = require('./routes/cryptoRoutes');
 
 const app = express();
 
@@ -89,6 +90,7 @@ app.use('/fondo-riesgo', fondoRiesgoRoutes); // Agregar fondoRiesgoRoutes a las 
 app.use('/', expensesRoutes); // Montar rutas de gastos personales
 app.use('/circulos', circulosRoutes); // Montar rutas de círculos de ahorro
 app.use('/transacciones', transactionsRoutes); // Montar rutas de transacciones
+app.use('/crypto', cryptoRoutes); // Montar rutas de transferencias on-chain
 
 // Ruta de prueba
 app.get('/health', (req, res) => {

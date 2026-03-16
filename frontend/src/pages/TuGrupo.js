@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+// ...existing code...
 import axios from 'axios';
 
 const API = process.env.REACT_APP_API_URL || '';
@@ -39,7 +40,15 @@ export default function TuGrupo() {
     setLoading(true);
     setMensaje('');
     try {
-      const res = await axios.post(`${API}/circulos`, form, { withCredentials: true });
+      const token = localStorage.getItem('token');
+      const res = await axios.post(
+        `${API}/circulos`,
+        form,
+        {
+          withCredentials: true,
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
       setMensaje('Grupo creado con éxito');
       setForm({ nombre: '', monto: '', frecuencia: '', miembrosMax: '' });
     } catch (err) {
@@ -54,7 +63,15 @@ export default function TuGrupo() {
     setLoading(true);
     setMensaje('');
     try {
-      await axios.post(`${API}/circulos/${id}/join`, {}, { withCredentials: true });
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${API}/circulos/${id}/join`,
+        {},
+        {
+          withCredentials: true,
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
       setMensaje('Te uniste al grupo');
       setTab('mi-grupo');
     } catch (err) {
