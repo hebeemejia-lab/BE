@@ -1,6 +1,8 @@
 // eslint-disable-next-line react-hooks/exhaustive-deps
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import CryptoForm from '../components/CryptoForm';
+import { QRCode } from 'qrcode.react';
 import GooglePayButton from '../components/GooglePayButton';
 import axios from 'axios';
 import './Recargas.css'; // El nombre del archivo CSS puede mantenerse
@@ -9,6 +11,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const PAYPAL_CLIENT_ID = process.env.REACT_APP_PAYPAL_CLIENT_ID;
 
 export default function Deposita() {
+  const { usuario } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('tarjeta');
   const [monto, setMonto] = useState('');
   const [loading, setLoading] = useState(false);
@@ -262,6 +265,13 @@ export default function Deposita() {
           <span className="tab-logo tab-emoji" aria-hidden="true">🎟️</span>
           <span>Usar Código</span>
         </button>
+        <button
+          className={`tab-button ${activeTab === 'crypto' ? 'active' : ''}`}
+          onClick={() => setActiveTab('crypto')}
+        >
+          <span className="tab-logo tab-emoji" aria-hidden="true">🪙</span>
+          <span>Crypto Wallet</span>
+        </button>
       </div>
 
       {/* Mensajes de error y éxito */}
@@ -410,8 +420,37 @@ export default function Deposita() {
       )}
 
 
-      {/* TAB: Código */}
-      {activeTab === 'codigo' && (
+      {/* TAB: Crypto Wallet */}
+      {activeTab === 'crypto' && (
+        <div className="payment-container">
+          <div className="payment-card">
+            <div className="card-title">
+              <h2>Recarga con Crypto Wallet</h2>
+              <p className="card-subtitle">Recibe depósitos desde cualquier plataforma externa usando tu ID wallet único.</p>
+            </div>
+            <div className="crypto-wallet-block" style={{textAlign: 'center', margin: '32px 0'}}>
+              <div style={{fontWeight: 'bold', fontSize: 18, marginBottom: 8}}>Tu ID Wallet:</div>
+              {usuario?.walletId ? (
+                <>
+                  <div style={{display: 'inline-flex', alignItems: 'center', background: '#f3f3f3', borderRadius: 8, padding: '8px 16px', fontSize: 16, letterSpacing: 1}}>
+                    <span id="wallet-id">{usuario.walletId}</span>
+                    <button style={{marginLeft: 8, padding: '2px 8px', border: 'none', background: '#1976d2', color: '#fff', borderRadius: 4, cursor: 'pointer'}} onClick={() => {navigator.clipboard.writeText(usuario.walletId)}}>Copiar</button>
+                  </div>
+                  <div style={{margin: '24px 0'}}>
+                    <QRCode value={usuario.walletId} size={128} />
+                    <div style={{fontSize: 13, color: '#888', marginTop: 8}}>Escanea este código QR para transferir a tu wallet desde apps compatibles.</div>
+                  </div>
+                  <div style={{marginTop: 12, color: '#555', fontSize: 14}}>
+                    Usa este ID para recibir transferencias desde Binance, Bybit, u otras plataformas compatibles.
+                  </div>
+                </>
+              ) : (
+                <div style={{color: '#b00', fontWeight: 500, marginBottom: 16}}>No tienes una wallet cripto registrada. Solicítala al soporte.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
         <div className="payment-container">
           <div className="payment-card">
             <div className="card-title">
