@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api, { transferAPI, loanAPI, depositoAPI } from '../services/api';
 import SalaDeSaldos from './SalaDeSaldos';
-import './Dashboard.css';
+import styles from './Dashboard.module.css';
 
 export default function Dashboard() {
   const { usuario, loading } = useContext(AuthContext);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { bankAccountAPI } from '../services/api';
-import './VincularCuenta.css';
+import styles from './VincularCuenta.module.css';
 
 export default function VincularCuenta() {
   const [tab, setTab] = useState('vincular'); // vincular | listado

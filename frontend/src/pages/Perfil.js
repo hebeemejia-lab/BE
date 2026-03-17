@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import './Perfil.css';
+import styles from './Perfil.module.css';
 
 export default function Perfil() {
   const { usuario, updatePerfil } = useContext(AuthContext);

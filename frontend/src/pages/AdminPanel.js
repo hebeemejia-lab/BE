@@ -5,11 +5,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { toJpeg } from 'html-to-image';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
-import './AdminPanel.css';
+import styles from './AdminPanel.module.css';
 import EstadoCuentaPanel from '../components/EstadoCuentaPanel';
 import AnalisisInversiones from '../components/AnalisisInversiones';
 import CurrencySelector from '../components/CurrencySelector';
-import './CurrencyCalculator.css';
+import currencyStyles from './CurrencyCalculator.module.css';
 // eslint-disable-next-line no-unused-vars
 import CurrencyCalculator from './CurrencyCalculator.jsx';
 

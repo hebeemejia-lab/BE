@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { transferAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
-import './Transferencias.css';
+import styles from './Transferencias.module.css';
 
 export default function Transferencias() {
   const [cedula, setCedula] = useState('');

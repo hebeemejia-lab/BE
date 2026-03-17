@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { authAPI } from '../services/api';
-import './Auth.css';
+import styles from './Auth.module.css';
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
@@ -47,8 +47,8 @@ export default function VerifyEmail() {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
+    <div className={styles['auth-container']}>
+      <div className={styles['auth-card']}>
         <div className="auth-header">
           <h1>Verificación de correo</h1>
           <p>Banco Exclusivo</p>

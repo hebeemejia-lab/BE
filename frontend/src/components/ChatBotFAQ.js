@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
-import './ChatBotFAQ.css';
+import styles from './ChatBotFAQ.module.css';
 
 const ChatBotFAQ = ({ isOpen, onClose }) => {
   const [mensajes, setMensajes] = useState([

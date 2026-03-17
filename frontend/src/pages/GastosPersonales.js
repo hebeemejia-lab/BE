@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { gastosAPI } from '../services/api';
 import AddExpenseForm from './AddExpenseForm.jsx';
-import './GastosPersonales.css';
+import styles from './GastosPersonales.module.css';
 
 const COLORS = ['#1976d2', '#43a047', '#fbc02d', '#e53935', '#8e24aa', '#00bcd4', '#ff9800'];
 

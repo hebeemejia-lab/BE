@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import './Home.css';
+import styles from './Home.module.css';
 
 export default function Home() {
   const { usuario } = useContext(AuthContext);

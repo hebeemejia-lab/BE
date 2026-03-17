@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
-import './MiInversion.css';
+import styles from './MiInversion.module.css';
 
 const MiInversion = () => {
   const navigate = useNavigate();
@@ -88,18 +88,18 @@ const MiInversion = () => {
   }, [usuario?.id]);
 
   if (!rechartsComponents || !usuario) {
-    return <div className="mi-inversion-container loading">Cargando...</div>;
+    return <div className={`${styles['mi-inversion-container']} ${styles.loading}`}>Cargando...</div>;
   }
 
   const { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } = rechartsComponents;
 
   if (cargando) {
-    return <div className="mi-inversion-container loading">Cargando inversiones...</div>;
+    return <div className={`${styles['mi-inversion-container']} ${styles.loading}`}>Cargando inversiones...</div>;
   }
 
   if (error) {
     return (
-      <div className="mi-inversion-container error">
+      <div className={`${styles['mi-inversion-container']} ${styles.error}`}>
         <p>{error}</p>
         <button onClick={() => navigate('/dashboard')} className="btn-volver">
           ← Volver al Dashboard
@@ -110,7 +110,7 @@ const MiInversion = () => {
 
   if (!datos || datos.length === 0) {
     return (
-      <div className="mi-inversion-container empty">
+      <div className={`${styles['mi-inversion-container']} ${styles.empty}`}>
         <h1>📈 Mi Inversión</h1>
         <p>No tienes inversiones registradas aún</p>
         <button onClick={() => navigate('/dashboard')} className="btn-volver">

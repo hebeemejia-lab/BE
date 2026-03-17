@@ -5,7 +5,7 @@ import CryptoForm from '../components/CryptoForm';
 import { QRCodeSVG } from 'qrcode.react';
 import GooglePayButton from '../components/GooglePayButton';
 import axios from 'axios';
-import './Recargas.css'; // El nombre del archivo CSS puede mantenerse
+import styles from './Recargas.module.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const PAYPAL_CLIENT_ID = process.env.REACT_APP_PAYPAL_CLIENT_ID;

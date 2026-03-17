@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { AuthContext } from '../context/AuthContext';
 import { bankAccountAPI, retiroAPI } from '../services/api';
 import API from '../services/api';
-import './Retiros.css';
+import styles from './Retiros.module.css';
 
 export default function Retiros() {
   const { usuario, refrescarPerfil } = useContext(AuthContext);

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import './SeleccionCurso.css';
+import styles from './SeleccionCurso.module.css';
 
 const cursos = [
   {

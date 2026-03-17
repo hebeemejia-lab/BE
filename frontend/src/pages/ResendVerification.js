@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authAPI } from '../services/api';
-import './Auth.css';
+import styles from './Auth.module.css';
 
 export default function ResendVerification() {
   const [email, setEmail] = useState('');
@@ -27,8 +27,8 @@ export default function ResendVerification() {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
+    <div className={styles['auth-container']}>
+      <div className={styles['auth-card']}>
         <div className="auth-header">
           <h1>Reenviar Verificación</h1>
           <p>¿No recibiste el correo de verificación?</p>

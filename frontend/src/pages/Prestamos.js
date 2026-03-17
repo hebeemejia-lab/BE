@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { loanAPI } from '../services/api';
-import './Prestamos.css';
+import styles from './Prestamos.module.css';
 
 export default function Prestamos() {
   const [prestamos, setPrestamos] = useState([]);

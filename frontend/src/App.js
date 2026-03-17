@@ -115,57 +115,62 @@ function App() {
   const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
   return (
-    <GoogleOAuthProvider clientId={googleClientId}>
-      <Router>
-        <TitleManager />
-        <CurrencyProvider>
-          <AuthProvider>
-            <Navbar onAbrirChatbot={() => setChatbotAbierto(true)} />
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/verificar-email" element={<VerifyEmail />} />
-              <Route path="/reenviar-verificacion" element={<ResendVerification />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/sala-saldos" element={<SalaDeSaldos />} />
-              <Route path="/mi-inversion" element={<MiInversionPage />} />
-              <Route path="/recargas" element={<Recargas />} />
-              <Route path="/gastos-personales" element={<GastosPersonales />} />
-              <Route path="/retiros" element={<Retiros />} />
-              <Route path="/vincular-cuenta" element={<VincularCuenta />} />
-              <Route path="/transferencias" element={<Transferencias />} />
-              <Route path="/transferencias-bancarias" element={<TransferenciaBancaria />} />
-              <Route path="/transferencias-internacionales" element={<TransferenciasInternacionales />} />
-              <Route path="/cursos" element={<Cursos />} />
-              <Route path="/cursos/activos-pasivos" element={<ActivosPasivos />} />
-              <Route path="/cursos/economia-emergente" element={<EconomiaEmergente />} />
-              <Route path="/cursos/beneficios-ahorro" element={<BeneficiosAhorro />} />
-              <Route path="/perfil" element={<Perfil />} />
-              <Route path="/tu-grupo" element={<TuGrupo />} />
-              <Route path="/admin" element={<AdminPanel />} />
-              <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-            {/* Chatbot FAQ */}
-            <ChatBotFAQ 
-              isOpen={chatbotAbierto} 
-              onClose={() => setChatbotAbierto(false)} 
-            />
-            {/* Botón flotante para abrir el chatbot */}
-            {!chatbotAbierto && (
-              <button
-                className="chatbot-fab"
-                onClick={() => setChatbotAbierto(true)}
-                title="¿Necesitas ayuda?"
-              >
-                💬
-              </button>
-            )}
-          </AuthProvider>
-        </CurrencyProvider>
-      </Router>
-    </GoogleOAuthProvider>
+    <>
+      <div className="bg-blue-500 text-white p-4 text-center font-bold z-50">
+        Tailwind CSS está funcionando 🎉
+      </div>
+      <GoogleOAuthProvider clientId={googleClientId}>
+        <Router>
+          <TitleManager />
+          <CurrencyProvider>
+            <AuthProvider>
+              <Navbar onAbrirChatbot={() => setChatbotAbierto(true)} />
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/verificar-email" element={<VerifyEmail />} />
+                <Route path="/reenviar-verificacion" element={<ResendVerification />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/sala-saldos" element={<SalaDeSaldos />} />
+                <Route path="/mi-inversion" element={<MiInversionPage />} />
+                <Route path="/recargas" element={<Recargas />} />
+                <Route path="/gastos-personales" element={<GastosPersonales />} />
+                <Route path="/retiros" element={<Retiros />} />
+                <Route path="/vincular-cuenta" element={<VincularCuenta />} />
+                <Route path="/transferencias" element={<Transferencias />} />
+                <Route path="/transferencias-bancarias" element={<TransferenciaBancaria />} />
+                <Route path="/transferencias-internacionales" element={<TransferenciasInternacionales />} />
+                <Route path="/cursos" element={<Cursos />} />
+                <Route path="/cursos/activos-pasivos" element={<ActivosPasivos />} />
+                <Route path="/cursos/economia-emergente" element={<EconomiaEmergente />} />
+                <Route path="/cursos/beneficios-ahorro" element={<BeneficiosAhorro />} />
+                <Route path="/perfil" element={<Perfil />} />
+                <Route path="/tu-grupo" element={<TuGrupo />} />
+                <Route path="/admin" element={<AdminPanel />} />
+                <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+              {/* Chatbot FAQ */}
+              <ChatBotFAQ 
+                isOpen={chatbotAbierto} 
+                onClose={() => setChatbotAbierto(false)} 
+              />
+              {/* Botón flotante para abrir el chatbot */}
+              {!chatbotAbierto && (
+                <button
+                  className="chatbot-fab"
+                  onClick={() => setChatbotAbierto(true)}
+                  title="¿Necesitas ayuda?"
+                >
+                  💬
+                </button>
+              )}
+            </AuthProvider>
+          </CurrencyProvider>
+        </Router>
+      </GoogleOAuthProvider>
+    </>
   );
 }
 

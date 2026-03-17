@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { CurrencyContext } from '../context/CurrencyContext';
-import './Navbar.css';
+import styles from './Navbar.module.css';
 
 export default function Navbar() {
   const { usuario, logout } = useContext(AuthContext);

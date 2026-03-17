@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { transferAPI } from '../services/api';
-import './TransferenciaBancaria.css';
+import styles from './TransferenciaBancaria.module.css';
 
 export default function TransferenciaBancaria() {
   const { usuario } = useContext(AuthContext);

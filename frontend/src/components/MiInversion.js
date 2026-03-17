@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
-import './MiInversion.css';
+import styles from './MiInversion.module.css';
 
 const timeRanges = [
   { label: 'Diario', value: 'daily' },

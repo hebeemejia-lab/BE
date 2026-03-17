@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import './Auth.css';
+import styles from './Auth.module.css';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -58,8 +58,8 @@ export default function Register() {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
+    <div className={styles['auth-container']}>
+      <div className={styles['auth-card']}>
         <div className="auth-header">
           <h1>Crear Cuenta</h1>
           <p>Únete a Banco Exclusivo hoy</p>
