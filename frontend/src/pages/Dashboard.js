@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api, { transferAPI, loanAPI, depositoAPI } from '../services/api';
 import SalaDeSaldos from './SalaDeSaldos';
+import MarketTicker from '../components/MarketTicker';
 import styles from './Dashboard.module.css';
 
 export default function Dashboard() {
@@ -140,6 +141,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-container">
+      <MarketTicker position="web" />
       <div className="dashboard-header">
         <h1>Bienvenido, <span className="user-nombre">{usuario?.nombre}</span> <span className="user-apellido">{usuario?.apellido}</span>!</h1>
         <p>Aquí está el resumen de tu cuenta</p>

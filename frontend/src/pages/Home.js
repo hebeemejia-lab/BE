@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import MarketTicker from '../components/MarketTicker';
 import styles from './Home.module.css';
 
 export default function Home() {
@@ -9,6 +10,7 @@ export default function Home() {
 
   return (
     <div className="home-container">
+      <MarketTicker position="web" />
       <div className="hero-section">
         <div className="hero-content">
           <h1 className="hero-title">Bienvenido a Banexclusivo</h1>

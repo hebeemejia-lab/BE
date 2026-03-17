@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import axios from 'axios';
+import API from '../services/api';
 import styles from './MarketTicker.module.css';
 
 // Iconos SVG simples para cada activo
@@ -51,7 +51,7 @@ export default function MarketTicker({ position = 'web' }) {
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
-        const { data } = await axios.get('/api/market-data');
+        const { data } = await API.get('/market-data');
         // Detectar cambios de precio para animar
         const newBounced = {};
         data.assets.forEach((asset) => {
