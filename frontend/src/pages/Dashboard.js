@@ -1,12 +1,31 @@
-import DashboardInversionContainer from '../components/DashboardInversionContainer';
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api, { transferAPI, loanAPI, depositoAPI } from '../services/api';
 import './Dashboard.css';
 
+// Acciones rápidas (Tekers)
+const TEKERS = [
+  { id: 'recargar',   label: 'Recargar',   icon: '💳', route: '/recargas',                  color: '#1d4ed8' },
+  { id: 'transferir', label: 'Transferir', icon: '📤', route: '/transferencias',             color: '#7c3aed' },
+  { id: 'retirar',    label: 'Retirar',    icon: '🏧', route: '/retiros',                    color: '#047857' },
+  { id: 'prestamos',  label: 'Préstamos',  icon: '🏦', route: '/prestamos',                  color: '#b45309' },
+  { id: 'invertir',   label: 'Invertir',   icon: '📈', route: '/mi-inversion',               color: '#0e7490' },
+  { id: 'grupo',      label: 'Mi Grupo',   icon: '👥', route: '/tu-grupo',                   color: '#be185d' },
+  { id: 'gastos',     label: 'Gastos',     icon: '📊', route: '/gastos-personales',          color: '#ca8a04' },
+  { id: 'cursos',     label: 'Cursos',     icon: '🎓', route: '/cursos',                     color: '#4338ca' },
+];
+
+// Activos favoritos (data estática, en una app real vendría del perfil de usuario)
+const FAVORITES = [
+  { id: 'btc',  label: 'Bitcoin',    symbol: 'BTC',  icon: '₿',    color: '#f7931a', change: '+2.4%',  up: true  },
+  { id: 'eth',  label: 'Ethereum',   symbol: 'ETH',  icon: 'Ξ',    color: '#627eea', change: '-0.8%',  up: false },
+  { id: 'dop',  label: 'Peso Dom.',  symbol: 'DOP',  icon: 'RD$',  color: '#003087', change: '+0.1%',  up: true  },
+  { id: 'aapl', label: 'Apple',      symbol: 'AAPL', icon: '',    color: '#6b7280', change: '+1.2%',  up: true  },
+];
+
 export default function Dashboard() {
-  const { usuario, loading } = useContext(AuthContext);
+  const { usuario, loading, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const [transferencias, setTransferencias] = useState([]);
   const [prestamos, setPrestamos] = useState([]);
@@ -16,36 +35,14 @@ export default function Dashboard() {
   const [gananciaInversion, setGananciaInversion] = useState(0);
   const [cargandoInversion, setCargandoInversion] = useState(true);
 
-  const getCurrencySymbol = (currency) => {
-    const symbols = {
-      'USD': '$',
-      'EUR': '€',
-      'GBP': '£',
-      'JPY': '¥',
-      'MXN': '$',
-      'COP': '$',
-      'ARS': '$',
-      'CLP': '$',
-      'PEN': 'S/',
-      'BRL': 'R$',
-      'DOP': 'RD$',
-    };
-    return symbols[currency] || '$';
-  };
-
   const formatMoney = (value) => {
-    const numberValue = Number(value);
-    if (Number.isFinite(numberValue)) {
-      return numberValue.toFixed(2);
-    }
-    return '0.00';
+    const n = Number(value);
+    return Number.isFinite(n) ? n.toFixed(2) : '0.00';
   };
 
   // Redirigir a login si no hay usuario y no está cargando
   React.useEffect(() => {
-    if (!usuario && !loading) {
-      navigate('/login');
-    }
+    if (!usuario && !loading) navigate('/login');
   }, [usuario, loading, navigate]);
 
   useEffect(() => {
@@ -65,7 +62,6 @@ export default function Dashboard() {
         setLoadingDatos(false);
       }
     };
-
     cargarDatos();
   }, []);
 
@@ -76,16 +72,13 @@ export default function Dashboard() {
       setCargandoInversion(false);
       return;
     }
-
     const cargarInversion = async () => {
       try {
         setCargandoInversion(true);
         const response = await api.get(`/fondo-riesgo/analysis/${usuario.id}`);
         const data = response.data || [];
-        const totalMonto = data.reduce((sum, inv) => sum + (parseFloat(inv.monto) || 0), 0);
-        const totalGanancia = data.reduce((sum, inv) => sum + (parseFloat(inv.crecimiento) || 0), 0);
-        setSaldoInversion(totalMonto);
-        setGananciaInversion(totalGanancia);
+        setSaldoInversion(data.reduce((s, inv) => s + (parseFloat(inv.monto) || 0), 0));
+        setGananciaInversion(data.reduce((s, inv) => s + (parseFloat(inv.crecimiento) || 0), 0));
       } catch (error) {
         console.error('Error cargando inversiones:', error);
         setSaldoInversion(0);
@@ -94,152 +87,295 @@ export default function Dashboard() {
         setCargandoInversion(false);
       }
     };
-
     cargarInversion();
   }, [usuario]);
 
-  const prestamosActivos = prestamos.filter((prestamo) => {
-    const estado = (prestamo.estado || '').toLowerCase();
-    return estado && estado !== 'pagado' && estado !== 'rechazado';
+  const prestamosActivos = prestamos.filter((p) => {
+    const e = (p.estado || '').toLowerCase();
+    return e && e !== 'pagado' && e !== 'rechazado';
   });
 
-  const saldoPrestamos = prestamosActivos.reduce((sum, prestamo) => {
-    const monto = Number(prestamo.montoAprobado ?? prestamo.montoSolicitado ?? prestamo.monto ?? 0);
-    return sum + (Number.isFinite(monto) ? monto : 0);
+  const saldoPrestamos = prestamosActivos.reduce((s, p) => {
+    const sn = Number(p.saldoNegativo ?? 0);
+    return s + (Number.isFinite(sn) ? sn : 0);
   }, 0);
 
-  const saldoDisponible = (Number(usuario?.saldo) || 0) + saldoPrestamos;
-  const simboloDop = getCurrencySymbol('DOP');
-  const simboloUsd = getCurrencySymbol('USD');
+  const transferenciasEnviadas  = transferencias.filter(t => t.remitente?._id === usuario?._id);
+  const transferenciasRecibidas = transferencias.filter(t => t.remitente?._id !== usuario?._id);
+
+  if (loading) {
+    return (
+      <div className="db-spinner-wrap" role="status" aria-label="Cargando">
+        <div className="db-spinner" />
+      </div>
+    );
+  }
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
-        <h1>Bienvenido, <span className="user-nombre">{usuario?.nombre}</span> <span className="user-apellido">{usuario?.apellido}</span>!</h1>
-        <p>Aquí está el resumen de tu cuenta</p>
-      </div>
+    <div className="db-root">
 
-      <div className="account-overview">
-        <div className="overview-card highlight">
-          <div className="overview-label">Depositos + prestamos</div>
-          <div className="overview-amount">
-            {simboloDop}{formatMoney(saldoDisponible)}
-          </div>
-          <div className="overview-meta">Disponible para uso interno</div>
-        </div>
-        <div className="overview-card debt">
-          <div className="overview-label">Prestamos en negativo</div>
-          <div className="overview-amount">
-            -{simboloDop}{formatMoney(saldoPrestamos)}
-          </div>
-          <div className="debt-list">
-            {prestamosActivos.length > 0 ? (
-              prestamosActivos.map((prestamo) => (
-                <div key={prestamo.id || prestamo._id} className="debt-item">
-                  <span className="debt-id">ID #{prestamo.id || prestamo._id}</span>
-                  <span className="debt-amount">{simboloDop}{formatMoney(prestamo.montoAprobado ?? prestamo.montoSolicitado ?? prestamo.monto)}</span>
-                </div>
-              ))
-            ) : (
-              <span className="debt-empty">Sin prestamos activos</span>
-            )}
+      {/* ── 1. HEADER MÓVIL ─────────────────────────────────────────── */}
+      <header className="db-header" role="banner">
+        <div className="db-header-left">
+          <img src="/imagen/BE (1) (1).png" alt="Banco Exclusivo" className="db-logo" />
+          <div>
+            <p className="db-welcome-label">Bienvenido,</p>
+            <p className="db-welcome-name">{usuario?.nombre} {usuario?.apellido}</p>
           </div>
         </div>
-        <div className="overview-card">
-          <div className="overview-label">Recargas PayPal</div>
-          <div className="overview-amount">
-            {simboloUsd}{formatMoney(paypalTotal)}
-          </div>
-          <div className="overview-meta">Saldo recargado via PayPal</div>
-        </div>
-        <div className="overview-card investment">
-          <div className="overview-label">Saldo inversion</div>
-          <div className="overview-amount">
-            {simboloUsd}{formatMoney(saldoInversion + gananciaInversion)}
-          </div>
-          <div className="overview-meta">
-            {cargandoInversion
-              ? 'Cargando inversiones...'
-              : `Ganancia: ${simboloUsd}${formatMoney(gananciaInversion)}`}
-          </div>
-        </div>
-      </div>
+        <button
+          className="db-logout-btn"
+          onClick={() => { logout(); navigate('/login'); }}
+          aria-label="Cerrar sesión"
+        >
+          <span aria-hidden="true">🚪</span>
+          <span className="db-logout-text">Salir</span>
+        </button>
+      </header>
 
-      <div className="dashboard-grid">
-        <div className="stats-card">
-          <div className="stat">
-            <img src="/imagen/BE (9).png" alt="Estadísticas" className="stat-icon-img" />
-            <span className="stat-label">Transferencias</span>
-            <span className="stat-value">{transferencias.length}</span>
-          </div>
-          <div className="stat">
-            <span className="stat-icon">📋</span>
-            <span className="stat-label">Préstamos</span>
-            <span className="stat-value">{prestamos.length}</span>
-          </div>
-        </div>
-      </div>
+      <main className="db-main">
 
-      {loadingDatos ? (
-        <div className="loading">Cargando datos...</div>
-      ) : (
-        <>
-          <section className="dashboard-section">
-            <h2>Últimas Transferencias</h2>
-            <div className="transaction-list">
-              {transferencias.length > 0 ? (
-                transferencias.map((trans) => (
-                  <div key={trans._id} className="transaction-item">
-                    <div className="transaction-info">
-                      <span className="transaction-type">
-                        {trans.remitente._id === usuario?._id ? '📤 Enviada' : '📥 Recibida'}
-                      </span>
-                      <span className="transaction-person">
-                        {trans.remitente._id === usuario?._id
-                          ? `A: ${trans.destinatario.nombre} ${trans.destinatario.apellido}`
-                          : `De: ${trans.remitente.nombre} ${trans.remitente.apellido}`}
-                      </span>
-                    </div>
-                    <div className="transaction-amount">
-                      <span className={`amount ${trans.remitente._id === usuario?._id ? 'negative' : 'positive'}`}>
-                        {trans.remitente._id === usuario?._id ? '-' : '+'}${formatMoney(trans.monto)}
-                      </span>
-                      <span className="transaction-date">
-                        {new Date(trans.fechaTransferencia).toLocaleDateString('es-ES')}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="empty-state">No hay transferencias aún</p>
-              )}
+        {/* ── 2. RESUMEN DE SALDOS ────────────────────────────────────── */}
+        <section aria-labelledby="saldos-heading" className="db-section">
+          <h2 id="saldos-heading" className="db-section-title">Resumen de saldos</h2>
+          <div className="db-cards-grid">
+
+            <div className="db-card db-card--debt" role="region" aria-label="Préstamos activos">
+              <span className="db-card-label">Préstamos</span>
+              <span className="db-card-amount">-RD${formatMoney(saldoPrestamos)}</span>
+              <span className="db-card-sub">{prestamosActivos.length} activo(s)</span>
             </div>
-          </section>
 
-          <section className="dashboard-section">
-            <h2>Mis Préstamos</h2>
-            <div className="loan-list">
-              {prestamos.length > 0 ? (
-                prestamos.map((prestamo) => (
-                  <div key={prestamo._id} className={`loan-item ${prestamo.estado}`}>
-                    <div className="loan-header">
-                      <span className="loan-amount">${formatMoney(prestamo.montoSolicitado)}</span>
-                      <span className={`loan-status ${prestamo.estado}`}>{prestamo.estado.toUpperCase()}</span>
-                    </div>
-                    <div className="loan-details">
-                      <span>Plazo: {prestamo.plazo} meses</span>
-                      <span>Tasa: {prestamo.tasaInteres}% anual</span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="empty-state">No hay préstamos aún</p>
-              )}
+            <div className="db-card db-card--paypal" role="region" aria-label="Recargas PayPal">
+              <span className="db-card-label">PayPal</span>
+              <span className="db-card-amount">${formatMoney(paypalTotal)}</span>
+              <span className="db-card-sub">Total recargado</span>
             </div>
-          </section>
-        </>
-      )}
-      <DashboardInversionContainer />
+
+            <div className="db-card db-card--invest" role="region" aria-label="Saldo de inversión">
+              <span className="db-card-label">Inversión</span>
+              <span className="db-card-amount">${formatMoney(saldoInversion + gananciaInversion)}</span>
+              <span className="db-card-sub">
+                {cargandoInversion ? 'Cargando...' : `+$${formatMoney(gananciaInversion)} ganancia`}
+              </span>
+            </div>
+
+            <div className="db-card db-card--group" role="region" aria-label="Tu grupo de ahorro">
+              <span className="db-card-label">Grupo</span>
+              <span className="db-card-amount db-card-emoji" aria-hidden="true">👥</span>
+              <button
+                className="db-card-btn"
+                onClick={() => navigate('/tu-grupo')}
+                aria-label="Ver mi grupo de ahorro"
+              >
+                Ver grupo
+              </button>
+            </div>
+
+          </div>
+        </section>
+
+        {/* ── 3. CARUSEL DE TEKERS ────────────────────────────────────── */}
+        <section aria-labelledby="tekers-heading" className="db-section">
+          <h2 id="tekers-heading" className="db-section-title">Acciones rápidas</h2>
+          <div className="db-carousel" role="list" aria-label="Acciones destacadas">
+            {TEKERS.map(teker => (
+              <button
+                key={teker.id}
+                className="db-teker"
+                style={{ '--teker-color': teker.color }}
+                onClick={() => navigate(teker.route)}
+                role="listitem"
+                aria-label={teker.label}
+              >
+                <span className="db-teker-icon" aria-hidden="true">{teker.icon}</span>
+                <span className="db-teker-label">{teker.label}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* ── 4. FAVORITOS ────────────────────────────────────────────── */}
+        <section aria-labelledby="favoritos-heading" className="db-section">
+          <h2 id="favoritos-heading" className="db-section-title">Favoritos</h2>
+          <div className="db-fav-grid" role="list" aria-label="Activos favoritos">
+            {FAVORITES.map(fav => (
+              <button
+                key={fav.id}
+                className="db-fav-card"
+                style={{ '--fav-color': fav.color }}
+                onClick={() => navigate('/mi-inversion')}
+                role="listitem"
+                aria-label={`${fav.label}: ${fav.change}`}
+              >
+                <span className="db-fav-icon" aria-hidden="true">{fav.icon}</span>
+                <span className="db-fav-symbol">{fav.symbol}</span>
+                <span className={`db-fav-change ${fav.up ? 'db-up' : 'db-down'}`}>
+                  {fav.change}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* ── 5. TENDENCIA DEL MERCADO ────────────────────────────────── */}
+        <section aria-labelledby="mercado-heading" className="db-section">
+          <h2 id="mercado-heading" className="db-section-title">Tendencia del mercado</h2>
+          <div className="db-market-card">
+            <div className="db-market-info">
+              <span className="db-market-pair">Peso Dom. / USD</span>
+              <span className="db-market-rate">RD$56.50</span>
+              <span className="db-market-change db-up">↑ +0.05%</span>
+            </div>
+            <div className="db-market-chart" aria-hidden="true">
+              {[42, 55, 38, 65, 50, 70, 58, 72, 60, 75].map((h, i) => (
+                <div key={i} className="db-market-bar" style={{ height: `${h}%` }} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── 6. TRANSFERENCIAS ───────────────────────────────────────── */}
+        <section aria-labelledby="transf-heading" className="db-section">
+          <div className="db-section-header">
+            <h2 id="transf-heading" className="db-section-title">Transferencias</h2>
+            <button
+              className="db-link-btn"
+              onClick={() => navigate('/transferencias')}
+              aria-label="Ver todas las transferencias"
+            >
+              Ver todas
+            </button>
+          </div>
+
+          <div className="db-badge-row" role="group" aria-label="Resumen de transferencias">
+            <span className="db-badge db-badge--out" aria-label={`${transferenciasEnviadas.length} transferencias enviadas`}>
+              📤 {transferenciasEnviadas.length} enviadas
+            </span>
+            <span className="db-badge db-badge--in" aria-label={`${transferenciasRecibidas.length} transferencias recibidas`}>
+              📥 {transferenciasRecibidas.length} recibidas
+            </span>
+          </div>
+
+          {loadingDatos ? (
+            <p className="db-empty">Cargando...</p>
+          ) : transferencias.length === 0 ? (
+            <p className="db-empty">No hay transferencias aún</p>
+          ) : (
+            <ul className="db-list" aria-label="Últimas transferencias">
+              {transferencias.map(t => {
+                const enviada = t.remitente?._id === usuario?._id;
+                return (
+                  <li key={t._id} className="db-list-item">
+                    <span className={`db-list-badge ${enviada ? 'db-badge--out' : 'db-badge--in'}`} aria-hidden="true">
+                      {enviada ? '📤' : '📥'}
+                    </span>
+                    <div className="db-list-info">
+                      <span className="db-list-name">
+                        {enviada
+                          ? `A: ${t.destinatario?.nombre} ${t.destinatario?.apellido}`
+                          : `De: ${t.remitente?.nombre} ${t.remitente?.apellido}`}
+                      </span>
+                      <span className="db-list-date">
+                        {new Date(t.fechaTransferencia).toLocaleDateString('es-ES')}
+                      </span>
+                    </div>
+                    <span className={`db-list-amount ${enviada ? 'db-neg' : 'db-pos'}`}>
+                      {enviada ? '-' : '+'}${formatMoney(t.monto)}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        {/* ── 7. PRÉSTAMOS ────────────────────────────────────────────── */}
+        <section aria-labelledby="prestamos-heading" className="db-section">
+          <div className="db-section-header">
+            <h2 id="prestamos-heading" className="db-section-title">Préstamos</h2>
+            <button
+              className="db-link-btn"
+              onClick={() => navigate('/saldos')}
+              aria-label="Ir a sala de saldos"
+            >
+              Sala de saldos
+            </button>
+          </div>
+
+          {loadingDatos ? (
+            <p className="db-empty">Cargando...</p>
+          ) : prestamos.length === 0 ? (
+            <p className="db-empty">No hay préstamos aún</p>
+          ) : (
+            <ul className="db-list" aria-label="Mis préstamos">
+              {prestamos.map(p => (
+                <li key={p.id || p._id} className="db-list-item">
+                  <span className="db-list-badge db-badge--loan" aria-hidden="true">🏦</span>
+                  <div className="db-list-info">
+                    <span className="db-list-name">#{p.id || p._id}</span>
+                    <span className="db-list-date">{p.plazo} meses · {p.tasaInteres}% anual</span>
+                  </div>
+                  <div className="db-loan-right">
+                    <span className="db-loan-monto">${formatMoney(p.montoSolicitado)}</span>
+                    <span className={`db-loan-status db-loan-${(p.estado || '').toLowerCase()}`}>
+                      {(p.estado || '').toUpperCase()}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <button
+            className="db-primary-btn"
+            onClick={() => navigate('/prestamos')}
+            aria-label="Solicitar un nuevo préstamo"
+          >
+            + Solicitar préstamo
+          </button>
+        </section>
+
+        {/* ── 8. INVERSIONES ──────────────────────────────────────────── */}
+        <section aria-labelledby="inversion-heading" className="db-section db-section--last">
+          <div className="db-section-header">
+            <h2 id="inversion-heading" className="db-section-title">Inversiones</h2>
+            <button
+              className="db-link-btn"
+              onClick={() => navigate('/mi-inversion')}
+              aria-label="Ver todas mis inversiones"
+            >
+              Ver todo
+            </button>
+          </div>
+
+          <div className="db-invest-card">
+            <div className="db-invest-row">
+              <span className="db-invest-label">Capital invertido</span>
+              <span className="db-invest-value">${formatMoney(saldoInversion)}</span>
+            </div>
+            <div className="db-invest-row">
+              <span className="db-invest-label">Ganancias</span>
+              <span className={`db-invest-value ${gananciaInversion >= 0 ? 'db-up' : 'db-down'}`}>
+                {gananciaInversion >= 0 ? '+' : ''}${formatMoney(gananciaInversion)}
+              </span>
+            </div>
+            <div className="db-invest-row db-invest-total">
+              <span className="db-invest-label">Total</span>
+              <span className="db-invest-value">${formatMoney(saldoInversion + gananciaInversion)}</span>
+            </div>
+          </div>
+
+          <button
+            className="db-primary-btn"
+            onClick={() => navigate('/mi-inversion')}
+            aria-label="Ir a gestionar mis inversiones"
+          >
+            Gestionar inversiones
+          </button>
+        </section>
+
+      </main>
     </div>
   );
 }
