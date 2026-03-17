@@ -82,67 +82,144 @@ export default function Navbar() {
                   <Link
                     to="/dashboard"
                     className="nav-link nav-link-with-img"
+                    aria-label="Dashboard"
+                    title="Dashboard"
                     onClick={handleMenuClose}
                   >
-                    <img src="/imagen/BE (17).png" alt="Dashboard" className="nav-icon" />
-                    Dashboard
+                    <img src="/imagen/BE (17).png" alt="" aria-hidden="true" className="nav-icon" />
+                    <span className="nav-label">Dashboard</span>
                   </Link>
                   <Link
                     to="/mi-inversion"
                     className="nav-link nav-link-with-img"
+                    aria-label="Mi Inversion"
+                    title="Mi Inversion"
                     onClick={handleMenuClose}
                   >
-                    <img src="/imagen/BE%20(24).png" alt="Mi Inversión" className="nav-icon" />
-                    Mi Inversión
+                    <img src="/imagen/BE%20(24).png" alt="" aria-hidden="true" className="nav-icon" />
+                    <span className="nav-label">Mi Inversion</span>
                   </Link>
                   <Link
                     to="/recargas"
                     className="nav-link nav-link-with-img"
+                    aria-label="Deposita"
+                    title="Deposita"
                     onClick={handleMenuClose}
                   >
-                    <img src="/imagen/BE (4) (1).png" alt="Deposita" className="nav-icon" />
-                    Deposita
+                    <img src="/imagen/BE (4) (1).png" alt="" aria-hidden="true" className="nav-icon" />
+                    <span className="nav-label">Deposita</span>
                   </Link>
                   <Link
                     to="/gastos-personales"
                     className="nav-link nav-link-with-img"
+                    aria-label="Gestion de Gastos Personales"
+                    title="Gestion de Gastos Personales"
                     onClick={handleMenuClose}
                   >
-                    <img src="/imagen/BE%20(23).png" alt="Gastos Personales" className="nav-icon" />
-                    Gestión de Gastos Personales
+                    <img src="/imagen/BE%20(23).png" alt="" aria-hidden="true" className="nav-icon" />
+                    <span className="nav-label">Gestion de Gastos Personales</span>
                   </Link>
                   <Link
                     to="/retiros"
                     className="nav-link nav-link-with-img"
+                    aria-label="Retiros"
+                    title="Retiros"
                     onClick={handleMenuClose}
                   >
-                    <img src="/imagen/BE (5) (1).png" alt="Retiros" className="nav-icon" />
-                    Retiros
+                    <img src="/imagen/BE (5) (1).png" alt="" aria-hidden="true" className="nav-icon" />
+                    <span className="nav-label">Retiros</span>
                   </Link>
                   <Link
                     to="/vincular-cuenta"
                     className="nav-link nav-link-with-img"
+                    aria-label="Vincular Cuenta"
+                    title="Vincular Cuenta"
                     onClick={handleMenuClose}
                   >
-                    <img src="/imagen/BE (11).png" alt="Vincular Cuenta" className="nav-icon" />
-                    Vincular Cuenta
+                    <img src="/imagen/BE (11).png" alt="" aria-hidden="true" className="nav-icon" />
+                    <span className="nav-label">Vincular Cuenta</span>
                   </Link>
                   <Link
                     to="/transferencias"
                     className="nav-link nav-link-with-img"
+                    aria-label="Transferencias"
+                    title="Transferencias"
                     onClick={handleMenuClose}
                   >
-                    <span role="img" aria-label="Transacciones">💸</span>
-                    Transacciones
+                    <img src="/imagen/BE (6) (1).png" alt="" aria-hidden="true" className="nav-icon" />
+                    <span className="nav-label">Transferencias</span>
+                  </Link>
+                  <Link
+                    to="/transferencias-bancarias"
+                    className="nav-link nav-link-with-img mobile-only-link"
+                    aria-label="Transferencias Bancarias"
+                    title="Transferencias Bancarias"
+                    onClick={handleMenuClose}
+                  >
+                    <img src="/imagen/BE (14).png" alt="" aria-hidden="true" className="nav-icon" />
+                    <span className="nav-label">Transf. Bancaria</span>
+                  </Link>
+                  <Link
+                    to="/transferencias-internacionales"
+                    className="nav-link nav-link-with-img mobile-only-link"
+                    aria-label="Transferencias Internacionales"
+                    title="Transferencias Internacionales"
+                    onClick={handleMenuClose}
+                  >
+                    <img src="/imagen/Adobe Express - file (12).png" alt="" aria-hidden="true" className="nav-icon" />
+                    <span className="nav-label">Transf. Internacional</span>
+                  </Link>
+                  <Link
+                    to="/cursos"
+                    className="nav-link mobile-only-link"
+                    aria-label="Cursos"
+                    title="Cursos"
+                    onClick={handleMenuClose}
+                  >
+                    <span className="nav-emoji-icon" aria-hidden="true">🎓</span>
+                    <span className="nav-label">Cursos</span>
+                  </Link>
+                  <Link
+                    to="/cursos/activos-pasivos"
+                    className="nav-link mobile-only-link"
+                    aria-label="Activos y Pasivos"
+                    title="Activos y Pasivos"
+                    onClick={handleMenuClose}
+                  >
+                    <span className="nav-emoji-icon" aria-hidden="true">📘</span>
+                    <span className="nav-label">Activos y Pasivos</span>
+                  </Link>
+                  <Link
+                    to="/cursos/economia-emergente"
+                    className="nav-link mobile-only-link"
+                    aria-label="Economia Emergente"
+                    title="Economia Emergente"
+                    onClick={handleMenuClose}
+                  >
+                    <span className="nav-emoji-icon" aria-hidden="true">🌍</span>
+                    <span className="nav-label">Economia Emergente</span>
+                  </Link>
+                  <Link
+                    to="/cursos/beneficios-ahorro"
+                    className="nav-link mobile-only-link"
+                    aria-label="Beneficios del Ahorro"
+                    title="Beneficios del Ahorro"
+                    onClick={handleMenuClose}
+                  >
+                    <span className="nav-emoji-icon" aria-hidden="true">💰</span>
+                    <span className="nav-label">Beneficios del Ahorro</span>
                   </Link>
                   {/* Todos los enlaces principales ya están como <a> externos arriba */}
                   
                   <div className="nav-dropdown">
                     <button 
                       className={`nav-link dropdown-toggle ${transactionsOpen ? 'active' : ''}`}
+                      aria-label="Menu de Transacciones"
+                      title="Menu de Transacciones"
                       onClick={() => setTransactionsOpen(!transactionsOpen)}
                     >
-                      💸 Transacciones
+                      <span className="nav-emoji-icon" aria-hidden="true">💸</span>
+                      <span className="nav-label">Transacciones</span>
                     </button>
                     {transactionsOpen && (
                       <div className="dropdown-menu">
@@ -166,9 +243,12 @@ export default function Navbar() {
                   <div className="nav-dropdown">
                     <button 
                       className="nav-link dropdown-toggle"
+                      aria-label="Menu de Cursos"
+                      title="Menu de Cursos"
                       onClick={() => setMenuOpen(menuOpen === 'cursos' ? false : 'cursos')}
                     >
-                      🎓 Cursos
+                      <span className="nav-emoji-icon" aria-hidden="true">🎓</span>
+                      <span className="nav-label">Cursos</span>
                     </button>
                     {menuOpen === 'cursos' && (
                       <div className="dropdown-menu">
@@ -190,8 +270,13 @@ export default function Navbar() {
                       <Link
                         to="/admin"
                         className="nav-link admin-link"
+                        aria-label="Panel de Control"
+                        title="Panel de Control"
                         onClick={handleMenuClose}
-                      >⚙️ Panel de Control</Link>
+                      >
+                        <span className="nav-emoji-icon" aria-hidden="true">⚙️</span>
+                        <span className="nav-label">Panel de Control</span>
+                      </Link>
                       {/* El enlace a Desarrolladores se oculta porque no existe la ruta */}
                     </>
                   )}
@@ -199,22 +284,33 @@ export default function Navbar() {
                   <Link
                     to="/perfil"
                     className="nav-link nav-link-with-img"
+                    aria-label="Perfil"
+                    title="Perfil"
                     onClick={handleMenuClose}
                   >
-                    <img src="/imagen/BE (13).png" alt="Perfil" className="nav-icon" />
-                    Perfil
+                    <img src="/imagen/BE (13).png" alt="" aria-hidden="true" className="nav-icon" />
+                    <span className="nav-label">Perfil</span>
                   </Link>
 
                   <Link
                     to="/politica-privacidad"
                     className="nav-link"
+                    aria-label="Politicas de Seguridad"
+                    title="Politicas de Seguridad"
                     onClick={handleMenuClose}
                   >
-                    🔐 Politicas de Seguridad
+                    <span className="nav-emoji-icon" aria-hidden="true">🔐</span>
+                    <span className="nav-label">Politicas de Seguridad</span>
                   </Link>
                   
-                  <button onClick={handleLogout} className="nav-button logout-btn">
-                    🚪 Cerrar Sesión
+                  <button
+                    onClick={handleLogout}
+                    className="nav-button logout-btn"
+                    aria-label="Cerrar Sesion"
+                    title="Cerrar Sesion"
+                  >
+                    <span className="nav-emoji-icon" aria-hidden="true">🚪</span>
+                    <span className="nav-label">Cerrar Sesion</span>
                   </button>
                 </div>
               </div>
