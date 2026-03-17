@@ -318,12 +318,32 @@ export default function Navbar() {
             </>
           ) : (
             <div className="navbar-links">
-              <Link to="/login" className="nav-link">Iniciar Sesión</Link>
-              <Link to="/register" className="nav-button register-btn">
-                Registrarse
+              <Link
+                to="/login"
+                className="nav-link"
+                aria-label="Iniciar Sesion"
+                title="Iniciar Sesion"
+              >
+                <span className="nav-emoji-icon" aria-hidden="true">🔑</span>
+                <span className="nav-label">Iniciar Sesion</span>
               </Link>
-              <Link to="/politica-privacidad" className="nav-link priv-link">
-                Politicas de Seguridad
+              <Link
+                to="/register"
+                className="nav-button register-btn"
+                aria-label="Registrarse"
+                title="Registrarse"
+              >
+                <span className="nav-emoji-icon" aria-hidden="true">📝</span>
+                <span className="nav-label">Registrarse</span>
+              </Link>
+              <Link
+                to="/politica-privacidad"
+                className="nav-link priv-link"
+                aria-label="Politicas de Seguridad"
+                title="Politicas de Seguridad"
+              >
+                <span className="nav-emoji-icon" aria-hidden="true">🔐</span>
+                <span className="nav-label">Politicas de Seguridad</span>
               </Link>
             </div>
           )}

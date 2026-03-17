@@ -1,4 +1,4 @@
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .navbar {
     display: flex !important;
     position: fixed !important;
