@@ -46,9 +46,11 @@ export default function MarketTicker({ position = 'web' }) {
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
   const prevPrices = useRef({});
-  const [bounced, setBounced] = useState({});
   const [dataStatus, setDataStatus] = useState('fresh');
+  const [currentAssetIndex, setCurrentAssetIndex] = useState(0);
+  const [fadeOut, setFadeOut] = useState(false);
 
+  // Efecto para obtener datos del mercado
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
@@ -56,20 +58,6 @@ export default function MarketTicker({ position = 'web' }) {
         // Capturar estado de datos (fresh, cached, stale)
         const status = data.stale ? 'stale' : data.cached ? 'cached' : 'fresh';
         setDataStatus(status);
-        // Detectar cambios de precio para animar
-        const newBounced = {};
-        data.assets.forEach((asset) => {
-          if (
-            prevPrices.current[asset.symbol] !== undefined &&
-            prevPrices.current[asset.symbol] !== asset.price
-          ) {
-            newBounced[asset.symbol] = true;
-            setTimeout(() => {
-              setBounced((b) => ({ ...b, [asset.symbol]: false }));
-            }, 700);
-          }
-        });
-        setBounced((b) => ({ ...b, ...newBounced }));
         setAssets(data.assets);
         prevPrices.current = Object.fromEntries(
           data.assets.map((a) => [a.symbol, a.price])
@@ -85,6 +73,21 @@ export default function MarketTicker({ position = 'web' }) {
     return () => clearInterval(interval);
   }, []);
 
+  // Efecto para carrusel de activos con transición de fade
+  useEffect(() => {
+    if (assets.length === 0) return;
+
+    const carouselInterval = setInterval(() => {
+      setFadeOut(true);
+      setTimeout(() => {
+        setCurrentAssetIndex((prev) => (prev + 1) % assets.length);
+        setFadeOut(false);
+      }, 300);
+    }, 3500);
+
+    return () => clearInterval(carouselInterval);
+  }, [assets]);
+
   const statusIndicators = {
     fresh: { emoji: '✅', label: 'Datos en vivo', color: '#10b981' },
     cached: { emoji: '📦', label: 'Datos en caché', color: '#f59e0b' },
@@ -96,16 +99,18 @@ export default function MarketTicker({ position = 'web' }) {
 
   const containerClass =
     position === 'mobile'
-      ? 'fixed bottom-0 left-0 w-full bg-white border-t z-50 flex justify-around py-2 shadow-md'
-      : 'absolute top-4 right-4 bg-white rounded-lg shadow-md p-4 flex flex-col gap-2 min-w-[260px]';
+      ? 'fixed bottom-0 left-0 w-full bg-white border-t z-50 flex flex-col items-center py-4 shadow-md'
+      : 'absolute top-4 right-4 bg-white rounded-lg shadow-md p-6 flex flex-col gap-4 w-[320px]';
+
+  const currentAsset = assets[currentAssetIndex];
 
   return (
     <div className={containerClass + ' ' + styles.fadeIn}>
+      {/* Indicador de estado */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
-        marginBottom: '8px',
         fontSize: '13px',
         color: indicator.color,
         fontWeight: 500
@@ -113,31 +118,93 @@ export default function MarketTicker({ position = 'web' }) {
         <span>{indicator.emoji}</span>
         <span>{indicator.label}</span>
       </div>
+
+      {/* Carrusel de activos */}
       {loading ? (
-        <span className="text-gray-400">Cargando...</span>
-      ) : (
-        assets.map((asset) => (
+        <div className="text-center text-gray-400">Cargando...</div>
+      ) : assets.length > 0 ? (
+        <>
+          {/* Contenedor del activo con transición fade */}
           <div
-            key={asset.symbol}
-            className={
-              'flex flex-row items-center gap-2 mx-2 min-w-[120px] transition-all duration-300 ' +
-              (bounced[asset.symbol] ? styles.bounce : '')
-            }
+            style={{
+              opacity: fadeOut ? 0 : 1,
+              transition: 'opacity 0.3s ease-in-out',
+              minHeight: '140px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center'
+            }}
           >
-            {icons[asset.name] || <span className="w-5 h-5" />}
-            <div className="flex flex-col items-start">
-              <span className="text-xs text-gray-500 font-medium">{asset.name}</span>
-              <span className="font-semibold text-base">
-                {asset.price !== null ? asset.price.toLocaleString() : '--'}
-              </span>
-              <span className={`text-xs ${getColor(asset.change)}`}>
-                {asset.change !== null
-                  ? `${asset.change > 0 ? '+' : ''}${asset.change.toFixed(2)}%`
-                  : '--'}
-              </span>
+            {currentAsset && (
+              <>
+                {/* Icono */}
+                <div className="mb-3">
+                  {icons[currentAsset.name] || <span className="w-8 h-8" />}
+                </div>
+
+                {/* Nombre */}
+                <div className="text-sm text-gray-600 font-medium mb-2">
+                  {currentAsset.name}
+                </div>
+
+                {/* Precio */}
+                <div className="text-3xl font-bold text-gray-900 mb-2">
+                  {currentAsset.price !== null
+                    ? currentAsset.price.toLocaleString('es-ES', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      })
+                    : '--'}
+                </div>
+
+                {/* Símbolo */}
+                <div className="text-xs text-gray-400 mb-3">{currentAsset.symbol}</div>
+
+                {/* Cambio porcentual */}
+                <div className={`text-lg font-semibold ${getColor(currentAsset.change)}`}>
+                  {currentAsset.change !== null
+                    ? `${currentAsset.change > 0 ? '↑ +' : '↓ '}${Math.abs(currentAsset.change).toFixed(2)}%`
+                    : '--'}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Indicador de progreso */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            marginTop: '12px',
+            fontSize: '12px',
+            color: '#9ca3af'
+          }}>
+            <span>{currentAssetIndex + 1} de {assets.length}</span>
+            {/* Barras de progreso */}
+            <div style={{
+              display: 'flex',
+              gap: '4px'
+            }}>
+              {assets.map((_, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    width: '4px',
+                    height: '4px',
+                    borderRadius: '50%',
+                    backgroundColor: idx === currentAssetIndex ? '#3b82f6' : '#d1d5db',
+                    transition: 'background-color 0.3s ease'
+                  }}
+                />
+              ))}
             </div>
           </div>
-        ))
+        </>
+      ) : (
+        <div className="text-center text-gray-400">No hay datos disponibles</div>
       )}
     </div>
   );
