@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import styles from './AnalisisInversiones.module.css';
+import './AnalisisInversiones.css';
 
 const timeRanges = [
   { label: 'Diario', value: 'daily' },
@@ -276,3 +276,6 @@ const AnalisisInversiones = () => {
 };
 
 export default AnalisisInversiones;
+
+
+

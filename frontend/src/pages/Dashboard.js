@@ -6,7 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import api, { transferAPI, loanAPI, depositoAPI } from '../services/api';
 import SalaDeSaldos from './SalaDeSaldos';
 import MarketTicker from '../components/MarketTicker';
-import styles from './Dashboard.module.css';
+import './Dashboard.css';
 
 export default function Dashboard() {
   const { usuario, loading } = useContext(AuthContext);
@@ -325,3 +325,6 @@ export default function Dashboard() {
     </div>
   );
 }
+
+
+

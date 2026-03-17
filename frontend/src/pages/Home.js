@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import MarketTicker from '../components/MarketTicker';
-import styles from './Home.module.css';
+import './Home.css';
 
 export default function Home() {
   const { usuario } = useContext(AuthContext);
@@ -90,3 +90,6 @@ export default function Home() {
     </div>
   );
 }
+
+
+

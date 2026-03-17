@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import styles from './TransferenciasInternacionales.module.css';
+import './TransferenciasInternacionales.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -377,3 +377,6 @@ export default function TransferenciasInternacionales() {
     </div>
   );
 }
+
+
+

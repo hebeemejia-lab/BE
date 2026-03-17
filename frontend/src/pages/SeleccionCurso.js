@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import styles from './SeleccionCurso.module.css';
+import './SeleccionCurso.css';
 
 const cursos = [
   {
@@ -43,3 +43,6 @@ function SeleccionCurso() {
 }
 
 export default SeleccionCurso;
+
+
+

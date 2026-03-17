@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { toJpeg } from 'html-to-image';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
-import styles from './AdminPanel.module.css';
+import './AdminPanel.css';
 import EstadoCuentaPanel from '../components/EstadoCuentaPanel';
 import AnalisisInversiones from '../components/AnalisisInversiones';
 import CurrencySelector from '../components/CurrencySelector';
@@ -2113,3 +2113,6 @@ const FAQFeedbackView = () => (
 );
 
 export default AdminPanel;
+
+
+

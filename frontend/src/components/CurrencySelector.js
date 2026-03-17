@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { CurrencyContext } from '../context/CurrencyContext';
-import styles from './CurrencySelector.module.css';
+import './CurrencySelector.css';
 
 const CurrencySelector = () => {
   // eslint-disable-next-line no-unused-vars
@@ -94,3 +94,6 @@ const CurrencySelector = () => {
 };
 
 export default CurrencySelector;
+
+
+

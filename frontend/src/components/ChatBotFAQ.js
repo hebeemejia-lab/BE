@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
-import styles from './ChatBotFAQ.module.css';
+import './ChatBotFAQ.css';
 
 const ChatBotFAQ = ({ isOpen, onClose }) => {
   const [mensajes, setMensajes] = useState([
@@ -284,3 +284,6 @@ const ChatBotFAQ = ({ isOpen, onClose }) => {
 };
 
 export default ChatBotFAQ;
+
+
+

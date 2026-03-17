@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { AuthContext } from '../context/AuthContext';
 import { bankAccountAPI, retiroAPI } from '../services/api';
 import API from '../services/api';
-import styles from './Retiros.module.css';
+import './Retiros.css';
 
 export default function Retiros() {
   const { usuario, refrescarPerfil } = useContext(AuthContext);
@@ -548,3 +548,6 @@ export default function Retiros() {
     </div>
   );
 }
+
+
+

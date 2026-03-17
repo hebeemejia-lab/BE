@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './PoliticaPrivacidad.module.css';
+import './PoliticaPrivacidad.css';
 
 const PoliticaPrivacidad = () => (
   <div className="policy-page">
@@ -63,3 +63,6 @@ const PoliticaPrivacidad = () => (
 );
 
 export default PoliticaPrivacidad;
+
+
+

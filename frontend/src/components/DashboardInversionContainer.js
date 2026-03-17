@@ -3,7 +3,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
-import styles from './DashboardInversionContainer.module.css';
+import './DashboardInversionContainer.css';
 
 const DashboardInversionContainer = () => {
   const navigate = useNavigate();
@@ -136,3 +136,6 @@ const DashboardInversionContainer = () => {
 };
 
 export default DashboardInversionContainer;
+
+
+
