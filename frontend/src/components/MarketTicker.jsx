@@ -47,11 +47,15 @@ export default function MarketTicker({ position = 'web' }) {
   const [loading, setLoading] = useState(true);
   const prevPrices = useRef({});
   const [bounced, setBounced] = useState({});
+  const [dataStatus, setDataStatus] = useState('fresh');
 
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
         const { data } = await API.get('/market-data');
+        // Capturar estado de datos (fresh, cached, stale)
+        const status = data.stale ? 'stale' : data.cached ? 'cached' : 'fresh';
+        setDataStatus(status);
         // Detectar cambios de precio para animar
         const newBounced = {};
         data.assets.forEach((asset) => {
@@ -81,6 +85,15 @@ export default function MarketTicker({ position = 'web' }) {
     return () => clearInterval(interval);
   }, []);
 
+  const statusIndicators = {
+    fresh: { emoji: '✅', label: 'Datos en vivo', color: '#10b981' },
+    cached: { emoji: '📦', label: 'Datos en caché', color: '#f59e0b' },
+    stale: { emoji: '⏰', label: 'Datos no actualizados', color: '#ef4444' },
+    error: { emoji: '❌', label: 'Error de conexión', color: '#ef4444' }
+  };
+
+  const indicator = statusIndicators[dataStatus] || statusIndicators.fresh;
+
   const containerClass =
     position === 'mobile'
       ? 'fixed bottom-0 left-0 w-full bg-white border-t z-50 flex justify-around py-2 shadow-md'
@@ -88,6 +101,18 @@ export default function MarketTicker({ position = 'web' }) {
 
   return (
     <div className={containerClass + ' ' + styles.fadeIn}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: '8px',
+        fontSize: '13px',
+        color: indicator.color,
+        fontWeight: 500
+      }}>
+        <span>{indicator.emoji}</span>
+        <span>{indicator.label}</span>
+      </div>
       {loading ? (
         <span className="text-gray-400">Cargando...</span>
       ) : (
