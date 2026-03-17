@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import API from '../services/api';
 import styles from './MarketTicker.module.css';
 
@@ -42,13 +42,26 @@ const getColor = (change) => {
   return 'text-gray-600';
 };
 
+const getIsMobileViewport = () =>
+  typeof window !== 'undefined' && window.innerWidth <= 768;
+
 export default function MarketTicker({ position = 'web' }) {
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const prevPrices = useRef({});
   const [dataStatus, setDataStatus] = useState('fresh');
   const [currentAssetIndex, setCurrentAssetIndex] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(getIsMobileViewport);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const handleResize = () => setIsMobileView(getIsMobileViewport());
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Efecto para obtener datos del mercado
   useEffect(() => {
@@ -59,11 +72,9 @@ export default function MarketTicker({ position = 'web' }) {
         const status = data.stale ? 'stale' : data.cached ? 'cached' : 'fresh';
         setDataStatus(status);
         setAssets(data.assets);
-        prevPrices.current = Object.fromEntries(
-          data.assets.map((a) => [a.symbol, a.price])
-        );
       } catch {
         setAssets([]);
+        setDataStatus('error');
       } finally {
         setLoading(false);
       }
@@ -77,15 +88,19 @@ export default function MarketTicker({ position = 'web' }) {
   useEffect(() => {
     if (assets.length === 0) return;
 
+    let transitionTimeout;
     const carouselInterval = setInterval(() => {
       setFadeOut(true);
-      setTimeout(() => {
+      transitionTimeout = setTimeout(() => {
         setCurrentAssetIndex((prev) => (prev + 1) % assets.length);
         setFadeOut(false);
       }, 300);
     }, 3500);
 
-    return () => clearInterval(carouselInterval);
+    return () => {
+      clearInterval(carouselInterval);
+      if (transitionTimeout) clearTimeout(transitionTimeout);
+    };
   }, [assets]);
 
   const statusIndicators = {
@@ -97,9 +112,11 @@ export default function MarketTicker({ position = 'web' }) {
 
   const indicator = statusIndicators[dataStatus] || statusIndicators.fresh;
 
+  const shouldUseInlineMobileLayout = isMobileView || position === 'mobile';
+
   const containerClass =
-    position === 'mobile'
-      ? 'fixed bottom-0 left-0 w-full bg-white border-t z-50 flex flex-col items-center py-4 shadow-md'
+    shouldUseInlineMobileLayout
+      ? 'relative w-full bg-white border border-gray-200 rounded-xl shadow-md px-4 py-4 flex flex-col gap-3 mb-4'
       : 'absolute top-4 right-4 bg-white rounded-lg shadow-md p-6 flex flex-col gap-4 w-[320px]';
 
   const currentAsset = assets[currentAssetIndex];
@@ -129,7 +146,7 @@ export default function MarketTicker({ position = 'web' }) {
             style={{
               opacity: fadeOut ? 0 : 1,
               transition: 'opacity 0.3s ease-in-out',
-              minHeight: '140px',
+              minHeight: shouldUseInlineMobileLayout ? '118px' : '140px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
