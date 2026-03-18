@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Alert,
@@ -17,6 +17,7 @@ import {
   InputLabel,
   MenuItem,
   Paper,
+  CircularProgress,
   Select,
   Snackbar,
   Stack,
@@ -25,36 +26,13 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined';
 import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlineRounded';
-import GoogleIcon from '@mui/icons-material/Google';
 import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined';
-import QrCode2RoundedIcon from '@mui/icons-material/QrCode2Rounded';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
 import SouthWestRoundedIcon from '@mui/icons-material/SouthWestRounded';
-import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
 import { AuthContext } from '../context/AuthContext';
-
-const coins = [
-  { value: 'BTC', label: 'Bitcoin' },
-  { value: 'ETH', label: 'Ethereum' },
-  { value: 'USDT', label: 'Tether' },
-  { value: 'SOL', label: 'Solana' },
-];
-
-const destinationOptions = [
-  { value: 'wallet-externa', label: 'Wallet externa' },
-  { value: 'usuario-be', label: 'Usuario Banco Exclusivo' },
-  { value: 'cuenta-vinculada', label: 'Cuenta vinculada' },
-];
-
-const walletAddresses = {
-  BTC: 'bc1q-be-crypto-04x9u2m3f8',
-  ETH: '0xBEwallet8f2e17c4d9a72b',
-  USDT: 'TN7BEwallet4vP1a3m8x9',
-  SOL: 'BEWalletSolana7dF92Lx11',
-};
+import { depositoAPI, inversionesAPI, transferAPI } from '../services/api';
 
 const panelSx = {
   borderRadius: '24px',
@@ -72,6 +50,25 @@ const sectionTitleSx = {
   color: '#93c5fd',
 };
 
+const toNumber = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const asArray = (value) => (Array.isArray(value) ? value : []);
+
+const formatUsd = (value) =>
+  toNumber(value).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+const getErrorMessage = (error, fallback) =>
+  error?.response?.data?.mensaje
+  || error?.response?.data?.error
+  || error?.message
+  || fallback;
+
 function Saldos() {
   const { usuario } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -79,18 +76,86 @@ function Saldos() {
   const theme = useTheme();
   const fullScreenDialog = useMediaQuery(theme.breakpoints.down('sm'));
   const nombreCompleto = [usuario?.nombre, usuario?.apellido].filter(Boolean).join(' ') || 'Usuario';
+
   const [activeFlow, setActiveFlow] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [walletStats, setWalletStats] = useState({
+    saldoDisponible: toNumber(usuario?.saldo),
+    recargasExitosas: 0,
+    totalRecargado: 0,
+    transferencias: 0,
+    comprasActivas: 0,
+  });
+
   const [depositForm, setDepositForm] = useState({ method: 'paypal', amount: '', code: '' });
-  const [buyForm, setBuyForm] = useState({ coin: 'BTC', amount: '' });
-  const [transferForm, setTransferForm] = useState({ destination: '', currency: 'USDT', amount: '', recipient: '' });
+  const [buyForm, setBuyForm] = useState({ symbol: '', cantidad: '' });
+  const [transferForm, setTransferForm] = useState({ cedula: '', monto: '', concepto: 'Transferencia crypto' });
+  const [assetQuery, setAssetQuery] = useState('');
+  const [assetOptions, setAssetOptions] = useState([]);
+  const [assetsLoading, setAssetsLoading] = useState(false);
   const [feedback, setFeedback] = useState({ open: false, severity: 'success', message: '' });
+
+  const isPositiveAmount = (value) => {
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) && numericValue > 0;
+  };
+
+  const openFeedback = (severity, message) => {
+    setFeedback({ open: true, severity, message });
+  };
+
+  const closeFeedback = () => {
+    setFeedback((prev) => ({ ...prev, open: false }));
+  };
+
+  const loadWalletStats = useCallback(async () => {
+    setStatsLoading(true);
+
+    const [recargasResult, transferenciasResult, posicionesResult] = await Promise.allSettled([
+      depositoAPI.obtenerDepositos(),
+      transferAPI.obtenerHistorial(),
+      inversionesAPI.obtenerPosiciones(),
+    ]);
+
+    const recargas = recargasResult.status === 'fulfilled' ? asArray(recargasResult.value?.data) : [];
+    const recargasExitosas = recargas.filter((recarga) => String(recarga.estado || '').toLowerCase() === 'exitosa');
+    const totalRecargado = recargasExitosas.reduce(
+      (sum, recarga) => sum + toNumber(recarga.montoNeto ?? recarga.monto),
+      0,
+    );
+
+    const transferencias = transferenciasResult.status === 'fulfilled'
+      ? asArray(transferenciasResult.value?.data)
+      : [];
+
+    let comprasActivas = 0;
+    if (posicionesResult.status === 'fulfilled') {
+      const payload = posicionesResult.value?.data;
+      if (Array.isArray(payload)) {
+        comprasActivas = payload.length;
+      } else if (Array.isArray(payload?.posiciones)) {
+        comprasActivas = payload.posiciones.length;
+      }
+    }
+
+    setWalletStats({
+      saldoDisponible: toNumber(usuario?.saldo),
+      recargasExitosas: recargasExitosas.length,
+      totalRecargado,
+      transferencias: transferencias.length,
+      comprasActivas,
+    });
+
+    setStatsLoading(false);
+  }, [usuario?.saldo]);
 
   useEffect(() => {
     const state = location.state || {};
     if (state.openFlow === 'deposit') {
       setDepositForm((prev) => ({
         ...prev,
-        method: state.depositMethod || prev.method,
+        method: state.depositMethod === 'codigo' ? 'codigo' : 'paypal',
       }));
       setActiveFlow('deposit');
     }
@@ -102,82 +167,151 @@ function Saldos() {
     }
   }, [location.state]);
 
-  const openFeedback = (severity, message) => {
-    setFeedback({ open: true, severity, message });
-  };
+  useEffect(() => {
+    loadWalletStats();
+  }, [loadWalletStats]);
 
-  const closeFeedback = () => {
-    setFeedback((prev) => ({ ...prev, open: false }));
-  };
+  useEffect(() => {
+    if (activeFlow !== 'buy') return;
 
-  const isPositiveAmount = (value) => {
-    const numericValue = Number(value);
-    return Number.isFinite(numericValue) && numericValue > 0;
-  };
+    const query = assetQuery.trim();
+    if (query.length < 1) {
+      setAssetOptions([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setAssetsLoading(true);
+        const response = await inversionesAPI.buscarActivos(query);
+        const resultados = asArray(response?.data?.resultados);
+        setAssetOptions(resultados);
+
+        if (!buyForm.symbol && resultados.length > 0) {
+          setBuyForm((prev) => ({ ...prev, symbol: resultados[0].symbol }));
+        }
+      } catch (error) {
+        setAssetOptions([]);
+      } finally {
+        setAssetsLoading(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [activeFlow, assetQuery, buyForm.symbol]);
 
   const resetDeposit = () => setDepositForm({ method: 'paypal', amount: '', code: '' });
-  const resetBuy = () => setBuyForm({ coin: 'BTC', amount: '' });
-  const resetTransfer = () => setTransferForm({ destination: '', currency: 'USDT', amount: '', recipient: '' });
+  const resetBuy = () => setBuyForm({ symbol: '', cantidad: '' });
+  const resetTransfer = () => setTransferForm({ cedula: '', monto: '', concepto: 'Transferencia crypto' });
 
-  const handleDepositConfirm = () => {
-    if (!depositForm.method) {
-      openFeedback('error', 'Selecciona un método de depósito.');
-      return;
+  const handleDepositConfirm = async () => {
+    if (processing) return;
+
+    try {
+      setProcessing(true);
+
+      if (depositForm.method === 'codigo') {
+        if (!depositForm.code.trim()) {
+          openFeedback('error', 'Ingresa un código válido.');
+          return;
+        }
+
+        const response = await depositoAPI.canjearCodigo({ codigo: depositForm.code.trim() });
+        openFeedback('success', response?.data?.mensaje || 'Código canjeado exitosamente.');
+        setActiveFlow(null);
+        resetDeposit();
+        await loadWalletStats();
+        return;
+      }
+
+      if (!isPositiveAmount(depositForm.amount)) {
+        openFeedback('error', 'Ingresa un monto mayor que cero para PayPal.');
+        return;
+      }
+
+      const response = await depositoAPI.crearDepositoPayPal({ monto: Number(depositForm.amount) });
+      const checkoutUrl = response?.data?.checkoutUrl;
+
+      if (!checkoutUrl) {
+        openFeedback('error', 'PayPal no devolvió URL de pago.');
+        return;
+      }
+
+      openFeedback('success', 'Redirigiendo a PayPal...');
+      window.location.assign(checkoutUrl);
+    } catch (error) {
+      openFeedback('error', getErrorMessage(error, 'No se pudo procesar el depósito.'));
+    } finally {
+      setProcessing(false);
     }
-    if (!isPositiveAmount(depositForm.amount)) {
-      openFeedback('error', 'Ingresa un monto mayor que cero.');
-      return;
-    }
-    if (depositForm.method === 'codigo' && !depositForm.code.trim()) {
-      openFeedback('error', 'Ingresa el código para continuar.');
-      return;
-    }
-    openFeedback('success', `Depósito preparado por USD ${Number(depositForm.amount).toFixed(2)} con ${depositForm.method}.`);
-    setActiveFlow(null);
-    resetDeposit();
   };
 
-  const handleBuyConfirm = () => {
-    if (!buyForm.coin) {
-      openFeedback('error', 'Selecciona una moneda para comprar.');
-      return;
+  const handleBuyConfirm = async () => {
+    if (processing) return;
+
+    try {
+      if (!buyForm.symbol.trim()) {
+        openFeedback('error', 'Selecciona un activo válido antes de comprar.');
+        return;
+      }
+      if (!isPositiveAmount(buyForm.cantidad)) {
+        openFeedback('error', 'La cantidad debe ser mayor que cero.');
+        return;
+      }
+
+      setProcessing(true);
+      const response = await inversionesAPI.comprar({
+        symbol: buyForm.symbol.trim().toUpperCase(),
+        cantidad: Number(buyForm.cantidad),
+      });
+
+      openFeedback('success', response?.data?.mensaje || 'Compra ejecutada correctamente.');
+      setActiveFlow(null);
+      resetBuy();
+      await loadWalletStats();
+    } catch (error) {
+      openFeedback('error', getErrorMessage(error, 'No se pudo ejecutar la compra.'));
+    } finally {
+      setProcessing(false);
     }
-    if (!isPositiveAmount(buyForm.amount)) {
-      openFeedback('error', 'Ingresa un monto mayor que cero para comprar crypto.');
-      return;
-    }
-    openFeedback('success', `Compra de ${buyForm.coin} iniciada por USD ${Number(buyForm.amount).toFixed(2)}.`);
-    setActiveFlow(null);
-    resetBuy();
   };
 
-  const handleTransferConfirm = () => {
-    if (!transferForm.destination) {
-      openFeedback('error', 'Selecciona el destino de la transferencia.');
-      return;
+  const handleTransferConfirm = async () => {
+    if (processing) return;
+
+    try {
+      if (!transferForm.cedula.trim()) {
+        openFeedback('error', 'Ingresa la cédula del destinatario.');
+        return;
+      }
+      if (!isPositiveAmount(transferForm.monto)) {
+        openFeedback('error', 'Ingresa un monto mayor que cero.');
+        return;
+      }
+
+      setProcessing(true);
+      const response = await transferAPI.realizar({
+        cedula_destinatario: transferForm.cedula.trim(),
+        monto: Number(transferForm.monto),
+        concepto: transferForm.concepto.trim() || 'Transferencia crypto',
+      });
+
+      openFeedback('success', response?.data?.mensaje || 'Transferencia realizada correctamente.');
+      setActiveFlow(null);
+      resetTransfer();
+      await loadWalletStats();
+    } catch (error) {
+      openFeedback('error', getErrorMessage(error, 'No se pudo realizar la transferencia.'));
+    } finally {
+      setProcessing(false);
     }
-    if (!transferForm.currency) {
-      openFeedback('error', 'Selecciona la moneda a transferir.');
-      return;
-    }
-    if (!transferForm.recipient.trim()) {
-      openFeedback('error', 'Ingresa la referencia o dirección de destino.');
-      return;
-    }
-    if (!isPositiveAmount(transferForm.amount)) {
-      openFeedback('error', 'Ingresa un monto mayor que cero.');
-      return;
-    }
-    openFeedback('success', `Transferencia de ${transferForm.currency} preparada por USD ${Number(transferForm.amount).toFixed(2)}.`);
-    setActiveFlow(null);
-    resetTransfer();
   };
 
-  const quickActions = [
+  const quickActions = useMemo(() => ([
     {
-      id: 'paypal',
-      title: 'Depositar con PayPal',
-      subtitle: 'Fondos inmediatos',
+      id: 'deposit',
+      title: 'Depositar',
+      subtitle: 'PayPal o código',
       icon: <PaymentsOutlinedIcon sx={{ fontSize: 28 }} />,
       onClick: () => {
         setDepositForm((prev) => ({ ...prev, method: 'paypal' }));
@@ -185,62 +319,69 @@ function Saldos() {
       },
     },
     {
-      id: 'google-pay',
-      title: 'Depositar con Google Pay',
-      subtitle: 'Un toque y confirma',
-      icon: <GoogleIcon sx={{ fontSize: 28 }} />,
+      id: 'buy',
+      title: 'Comprar crypto',
+      subtitle: 'Conexión a API de trading',
+      icon: <ShoppingBagOutlinedIcon sx={{ fontSize: 28 }} />,
       onClick: () => {
-        setDepositForm((prev) => ({ ...prev, method: 'googlepay' }));
-        setActiveFlow('deposit');
+        setAssetQuery('');
+        setActiveFlow('buy');
       },
     },
     {
-      id: 'codigo',
-      title: 'Usar Código',
-      subtitle: 'Canje manual de saldo',
-      icon: <VpnKeyOutlinedIcon sx={{ fontSize: 28 }} />,
-      onClick: () => {
-        setDepositForm((prev) => ({ ...prev, method: 'codigo' }));
-        setActiveFlow('deposit');
-      },
+      id: 'transfer',
+      title: 'Transferir crypto',
+      subtitle: 'Envío entre cuentas BE',
+      icon: <SendRoundedIcon sx={{ fontSize: 28 }} />,
+      onClick: () => setActiveFlow('transfer'),
     },
-    {
-      id: 'wallet',
-      title: 'Crypto Wallet',
-      subtitle: 'Vista general de activos',
-      icon: <AccountBalanceWalletOutlinedIcon sx={{ fontSize: 28 }} />,
-      onClick: () => navigate('/saldos'),
-    },
-  ];
+  ]), []);
 
   const mainActions = [
     {
       id: 'deposit',
       title: 'Deposita',
-      description: 'Selecciona método, monto y confirma fondos.',
+      description: 'Métodos activos: PayPal y código de recarga.',
       icon: <SouthWestRoundedIcon sx={{ fontSize: 32 }} />,
       onClick: () => setActiveFlow('deposit'),
     },
     {
       id: 'buy',
       title: 'Compra crypto',
-      description: 'Elige moneda, monto y escanea QR de compra.',
+      description: 'Envía orden real a /inversiones/comprar.',
       icon: <ShoppingBagOutlinedIcon sx={{ fontSize: 32 }} />,
       onClick: () => setActiveFlow('buy'),
     },
     {
       id: 'transfer',
       title: 'Transfiere',
-      description: 'Selecciona destino, moneda y confirma envío.',
+      description: 'Transferencia real vía /transferencias/realizar.',
       icon: <SendRoundedIcon sx={{ fontSize: 32 }} />,
       onClick: () => setActiveFlow('transfer'),
     },
   ];
 
   const walletMetrics = [
-    { label: 'Saldo wallet', value: 'USD 12,480.00', helper: 'Disponible para nuevas operaciones' },
-    { label: 'Activos activos', value: '4', helper: 'BTC, ETH, USDT y SOL' },
-    { label: 'Red principal', value: 'Operativa', helper: 'Sin incidencias en confirmación' },
+    {
+      label: 'Saldo disponible',
+      value: `USD ${formatUsd(walletStats.saldoDisponible)}`,
+      helper: 'Saldo actual del usuario autenticado',
+    },
+    {
+      label: 'Recargas exitosas',
+      value: String(walletStats.recargasExitosas),
+      helper: `Total recargado: USD ${formatUsd(walletStats.totalRecargado)}`,
+    },
+    {
+      label: 'Transferencias',
+      value: String(walletStats.transferencias),
+      helper: 'Movimientos desde historial real',
+    },
+    {
+      label: 'Compras activas',
+      value: String(walletStats.comprasActivas),
+      helper: 'Posiciones abiertas en inversiones',
+    },
   ];
 
   return (
@@ -270,7 +411,7 @@ function Saldos() {
                     Crypto Wallet de {nombreCompleto}
                   </Typography>
                   <Typography sx={{ mt: 0.75, color: 'rgba(226, 232, 240, 0.76)', maxWidth: '62ch', fontSize: { xs: '0.92rem', md: '1rem' } }}>
-                    Gestiona tus depósitos, compras y transferencias con el mismo lenguaje visual del dashboard bancario.
+                    Esta vista solo usa operaciones conectadas a APIs activas en producción: depositar, comprar y transferir.
                   </Typography>
                 </Box>
               </Stack>
@@ -295,9 +436,13 @@ function Saldos() {
               </Stack>
             </Stack>
 
+            <Alert severity="warning" sx={{ borderRadius: '14px' }}>
+              Las compras se envían a la API real de inversiones. Usa símbolos válidos del broker para evitar rechazos.
+            </Alert>
+
             <Grid container spacing={2}>
               {walletMetrics.map((metric) => (
-                <Grid item xs={12} sm={4} key={metric.label}>
+                <Grid item xs={12} sm={6} md={3} key={metric.label}>
                   <Card
                     sx={{
                       height: '100%',
@@ -310,12 +455,23 @@ function Saldos() {
                   >
                     <CardContent sx={{ p: 2.25 }}>
                       <Typography sx={sectionTitleSx}>{metric.label}</Typography>
-                      <Typography sx={{ mt: 1.2, fontSize: { xs: '1.3rem', md: '1.55rem' }, fontWeight: 800 }}>
-                        {metric.value}
-                      </Typography>
-                      <Typography sx={{ mt: 0.7, fontSize: '0.9rem', color: 'rgba(226,232,240,0.68)' }}>
-                        {metric.helper}
-                      </Typography>
+                      {statsLoading ? (
+                        <Stack direction="row" alignItems="center" sx={{ mt: 1.4 }}>
+                          <CircularProgress size={20} sx={{ color: '#bfdbfe' }} />
+                          <Typography sx={{ ml: 1.2, fontSize: '0.9rem', color: 'rgba(226,232,240,0.7)' }}>
+                            Cargando...
+                          </Typography>
+                        </Stack>
+                      ) : (
+                        <>
+                          <Typography sx={{ mt: 1.2, fontSize: { xs: '1.3rem', md: '1.55rem' }, fontWeight: 800 }}>
+                            {metric.value}
+                          </Typography>
+                          <Typography sx={{ mt: 0.7, fontSize: '0.9rem', color: 'rgba(226,232,240,0.68)' }}>
+                            {metric.helper}
+                          </Typography>
+                        </>
+                      )}
                     </CardContent>
                   </Card>
                 </Grid>
@@ -432,7 +588,7 @@ function Saldos() {
         <DialogTitle sx={{ fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Depositar</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ pt: 0.5 }}>
-            <Alert severity="info">Selecciona el método, ingresa el monto y confirma la operación.</Alert>
+            <Alert severity="info">Métodos activos en esta vista: PayPal y código de recarga.</Alert>
             <FormControl fullWidth>
               <InputLabel id="deposit-method-label">Método</InputLabel>
               <Select
@@ -443,10 +599,10 @@ function Saldos() {
                 inputProps={{ 'aria-label': 'Método de depósito' }}
               >
                 <MenuItem value="paypal">Depositar con PayPal</MenuItem>
-                <MenuItem value="googlepay">Depositar con Google Pay</MenuItem>
                 <MenuItem value="codigo">Usar Código</MenuItem>
               </Select>
             </FormControl>
+
             {depositForm.method === 'codigo' && (
               <TextField
                 fullWidth
@@ -456,20 +612,25 @@ function Saldos() {
                 inputProps={{ 'aria-label': 'Código de depósito' }}
               />
             )}
-            <TextField
-              fullWidth
-              label="Monto"
-              type="number"
-              value={depositForm.amount}
-              onChange={(event) => setDepositForm((prev) => ({ ...prev, amount: event.target.value }))}
-              inputProps={{ min: 0, step: '0.01', 'aria-label': 'Monto a depositar' }}
-              InputProps={{ startAdornment: <InputAdornment position="start">USD</InputAdornment> }}
-            />
+
+            {depositForm.method === 'paypal' && (
+              <TextField
+                fullWidth
+                label="Monto"
+                type="number"
+                value={depositForm.amount}
+                onChange={(event) => setDepositForm((prev) => ({ ...prev, amount: event.target.value }))}
+                inputProps={{ min: 0, step: '0.01', 'aria-label': 'Monto a depositar' }}
+                InputProps={{ startAdornment: <InputAdornment position="start">USD</InputAdornment> }}
+              />
+            )}
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => { setActiveFlow(null); resetDeposit(); }}>Cancelar</Button>
-          <Button variant="contained" onClick={handleDepositConfirm}>Confirmar</Button>
+          <Button onClick={() => { setActiveFlow(null); resetDeposit(); }} disabled={processing}>Cancelar</Button>
+          <Button variant="contained" onClick={handleDepositConfirm} disabled={processing}>
+            {processing ? 'Procesando...' : 'Confirmar'}
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -477,52 +638,53 @@ function Saldos() {
         <DialogTitle sx={{ fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Compra crypto</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ pt: 0.5 }}>
-            <Alert severity="info">Elige la moneda, indica el monto y escanea el QR para completar la compra.</Alert>
+            <Alert severity="info">Busca un símbolo, selecciona la cantidad y confirma la orden real.</Alert>
+            <TextField
+              fullWidth
+              label="Buscar símbolo"
+              value={assetQuery}
+              onChange={(event) => setAssetQuery(event.target.value)}
+              inputProps={{ 'aria-label': 'Buscar símbolo para compra' }}
+              placeholder="Ej: AAPL"
+            />
             <FormControl fullWidth>
-              <InputLabel id="buy-coin-label">Moneda</InputLabel>
+              <InputLabel id="buy-symbol-label">Símbolo</InputLabel>
               <Select
-                labelId="buy-coin-label"
-                label="Moneda"
-                value={buyForm.coin}
-                onChange={(event) => setBuyForm((prev) => ({ ...prev, coin: event.target.value }))}
-                inputProps={{ 'aria-label': 'Moneda a comprar' }}
+                labelId="buy-symbol-label"
+                label="Símbolo"
+                value={buyForm.symbol}
+                onChange={(event) => setBuyForm((prev) => ({ ...prev, symbol: event.target.value }))}
+                inputProps={{ 'aria-label': 'Símbolo a comprar' }}
               >
-                {coins.map((coin) => (
-                  <MenuItem key={coin.value} value={coin.value}>{coin.label}</MenuItem>
+                {assetOptions.map((asset) => (
+                  <MenuItem key={asset.symbol} value={asset.symbol}>
+                    {asset.symbol} · {asset.nombre || asset.name || 'Activo'}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
+            {assetsLoading && (
+              <Stack direction="row" alignItems="center">
+                <CircularProgress size={18} sx={{ mr: 1.2 }} />
+                <Typography sx={{ fontSize: '0.9rem' }}>Buscando activos...</Typography>
+              </Stack>
+            )}
             <TextField
               fullWidth
-              label="Monto"
+              label="Cantidad"
               type="number"
-              value={buyForm.amount}
-              onChange={(event) => setBuyForm((prev) => ({ ...prev, amount: event.target.value }))}
-              inputProps={{ min: 0, step: '0.01', 'aria-label': 'Monto para comprar crypto' }}
-              InputProps={{ startAdornment: <InputAdornment position="start">USD</InputAdornment> }}
+              value={buyForm.cantidad}
+              onChange={(event) => setBuyForm((prev) => ({ ...prev, cantidad: event.target.value }))}
+              inputProps={{ min: 0, step: '0.01', 'aria-label': 'Cantidad para comprar' }}
+              InputProps={{ startAdornment: <InputAdornment position="start">UN</InputAdornment> }}
             />
-            <Paper
-              variant="outlined"
-              sx={{
-                borderRadius: '20px',
-                borderColor: 'rgba(167,216,255,0.24)',
-                bgcolor: 'rgba(15,23,42,0.04)',
-                p: 2,
-              }}
-            >
-              <Stack spacing={1.5} alignItems="center">
-                <QrCode2RoundedIcon sx={{ fontSize: 112, color: '#1d4ed8' }} aria-hidden="true" />
-                <Typography sx={{ ...sectionTitleSx, color: '#1e3a8a' }}>Escanear QR</Typography>
-                <Typography sx={{ fontSize: '0.92rem', textAlign: 'center', color: '#334155' }}>
-                  Dirección de compra para {buyForm.coin}: {walletAddresses[buyForm.coin]}
-                </Typography>
-              </Stack>
-            </Paper>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => { setActiveFlow(null); resetBuy(); }}>Cancelar</Button>
-          <Button variant="contained" onClick={handleBuyConfirm}>Confirmar compra</Button>
+          <Button onClick={() => { setActiveFlow(null); resetBuy(); }} disabled={processing}>Cancelar</Button>
+          <Button variant="contained" onClick={handleBuyConfirm} disabled={processing || assetsLoading}>
+            {processing ? 'Procesando...' : 'Confirmar compra'}
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -530,56 +692,37 @@ function Saldos() {
         <DialogTitle sx={{ fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Transfiere</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ pt: 0.5 }}>
-            <Alert severity="info">Selecciona el destino, la moneda y el monto antes de confirmar.</Alert>
-            <FormControl fullWidth>
-              <InputLabel id="transfer-destination-label">Destino</InputLabel>
-              <Select
-                labelId="transfer-destination-label"
-                label="Destino"
-                value={transferForm.destination}
-                onChange={(event) => setTransferForm((prev) => ({ ...prev, destination: event.target.value }))}
-                inputProps={{ 'aria-label': 'Destino de la transferencia' }}
-              >
-                {destinationOptions.map((destination) => (
-                  <MenuItem key={destination.value} value={destination.value}>{destination.label}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl fullWidth>
-              <InputLabel id="transfer-currency-label">Moneda</InputLabel>
-              <Select
-                labelId="transfer-currency-label"
-                label="Moneda"
-                value={transferForm.currency}
-                onChange={(event) => setTransferForm((prev) => ({ ...prev, currency: event.target.value }))}
-                inputProps={{ 'aria-label': 'Moneda a transferir' }}
-              >
-                {coins.map((coin) => (
-                  <MenuItem key={coin.value} value={coin.value}>{coin.label}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Alert severity="info">Este flujo usa /transferencias/realizar con validaciones reales del backend.</Alert>
             <TextField
               fullWidth
-              label="Referencia o dirección"
-              value={transferForm.recipient}
-              onChange={(event) => setTransferForm((prev) => ({ ...prev, recipient: event.target.value }))}
-              inputProps={{ 'aria-label': 'Dirección o referencia de destino' }}
+              label="Cédula del destinatario"
+              value={transferForm.cedula}
+              onChange={(event) => setTransferForm((prev) => ({ ...prev, cedula: event.target.value }))}
+              inputProps={{ 'aria-label': 'Cédula del destinatario' }}
             />
             <TextField
               fullWidth
               label="Monto"
               type="number"
-              value={transferForm.amount}
-              onChange={(event) => setTransferForm((prev) => ({ ...prev, amount: event.target.value }))}
+              value={transferForm.monto}
+              onChange={(event) => setTransferForm((prev) => ({ ...prev, monto: event.target.value }))}
               inputProps={{ min: 0, step: '0.01', 'aria-label': 'Monto a transferir' }}
               InputProps={{ startAdornment: <InputAdornment position="start">USD</InputAdornment> }}
+            />
+            <TextField
+              fullWidth
+              label="Concepto"
+              value={transferForm.concepto}
+              onChange={(event) => setTransferForm((prev) => ({ ...prev, concepto: event.target.value }))}
+              inputProps={{ 'aria-label': 'Concepto de la transferencia' }}
             />
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => { setActiveFlow(null); resetTransfer(); }}>Cancelar</Button>
-          <Button variant="contained" onClick={handleTransferConfirm}>Confirmar envío</Button>
+          <Button onClick={() => { setActiveFlow(null); resetTransfer(); }} disabled={processing}>Cancelar</Button>
+          <Button variant="contained" onClick={handleTransferConfirm} disabled={processing}>
+            {processing ? 'Procesando...' : 'Confirmar envío'}
+          </Button>
         </DialogActions>
       </Dialog>
 
