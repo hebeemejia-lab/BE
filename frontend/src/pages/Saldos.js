@@ -183,13 +183,17 @@ function Saldos() {
     const timer = setTimeout(async () => {
       try {
         setAssetsLoading(true);
-        const response = await inversionesAPI.buscarActivos(query);
+        const response = await inversionesAPI.buscarActivos(query, { assetClass: 'crypto' });
         const resultados = asArray(response?.data?.resultados);
         setAssetOptions(resultados);
+        setBuyForm((prev) => {
+          if (resultados.length === 0) {
+            return prev.symbol ? { ...prev, symbol: '' } : prev;
+          }
 
-        if (!buyForm.symbol && resultados.length > 0) {
-          setBuyForm((prev) => ({ ...prev, symbol: resultados[0].symbol }));
-        }
+          const currentStillVisible = resultados.some((asset) => asset.symbol === prev.symbol);
+          return currentStillVisible ? prev : { ...prev, symbol: resultados[0].symbol };
+        });
       } catch (error) {
         setAssetOptions([]);
       } finally {
@@ -198,7 +202,7 @@ function Saldos() {
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [activeFlow, assetQuery, buyForm.symbol]);
+  }, [activeFlow, assetQuery]);
 
   const resetDeposit = () => setDepositForm({ method: 'paypal', amount: '', code: '' });
   const resetBuy = () => setBuyForm({ symbol: '', cantidad: '' });
@@ -263,6 +267,7 @@ function Saldos() {
       const response = await inversionesAPI.comprar({
         symbol: buyForm.symbol.trim().toUpperCase(),
         cantidad: Number(buyForm.cantidad),
+        assetClass: 'crypto',
       });
 
       openFeedback('success', response?.data?.mensaje || 'Compra ejecutada correctamente.');
@@ -321,7 +326,7 @@ function Saldos() {
     {
       id: 'buy',
       title: 'Comprar crypto',
-      subtitle: 'Conexión a API de trading',
+      subtitle: 'Orden real Alpaca Crypto',
       icon: <ShoppingBagOutlinedIcon sx={{ fontSize: 28 }} />,
       onClick: () => {
         setAssetQuery('');
@@ -348,7 +353,7 @@ function Saldos() {
     {
       id: 'buy',
       title: 'Compra crypto',
-      description: 'Envía orden real a /inversiones/comprar.',
+      description: 'Envía orden real IOC a Alpaca Crypto.',
       icon: <ShoppingBagOutlinedIcon sx={{ fontSize: 32 }} />,
       onClick: () => setActiveFlow('buy'),
     },
@@ -411,7 +416,7 @@ function Saldos() {
                     Crypto Wallet de {nombreCompleto}
                   </Typography>
                   <Typography sx={{ mt: 0.75, color: 'rgba(226, 232, 240, 0.76)', maxWidth: '62ch', fontSize: { xs: '0.92rem', md: '1rem' } }}>
-                    Esta vista solo usa operaciones conectadas a APIs activas en producción: depositar, comprar y transferir.
+                    Esta vista solo usa operaciones conectadas a APIs activas en producción: depositar, comprar crypto y transferir.
                   </Typography>
                 </Box>
               </Stack>
@@ -437,7 +442,7 @@ function Saldos() {
             </Stack>
 
             <Alert severity="warning" sx={{ borderRadius: '14px' }}>
-              Las compras se envían a la API real de inversiones. Usa símbolos válidos del broker para evitar rechazos.
+              Las compras crypto se envían como ordenes reales a Alpaca Crypto. Usa pares validos como BTC/USD o ETH/USD.
             </Alert>
 
             <Grid container spacing={2}>
@@ -638,14 +643,14 @@ function Saldos() {
         <DialogTitle sx={{ fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Compra crypto</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ pt: 0.5 }}>
-            <Alert severity="info">Busca un símbolo, selecciona la cantidad y confirma la orden real.</Alert>
+            <Alert severity="info">Busca BTC o ETH y selecciona un par real de crypto como BTC/USD. Esta vista ya no lista acciones.</Alert>
             <TextField
               fullWidth
               label="Buscar símbolo"
               value={assetQuery}
               onChange={(event) => setAssetQuery(event.target.value)}
               inputProps={{ 'aria-label': 'Buscar símbolo para compra' }}
-              placeholder="Ej: AAPL"
+              placeholder="Ej: BTC, ETH, SOL"
             />
             <FormControl fullWidth>
               <InputLabel id="buy-symbol-label">Símbolo</InputLabel>
@@ -671,12 +676,12 @@ function Saldos() {
             )}
             <TextField
               fullWidth
-              label="Cantidad"
+              label="Cantidad del activo"
               type="number"
               value={buyForm.cantidad}
               onChange={(event) => setBuyForm((prev) => ({ ...prev, cantidad: event.target.value }))}
-              inputProps={{ min: 0, step: '0.01', 'aria-label': 'Cantidad para comprar' }}
-              InputProps={{ startAdornment: <InputAdornment position="start">UN</InputAdornment> }}
+              inputProps={{ min: 0, step: '0.0001', 'aria-label': 'Cantidad para comprar' }}
+              InputProps={{ startAdornment: <InputAdornment position="start">QTY</InputAdornment> }}
             />
           </Stack>
         </DialogContent>

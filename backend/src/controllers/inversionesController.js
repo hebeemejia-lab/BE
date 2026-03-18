@@ -1,12 +1,12 @@
 const Inversion = require('../models/Inversion');
 const User = require('../models/User');
+const { sequelize } = require('../config/database');
 const alpacaService = require('../services/alpacaService');
-const { Op } = require('sequelize');
 
-// Comprar acción
+// Comprar activo
 const comprarAccion = async (req, res) => {
   try {
-    const { symbol, cantidad } = req.body;
+    const { symbol, cantidad, assetClass } = req.body;
     const usuarioId = req.usuario.id;
 
     // ⚠️ ADVERTENCIA: Trading real
@@ -14,7 +14,7 @@ const comprarAccion = async (req, res) => {
 
     // Validaciones
     if (!symbol || !cantidad) {
-      return res.status(400).json({ mensaje: 'Symbol y cantidad requeridos' });
+      return res.status(400).json({ mensaje: 'Simbolo y cantidad requeridos' });
     }
 
     const cantidadNum = parseFloat(cantidad);
@@ -25,7 +25,7 @@ const comprarAccion = async (req, res) => {
     // Límite de seguridad para trading real
     if (cantidadNum > 100) {
       return res.status(400).json({ 
-        mensaje: 'Límite de seguridad: máximo 100 acciones por operación',
+        mensaje: 'Limite de seguridad: maximo 100 unidades por operacion',
         nota: 'Contacta soporte para aumentar límites',
       });
     }
@@ -36,53 +36,112 @@ const comprarAccion = async (req, res) => {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     }
 
-    // Validar que la acción existe
+    // Validar que el activo existe
     const symbolUpper = symbol.toUpperCase();
-    await alpacaService.validarAccion(symbolUpper);
+    const activo = await alpacaService.validarAccion(symbolUpper);
+
+    if (assetClass === 'crypto' && activo.assetClass !== 'crypto') {
+      return res.status(400).json({ mensaje: 'Esta wallet solo permite compras de pares crypto reales.' });
+    }
 
     // Obtener precio actual
-    const cotizacion = await alpacaService.obtenerCotizacion(symbolUpper);
+    const cotizacion = await alpacaService.obtenerCotizacion(activo.symbol);
     const precioCompra = cotizacion.precioCompra || cotizacion.precio;
-    const costoTotal = parseFloat((precioCompra * cantidadNum).toFixed(2));
+    const costoEstimado = parseFloat((precioCompra * cantidadNum).toFixed(2));
+    const costoValidacion = parseFloat((costoEstimado * (activo.assetClass === 'crypto' ? 1.05 : 1.02)).toFixed(2));
 
-    console.log(`💰 COMPRA REAL: ${cantidadNum} ${symbolUpper} @ $${precioCompra} = $${costoTotal}`);
+    console.log(`💰 COMPRA REAL: ${cantidadNum} ${activo.symbol} @ $${precioCompra} = $${costoEstimado}`);
 
     // Validar saldo suficiente
     const saldoDisponible = parseFloat(usuario.saldo);
-    if (costoTotal > saldoDisponible) {
+    if (costoValidacion > saldoDisponible) {
       return res.status(400).json({
         mensaje: 'Saldo insuficiente',
-        costoTotal,
+        costoTotal: costoEstimado,
+        costoValidacion,
         saldoDisponible,
-        faltante: parseFloat((costoTotal - saldoDisponible).toFixed(2)),
+        faltante: parseFloat((costoValidacion - saldoDisponible).toFixed(2)),
+      });
+    }
+
+    const estadoCuentaTrading = await alpacaService.obtenerEstadoCuenta();
+    if (!estadoCuentaTrading) {
+      return res.status(503).json({ mensaje: 'No se pudo consultar la cuenta real de trading.' });
+    }
+
+    const poderCompraBroker = activo.assetClass === 'crypto'
+      ? parseFloat(estadoCuentaTrading.poderCompraNoMargen || 0)
+      : parseFloat(estadoCuentaTrading.poderCompra || 0);
+
+    if (costoValidacion > poderCompraBroker) {
+      return res.status(400).json({
+        mensaje: 'Fondos insuficientes en la cuenta real de trading.',
+        costoValidacion,
+        poderCompraBroker,
       });
     }
 
     // Advertencia final antes de ejecutar
     console.log('🚨 CONFIRMACIÓN REQUERIDA: Esta es una orden REAL');
-    console.log(`   Costo: $${costoTotal} (dinero real)`);
+    console.log(`   Costo estimado: $${costoEstimado} (dinero real)`);
 
-    // Descontar del saldo BE
-    usuario.saldo = parseFloat((saldoDisponible - costoTotal).toFixed(2));
-    await usuario.save();
-
-    // Guardar inversión
-    const inversion = await Inversion.create({
-      usuarioId,
-      symbol: symbolUpper,
+    const orden = await alpacaService.crearOrdenMercado({
+      symbol: activo.symbol,
       cantidad: cantidadNum,
-      precioCompra,
-      costoTotal,
-      estado: 'abierta',
-      tipo: 'compra',
-      fechaCompra: new Date(),
+      side: 'buy',
+      clientOrderId: `be-${usuarioId}-${Date.now()}`,
+    });
+
+    const ordenConfirmada = await alpacaService.confirmarOrdenMercado(orden.id);
+    const cantidadEjecutada = ordenConfirmada.filledQty || 0;
+
+    if (cantidadEjecutada <= 0) {
+      return res.status(400).json({
+        mensaje: 'La orden real no se ejecuto. No se registro compra en BE.',
+        estadoOrden: ordenConfirmada.status,
+        orderId: ordenConfirmada.id,
+      });
+    }
+
+    const precioEjecutado = ordenConfirmada.filledAvgPrice || precioCompra;
+    const costoTotal = parseFloat((precioEjecutado * cantidadEjecutada).toFixed(2));
+
+    if (costoTotal > saldoDisponible) {
+      return res.status(409).json({
+        mensaje: 'La orden real se ejecuto por encima del saldo BE disponible. Requiere conciliacion manual.',
+        costoTotal,
+        saldoDisponible,
+        orderId: ordenConfirmada.id,
+      });
+    }
+
+    let inversion;
+    await sequelize.transaction(async (transaction) => {
+      usuario.saldo = parseFloat((saldoDisponible - costoTotal).toFixed(2));
+      await usuario.save({ transaction });
+
+      inversion = await Inversion.create({
+        usuarioId,
+        symbol: activo.symbol,
+        cantidad: cantidadEjecutada,
+        precioCompra: precioEjecutado,
+        costoTotal,
+        estado: 'abierta',
+        tipo: 'compra',
+        fechaCompra: new Date(),
+      }, { transaction });
     });
 
     console.log(`✅ Compra REAL ejecutada - Nuevo saldo: $${usuario.saldo}`);
 
     res.json({
-      mensaje: `✅ COMPRA REAL EJECUTADA: ${cantidadNum} ${symbolUpper}`,
+      mensaje: `✅ COMPRA REAL EJECUTADA EN ALPACA: ${cantidadEjecutada} ${activo.symbol}`,
       advertencia: '⚠️ Esta operación usó dinero REAL',
+      orden: {
+        id: ordenConfirmada.id,
+        estado: ordenConfirmada.status,
+        clientOrderId: ordenConfirmada.clientOrderId,
+      },
       inversion: {
         id: inversion.id,
         symbol: inversion.symbol,
@@ -94,7 +153,7 @@ const comprarAccion = async (req, res) => {
       nuevoSaldo: usuario.saldo,
     });
   } catch (error) {
-    console.error('❌ Error comprando acción:', error.message);
+    console.error('❌ Error comprando activo:', error.message);
     res.status(500).json({ 
       mensaje: 'Error procesando compra',
       error: error.message,
@@ -318,20 +377,20 @@ const obtenerCotizacionAccion = async (req, res) => {
   }
 };
 
-// Buscar acciones
+// Buscar activos
 const buscarAcciones = async (req, res) => {
   try {
-    const { q } = req.query;
+    const { q, assetClass } = req.query;
 
     if (!q || q.length < 1) {
       return res.status(400).json({ mensaje: 'Query de búsqueda requerido' });
     }
 
-    const resultados = await alpacaService.buscarAccion(q);
+    const resultados = await alpacaService.buscarAccion(q, { assetClass });
 
     res.json({ resultados });
   } catch (error) {
-    console.error('❌ Error buscando acciones:', error.message);
+    console.error('❌ Error buscando activos:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
