@@ -2,6 +2,41 @@ import React, { createContext, useState, useEffect, useCallback } from 'react';
 
 export const CurrencyContext = createContext();
 
+const DEFAULT_EXCHANGE_RATES = { DOP: 1, USD: 0.017, EUR: 0.016, GBP: 0.013 };
+const EXCHANGE_RATE_ENDPOINTS = [
+  'https://api.exchangerate-api.com/v4/latest/USD',
+  'https://open.er-api.com/v6/latest/USD',
+];
+const GEOLOCATION_ENDPOINTS = [
+  'https://ipapi.co/json/',
+  'https://ipwho.is/',
+];
+
+const fetchJsonWithTimeout = async (url, timeoutMs = 8000) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return await response.json();
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
+const extraerRates = (data) => data?.rates || null;
+
+const extraerCountryCode = (data) => {
+  if (!data || typeof data !== 'object') {
+    return null;
+  }
+
+  return data.country_code || data.country_code_iso3 || data.country_code_iso2 || data.country || null;
+};
+
 const CURRENCY_SYMBOLS = {
   DOP: 'RD$',
   USD: '$',
@@ -31,7 +66,7 @@ export const CurrencyProvider = ({ children }) => {
     }
     
     // Valores por defecto (1 DOP a otras monedas)
-    return { DOP: 1, USD: 0.017, EUR: 0.016, GBP: 0.013 };
+    return DEFAULT_EXCHANGE_RATES;
   });
   
   const [loading, setLoading] = useState(false);
@@ -40,22 +75,32 @@ export const CurrencyProvider = ({ children }) => {
   const fetchExchangeRates = useCallback(async (userLocation = null) => {
     setLoading(true);
     try {
-      // Primero obtener tasa USD (base internacional)
-      const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-      
-      if (!response.ok) throw new Error('Error al obtener tasas de cambio');
-      
-      const data = await response.json();
+      let data = null;
+
+      for (const endpoint of EXCHANGE_RATE_ENDPOINTS) {
+        try {
+          data = await fetchJsonWithTimeout(endpoint);
+          if (extraerRates(data)?.DOP) {
+            break;
+          }
+        } catch (exchangeError) {
+          data = null;
+        }
+      }
+
+      if (!extraerRates(data)?.DOP) {
+        throw new Error('No fue posible obtener tasas actualizadas');
+      }
       
       // DOP normalmente está alrededor de 58-60 por USD
-      const dopToUsd = data.rates.DOP || 59; // Cuántos DOP = 1 USD
+      const dopToUsd = extraerRates(data).DOP || 59; // Cuántos DOP = 1 USD
       
       // Calcular tasas desde DOP (1 DOP = ? USD/EUR/GBP)
       const rates = {
         DOP: 1,
         USD: 1 / dopToUsd, // Convertir de DOP a USD
-        EUR: (1 / dopToUsd) * (data.rates.EUR || 0.92), // DOP -> USD -> EUR
-        GBP: (1 / dopToUsd) * (data.rates.GBP || 0.79)  // DOP -> USD -> GBP
+        EUR: (1 / dopToUsd) * (extraerRates(data).EUR || 0.92), // DOP -> USD -> EUR
+        GBP: (1 / dopToUsd) * (extraerRates(data).GBP || 0.79)  // DOP -> USD -> GBP
       };
       
       setExchangeRates(rates);
@@ -73,8 +118,13 @@ export const CurrencyProvider = ({ children }) => {
       }
       
     } catch (error) {
-      console.error('Error al obtener tasas de cambio:', error);
-      // Mantener tasas en caché o por defecto
+      const cached = localStorage.getItem('exchangeRates');
+      if (cached) {
+        setExchangeRates(JSON.parse(cached));
+      } else {
+        setExchangeRates(DEFAULT_EXCHANGE_RATES);
+      }
+      console.warn('No se pudieron actualizar las tasas de cambio; se usan tasas en caché o por defecto.');
     } finally {
       setLoading(false);
     }
@@ -100,14 +150,21 @@ export const CurrencyProvider = ({ children }) => {
   // Obtener ubicación del usuario usando API de geolocalización
   const getUserLocation = useCallback(async () => {
     try {
-      // Usar ipgeolocation.io o similar (o la API nativa del navegador)
-      const response = await fetch('https://ipapi.co/json/');
-      if (!response.ok) throw new Error('Error al obtener ubicación');
-      
-      const data = await response.json();
-      return data.country_code; // Devuelve código de país como 'DO', 'US', 'ES', etc.
+      for (const endpoint of GEOLOCATION_ENDPOINTS) {
+        try {
+          const data = await fetchJsonWithTimeout(endpoint, 5000);
+          const countryCode = extraerCountryCode(data);
+          if (countryCode) {
+            return String(countryCode).slice(0, 2);
+          }
+        } catch (locationError) {
+          // Probar siguiente endpoint.
+        }
+      }
+
+      throw new Error('Error al obtener ubicación');
     } catch (error) {
-      console.error('Error al obtener ubicación:', error);
+      console.warn('No se pudo detectar ubicación automáticamente.');
       return null;
     }
   }, []);
@@ -156,6 +213,15 @@ export const CurrencyProvider = ({ children }) => {
   // Inicializar: obtener tasas y detectar ubicación
   useEffect(() => {
     const initializeCurrency = async () => {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        return;
+      }
+
+      const location = await getUserLocation();
+      await fetchExchangeRates(location);
+    };
+
+    const handleOnline = async () => {
       const location = await getUserLocation();
       await fetchExchangeRates(location);
     };
@@ -166,8 +232,13 @@ export const CurrencyProvider = ({ children }) => {
     const interval = setInterval(() => {
       fetchExchangeRates();
     }, 3600000); // 1 hora
+
+    window.addEventListener('online', handleOnline);
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('online', handleOnline);
+    };
   }, [fetchExchangeRates, getUserLocation]);
 
   const value = {

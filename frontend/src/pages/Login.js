@@ -7,6 +7,9 @@ import GoogleAuthButton from '../components/GoogleAuthButton';
 import './Auth.css';
 
 const PENDING_GOOGLE_REGISTRATION_KEY = 'pendingGoogleRegistration';
+const GOOGLE_CONFIG_RETRY_DELAYS = [0, 1500, 4000];
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function LoginContent() {
   const [email, setEmail] = useState('');
@@ -24,21 +27,38 @@ function LoginContent() {
     let mounted = true;
 
     const cargarGoogleConfig = async () => {
-      try {
-        const response = await authAPI.getGoogleConfig();
-        if (mounted) {
-          setGoogleClientId(response.data?.clientId || '');
+      for (const delayMs of GOOGLE_CONFIG_RETRY_DELAYS) {
+        if (delayMs > 0) {
+          await wait(delayMs);
         }
-      } catch (configError) {
-        if (mounted) {
-          setGoogleClientId('');
+
+        try {
+          const response = await authAPI.getGoogleConfig();
+          if (mounted) {
+            setGoogleClientId(response.data?.clientId || '');
+          }
+          return;
+        } catch (configError) {
+          if (!mounted) {
+            return;
+          }
         }
+      }
+
+      if (mounted) {
+        setGoogleClientId('');
       }
     };
 
+    const handleOnline = () => {
+      cargarGoogleConfig();
+    };
+
     cargarGoogleConfig();
+    window.addEventListener('online', handleOnline);
     return () => {
       mounted = false;
+      window.removeEventListener('online', handleOnline);
     };
   }, []);
 
