@@ -16,6 +16,13 @@ const TEKERS = [
   { id: 'cursos',     label: 'Cursos',     icon: '🎓', route: '/cursos',                     color: '#4338ca' },
 ];
 
+const CRYPTO_ACTIONS = [
+  { id: 'paypal', label: 'PayPal', icon: 'P', helper: 'Depositar saldo', route: '/saldos', state: { openFlow: 'deposit', depositMethod: 'paypal' } },
+  { id: 'google-pay', label: 'Google Pay', icon: 'G', helper: 'Fondear wallet', route: '/saldos', state: { openFlow: 'deposit', depositMethod: 'googlepay' } },
+  { id: 'usar-codigo', label: 'Usar Código', icon: '#', helper: 'Canjear acceso', route: '/saldos', state: { openFlow: 'deposit', depositMethod: 'codigo' } },
+  { id: 'crypto-wallet', label: 'Crypto Wallet', icon: '◈', helper: 'Comprar y transferir', route: '/saldos' },
+];
+
 // Activos favoritos (data estática, en una app real vendría del perfil de usuario)
 const FAVORITES = [
   { id: 'btc',  label: 'Bitcoin',    symbol: 'BTC',  icon: '₿',    color: '#f7931a', change: '+2.4%',  up: true  },
@@ -109,6 +116,7 @@ export default function Dashboard() {
     ? new Date(transferencias[0].fechaTransferencia).toLocaleDateString('es-ES')
     : 'Sin movimientos recientes';
   const operacionesMonitoreadas = transferencias.length + prestamos.length;
+  const handleCryptoAction = (action) => navigate(action.route, action.state ? { state: action.state } : undefined);
 
   if (loading) {
     return (
@@ -182,26 +190,38 @@ export default function Dashboard() {
 
             {/* Bienvenida + acciones */}
             <div className="db-hero-welcome">
-              <div>
-                <p className="db-hero-kicker">Panel principal</p>
+              <div className="db-hero-heading">
+                <p className="db-hero-kicker">Mesa cripto</p>
                 <h1 id="dashboard-overview-heading" className="db-hero-title">{nombreCompleto}</h1>
+                <p className="db-hero-summary">
+                  Entradas directas para depósitos, compra de crypto y transferencias desde una sola wallet.
+                </p>
               </div>
-              <div className="db-hero-actions">
+              <button
+                className="db-hero-overview-btn"
+                onClick={() => navigate('/saldos')}
+                aria-label="Ver mi cartera"
+              >
+                Ver cartera
+              </button>
+            </div>
+
+            <div className="db-crypto-bar" role="list" aria-label="Operaciones rápidas de cripto">
+              {CRYPTO_ACTIONS.map((action) => (
                 <button
-                  className="db-primary-btn db-primary-btn--compact"
-                  onClick={() => navigate('/prestamos')}
-                  aria-label="Ir a préstamos"
+                  key={action.id}
+                  className="db-crypto-action"
+                  onClick={() => handleCryptoAction(action)}
+                  role="listitem"
+                  aria-label={action.label}
                 >
-                  + Préstamo
+                  <span className="db-crypto-icon" aria-hidden="true">{action.icon}</span>
+                  <span className="db-crypto-meta">
+                    <span className="db-crypto-label">{action.label}</span>
+                    <span className="db-crypto-helper">{action.helper}</span>
+                  </span>
                 </button>
-                <button
-                  className="db-secondary-btn"
-                  onClick={() => navigate('/transferencias')}
-                  aria-label="Crear una transferencia"
-                >
-                  ↗ Transferir
-                </button>
-              </div>
+              ))}
             </div>
 
             {/* Tira de KPI cards */}

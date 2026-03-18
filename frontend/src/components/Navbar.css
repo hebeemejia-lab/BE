@@ -332,6 +332,12 @@
   z-index: 10002;
 }
 
+.hamburger-symbol {
+  font-size: 24px;
+  line-height: 1;
+  color: #ffffff;
+}
+
 .hamburger.active {
   /* optional shift when drawer opens, keeps it visible */
   right: 292px;
@@ -359,6 +365,16 @@
 
 .navbar-overlay {
   display: none;
+}
+
+.navbar.open .navbar-overlay {
+  display: block;
+  position: fixed;
+  inset: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 10000;
+  cursor: pointer;
 }
 
 .user-info {
@@ -822,6 +838,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+@media (min-width: 769px) {
+  .hamburger {
+    display: none;
+  }
+
+  .navbar-overlay {
+    display: none !important;
+  }
 }
 
 /* Ensure drawer links render horizontally on desktop */

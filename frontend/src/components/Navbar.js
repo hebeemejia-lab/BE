@@ -13,10 +13,11 @@ const FloatingDropdown = ({ label, icon, children }) => (
 const formatMoney = (value) => `$${value}`;
 
 const Navbar = () => {
-  const { usuario, token, logout } = useContext(AuthContext);
+  const { usuario, logout } = useContext(AuthContext);
   const [menuOpen, setMenuOpen] = useState(false);
   const [devMode, setDevMode] = useState(false);
   const handleMenuClose = () => setMenuOpen(false);
+  const toggleMenu = () => setMenuOpen((prev) => !prev);
   const toggleDevMode = () => setDevMode((prev) => !prev);
   const handleLogout = () => {
     logout();
@@ -28,12 +29,22 @@ const Navbar = () => {
       <nav className={`navbar ${menuOpen ? 'open' : ''}`}>
         <div className="navbar-container">
           <div className="navbar-header">
+            <button
+              type="button"
+              className={`hamburger ${menuOpen ? 'active' : ''}`}
+              onClick={toggleMenu}
+              aria-label={menuOpen ? 'Cerrar menú de opciones' : 'Abrir menú de opciones'}
+              aria-expanded={menuOpen}
+              aria-controls="navbar-options"
+            >
+              <span className="hamburger-symbol" aria-hidden="true">{menuOpen ? '✕' : '☰'}</span>
+            </button>
             <Link to="/" className="navbar-logo" onClick={handleMenuClose}>
               <img src="/imagen/BE (1) (1).png" alt="BE" className="logo-img" />
               <span className="logo-text">BE</span>
             </Link>
           </div>
-          <div className={`navbar-right ${menuOpen ? 'open' : ''}`}>
+          <div id="navbar-options" className={`navbar-right ${menuOpen ? 'open' : ''}`}>
             <div className="user-info">
               <span className="user-name">
                 {usuario && (usuario.nombre || usuario.apellido)
@@ -46,6 +57,10 @@ const Navbar = () => {
               <Link to="/dashboard" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
                 <img src="/imagen/BE (1) (1).png" alt="Dashboard" className="nav-icon" />
                 Dashboard
+              </Link>
+              <Link to="/saldos" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
+                <img src="/imagen/BE (6) (1).png" alt="Crypto Wallet" className="nav-icon" />
+                Crypto Wallet
               </Link>
               <Link to="/recargas" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
                 <img src="/imagen/BE (4) (1).png" alt="Deposita" className="nav-icon" />
@@ -111,6 +126,14 @@ const Navbar = () => {
             </div>
           </div>
         </div>
+        {menuOpen && (
+          <button
+            type="button"
+            className="navbar-overlay"
+            onClick={handleMenuClose}
+            aria-label="Cerrar menú"
+          />
+        )}
       </nav>
     </React.Fragment>
   );
