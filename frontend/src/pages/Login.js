@@ -8,6 +8,8 @@ import './Auth.css';
 
 const PENDING_GOOGLE_REGISTRATION_KEY = 'pendingGoogleRegistration';
 const GOOGLE_CONFIG_RETRY_DELAYS = [0, 1500, 4000];
+const GOOGLE_CLIENT_ID_FALLBACK = process.env.REACT_APP_GOOGLE_CLIENT_ID
+  || '978208362804-knsj41tcdmdlaiu7amh4kvlp6tscmq3p.apps.googleusercontent.com';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -18,7 +20,7 @@ function LoginContent() {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleClientId, setGoogleClientId] = useState('');
+  const [googleClientId, setGoogleClientId] = useState(GOOGLE_CLIENT_ID_FALLBACK);
   const { login, loginWithGoogle } = useContext(AuthContext);
   const navigate = useNavigate();
   const { executeRecaptcha } = useGoogleReCaptcha();
@@ -35,7 +37,7 @@ function LoginContent() {
         try {
           const response = await authAPI.getGoogleConfig();
           if (mounted) {
-            setGoogleClientId(response.data?.clientId || '');
+            setGoogleClientId(response.data?.clientId || GOOGLE_CLIENT_ID_FALLBACK);
           }
           return;
         } catch (configError) {
@@ -46,7 +48,7 @@ function LoginContent() {
       }
 
       if (mounted) {
-        setGoogleClientId('');
+        setGoogleClientId(GOOGLE_CLIENT_ID_FALLBACK);
       }
     };
 
