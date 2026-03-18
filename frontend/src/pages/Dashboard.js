@@ -17,10 +17,10 @@ const TEKERS = [
 ];
 
 const CRYPTO_ACTIONS = [
-  { id: 'paypal', label: 'PayPal', icon: 'P', helper: 'Depositar saldo', route: '/saldos', state: { openFlow: 'deposit', depositMethod: 'paypal' } },
-  { id: 'google-pay', label: 'Google Pay', icon: 'G', helper: 'Fondear wallet', route: '/saldos', state: { openFlow: 'deposit', depositMethod: 'googlepay' } },
-  { id: 'usar-codigo', label: 'Usar Código', icon: '#', helper: 'Canjear acceso', route: '/saldos', state: { openFlow: 'deposit', depositMethod: 'codigo' } },
-  { id: 'crypto-wallet', label: 'Crypto Wallet', icon: '◈', helper: 'Comprar y transferir', route: '/saldos' },
+  { id: 'depositar', label: 'Depositar', icon: '↓', helper: 'PayPal o código', route: '/saldos', state: { openFlow: 'deposit' } },
+  { id: 'comprar', label: 'Comprar', icon: '◈', helper: 'Orden de mercado', route: '/saldos', state: { openFlow: 'buy' } },
+  { id: 'transferir', label: 'Transferir', icon: '↑', helper: 'Enviar saldo', route: '/saldos', state: { openFlow: 'transfer' } },
+  { id: 'crypto-wallet', label: 'Wallet', icon: 'W', helper: 'Panel completo', route: '/saldos' },
 ];
 
 // Activos favoritos (data estática, en una app real vendría del perfil de usuario)

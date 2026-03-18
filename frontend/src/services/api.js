@@ -58,12 +58,24 @@ export const loanAPI = {
 // Depositos (rutas en /recargas en el backend)
 export const depositoAPI = {
   crearDepositoStripe: (datos) => API.post('/recargas/crear', datos),
+  crearDepositoPayPal: (datos) => API.post('/recargas/crear-paypal', datos),
+  capturarDepositoPayPal: (datos) => API.post('/recargas/paypal/capturar', datos),
   procesarDepositoTarjeta: (datos) => API.post('/recargas/procesar-tarjeta', datos),
   procesarDepositoExitoso: (datos) => API.post('/recargas/procesar', datos),
   obtenerDepositos: () => API.get('/recargas/historial'),
   obtenerResumenPayPal: () => API.get('/recargas/resumen-paypal'),
   canjearCodigo: (datos) => API.post('/recargas/canjear-codigo', datos),
   generarCodigos: (datos) => API.post('/recargas/generar-codigos', datos),
+};
+
+// Inversiones (trading en vivo)
+export const inversionesAPI = {
+  comprar: (datos) => API.post('/inversiones/comprar', datos),
+  vender: (datos) => API.post('/inversiones/vender', datos),
+  obtenerPosiciones: () => API.get('/inversiones/posiciones'),
+  obtenerPortfolio: () => API.get('/inversiones/portfolio'),
+  buscarActivos: (query) => API.get('/inversiones/buscar', { params: { q: query } }),
+  obtenerCotizacion: (symbol) => API.get(`/inversiones/cotizacion/${encodeURIComponent(symbol)}`),
 };
 
 // Cuentas Bancarias
