@@ -238,7 +238,7 @@ export default function Login() {
   }
 
   return (
-    <GoogleReCaptchaProvider reCaptchaKey={recaptchaSiteKey}>
+    <GoogleReCaptchaProvider reCaptchaKey={recaptchaSiteKey} useRecaptchaNet>
       <LoginContent />
     </GoogleReCaptchaProvider>
   );
