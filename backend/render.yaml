@@ -17,3 +17,7 @@ services:
         value: "postgresql://banco_exclusivo_user:7dtcq9tLrlTvbiTWiorMEbnIzTHFxIi9@dpg-d5t3flv18n1s7380l0gg-a.onrender.com:5432/banco_exclusivo"
       - key: NODE_ENV
         value: "production"
+      - key: RECAPTCHA_SECRET_KEY
+        value: "6Ldb24QsAAAAAHc8P84G7K42FlYLuZ5qC0Fac5QP"
+      - key: RECAPTCHA_THRESHOLD
+        value: "0.5"

@@ -21,6 +21,32 @@ const getHeaders = () => {
   };
 };
 
+const getBrokerConfig = () => ({
+  apiKey: process.env.ALPACA_BROKER_API_KEY || process.env.ALPACA_BROKER_KEY,
+  secretKey: process.env.ALPACA_BROKER_SECRET_KEY || process.env.ALPACA_BROKER_SECRET,
+  baseUrl: process.env.ALPACA_BROKER_BASE_URL || 'https://broker-api.sandbox.alpaca.markets',
+});
+
+const ensureBrokerConfig = () => {
+  const config = getBrokerConfig();
+  if (!config.apiKey || !config.secretKey) {
+    throw new Error('Credenciales Broker API no configuradas (ALPACA_BROKER_API_KEY/ALPACA_BROKER_SECRET_KEY)');
+  }
+
+  return config;
+};
+
+const getBrokerHeaders = () => {
+  const config = ensureBrokerConfig();
+  const credentials = Buffer.from(`${config.apiKey}:${config.secretKey}`).toString('base64');
+
+  return {
+    Authorization: `Basic ${credentials}`,
+    'Content-Type': 'application/json',
+    accept: 'application/json',
+  };
+};
+
 const TERMINAL_ORDER_STATUSES = new Set(['filled', 'canceled', 'expired', 'rejected', 'suspended', 'stopped', 'done_for_day']);
 
 const CRYPTO_QUOTE_ASSETS = ['USD', 'USDT', 'USDC', 'BTC', 'ETH'];
@@ -115,6 +141,53 @@ const formatOrder = (order) => ({
 });
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const normalizeFundingStatus = (status) => {
+  const normalized = String(status || '').trim().toLowerCase();
+
+  if (!normalized) {
+    return 'pending';
+  }
+
+  if (['settled', 'complete', 'completed', 'approved', 'posted'].includes(normalized)) {
+    return 'settled';
+  }
+
+  if (['failed', 'rejected', 'returned', 'error'].includes(normalized)) {
+    return 'failed';
+  }
+
+  if (['canceled', 'cancelled', 'revoked'].includes(normalized)) {
+    return 'canceled';
+  }
+
+  return 'pending';
+};
+
+const formatAchRelationship = (relationship) => ({
+  id: relationship?.id,
+  accountId: relationship?.account_id,
+  accountOwnerName: relationship?.account_owner_name,
+  nickname: relationship?.nickname,
+  statusRaw: relationship?.status,
+  status: normalizeFundingStatus(relationship?.status),
+  createdAt: relationship?.created_at,
+  updatedAt: relationship?.updated_at,
+});
+
+const formatBrokerTransfer = (transfer) => ({
+  id: transfer?.id,
+  accountId: transfer?.account_id,
+  relationshipId: transfer?.relationship_id,
+  transferType: transfer?.transfer_type || 'ach',
+  direction: transfer?.direction,
+  timing: transfer?.timing,
+  amount: transfer?.amount ? Number(transfer.amount) : 0,
+  statusRaw: transfer?.status,
+  status: normalizeFundingStatus(transfer?.status),
+  createdAt: transfer?.created_at,
+  updatedAt: transfer?.updated_at,
+});
 
 const obtenerActivos = async (assetClass) => {
   const config = getConfig();
@@ -289,6 +362,112 @@ const crearOrdenMercado = async ({ symbol, cantidad, side = 'buy', clientOrderId
   );
 
   return formatOrder(response.data);
+};
+
+const crearRelacionAchBroker = async ({
+  accountId,
+  accountOwnerName,
+  bankAccountType,
+  bankAccountNumber,
+  bankRoutingNumber,
+  nickname,
+  processorToken,
+  instant,
+}) => {
+  const config = ensureBrokerConfig();
+
+  const payload = {};
+  if (processorToken) {
+    payload.processor_token = processorToken;
+  } else {
+    payload.account_owner_name = accountOwnerName;
+    payload.bank_account_type = bankAccountType;
+    payload.bank_account_number = bankAccountNumber;
+    payload.bank_routing_number = bankRoutingNumber;
+    if (nickname) {
+      payload.nickname = nickname;
+    }
+    if (typeof instant === 'boolean') {
+      payload.instant = instant;
+    }
+  }
+
+  const response = await axios.post(
+    `${config.baseUrl}/v1/accounts/${encodeURIComponent(accountId)}/ach_relationships`,
+    payload,
+    { headers: getBrokerHeaders() },
+  );
+
+  return formatAchRelationship(response.data);
+};
+
+const crearTransferenciaAchBroker = async ({
+  accountId,
+  relationshipId,
+  amount,
+  direction = 'INCOMING',
+  timing = 'immediate',
+}) => {
+  const config = ensureBrokerConfig();
+  const payload = {
+    transfer_type: 'ach',
+    relationship_id: relationshipId,
+    amount: String(amount),
+    direction,
+    timing,
+  };
+
+  const response = await axios.post(
+    `${config.baseUrl}/v1/accounts/${encodeURIComponent(accountId)}/transfers`,
+    payload,
+    { headers: getBrokerHeaders() },
+  );
+
+  return formatBrokerTransfer(response.data);
+};
+
+const listarTransferenciasAchBroker = async ({ accountId, direction }) => {
+  const config = ensureBrokerConfig();
+  const params = {};
+  if (direction) {
+    params.direction = direction;
+  }
+
+  const response = await axios.get(
+    `${config.baseUrl}/v1/accounts/${encodeURIComponent(accountId)}/transfers`,
+    {
+      headers: getBrokerHeaders(),
+      params,
+    },
+  );
+
+  const transfers = Array.isArray(response.data) ? response.data : [];
+  return transfers.map(formatBrokerTransfer);
+};
+
+const obtenerTransferenciaAchBroker = async ({ accountId, transferId }) => {
+  const config = ensureBrokerConfig();
+  try {
+    const response = await axios.get(
+      `${config.baseUrl}/v1/accounts/${encodeURIComponent(accountId)}/transfers/${encodeURIComponent(transferId)}`,
+      { headers: getBrokerHeaders() },
+    );
+
+    return formatBrokerTransfer(response.data);
+  } catch (error) {
+    if (error.response?.status !== 404) {
+      throw error;
+    }
+
+    // Fallback defensivo cuando la API no expone endpoint individual en ciertos planes/entornos.
+    const transfers = await listarTransferenciasAchBroker({ accountId });
+    const transfer = transfers.find((item) => item.id === transferId);
+    if (!transfer) {
+      throw new Error(`Transferencia ${transferId} no encontrada en Broker API`);
+    }
+
+    return transfer;
+  }
 };
 
 const obtenerOrden = async (orderId) => {
@@ -477,76 +656,36 @@ const obtenerHistorial = async (symbol, timeframe = '1Day', limit = 100) => {
   }
 };
 
-// ⚠️ LIVE TRADING - Transferir fondos de BE a Alpaca
-// ADVERTENCIA: Esto mueve dinero REAL del saldo BE a la cuenta de trading Alpaca
-const transferirFondosAAlpaca = async (usuarioId, monto) => {
-  const config = getConfig();
-  
-  if (config.mode !== 'live') {
-    throw new Error('Transferencias de fondos solo disponibles en modo LIVE');
-  }
-  
-  try {
-    console.log(`💰 TRANSFERENCIA REAL: $${monto} → Alpaca para usuario ${usuarioId}`);
-    console.log('⚠️  ADVERTENCIA: Esto moverá dinero REAL');
-    
-    // En producción, esto requeriría:
-    // 1. Crear ACH relationship con banco del usuario
-    // 2. Iniciar transferencia ACH
-    // 3. Esperar 3-5 días hábiles para clearing
-    
-    // Por ahora, documentamos el proceso
-    return {
-      success: false,
-      mensaje: 'Transferencias ACH requieren configuración adicional',
-      pasos: [
-        '1. Vincular cuenta bancaria USA con Alpaca',
-        '2. Verificar cuenta (microdeposits)',
-        '3. Iniciar ACH transfer',
-        '4. Esperar 3-5 días para clearing',
-      ],
-      nota: 'Contacta soporte para habilitar funding automático',
-    };
-  } catch (error) {
-    console.error('❌ Error transfiriendo fondos:', error.message);
-    throw error;
-  }
+// Transferir fondos de BE a Alpaca via Broker API ACH (incoming)
+const transferirFondosAAlpaca = async ({ accountId, relationshipId, monto }) => {
+  return crearTransferenciaAchBroker({
+    accountId,
+    relationshipId,
+    amount: monto,
+    direction: 'INCOMING',
+    timing: 'immediate',
+  });
 };
 
-// Retirar fondos de Alpaca de vuelta a BE
-const retirarFondosDeAlpaca = async (usuarioId, monto) => {
-  const config = getConfig();
-  
-  if (config.mode !== 'live') {
-    throw new Error('Retiros solo disponibles en modo LIVE');
-  }
-  
-  try {
-    console.log(`💵 RETIRO REAL: $${monto} de Alpaca → BE para usuario ${usuarioId}`);
-    
-    // Obtener saldo disponible en Alpaca
-    const cuenta = await obtenerEstadoCuenta();
-    
-    if (!cuenta || cuenta.efectivo < monto) {
-      throw new Error(`Saldo insuficiente en Alpaca. Disponible: $${cuenta?.efectivo || 0}`);
-    }
-    
-    // En producción, esto requeriría iniciar ACH withdrawal
-    return {
-      success: false,
-      mensaje: 'Retiros ACH requieren configuración adicional',
-      saldoAlpaca: cuenta.efectivo,
-      nota: 'Contacta soporte para procesar retiro',
-    };
-  } catch (error) {
-    console.error('❌ Error retirando fondos:', error.message);
-    throw error;
-  }
+// Retirar fondos de Alpaca de vuelta a BE via Broker API ACH (outgoing)
+const retirarFondosDeAlpaca = async ({ accountId, relationshipId, monto }) => {
+  return crearTransferenciaAchBroker({
+    accountId,
+    relationshipId,
+    amount: monto,
+    direction: 'OUTGOING',
+    timing: 'immediate',
+  });
 };
 
 module.exports = {
+  crearRelacionAchBroker,
   crearOrdenMercado,
+  crearTransferenciaAchBroker,
   confirmarOrdenMercado,
+  listarTransferenciasAchBroker,
+  normalizeFundingStatus,
+  obtenerTransferenciaAchBroker,
   obtenerCotizacion,
   obtenerCotizaciones,
   obtenerOrden,

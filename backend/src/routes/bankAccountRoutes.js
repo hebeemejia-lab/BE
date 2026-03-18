@@ -6,6 +6,9 @@ const {
   listarCuentas,
   desvincularCuenta,
   recargarDesdeBanco,
+  obtenerFundingHistorial,
+  sincronizarFundingTransfer,
+  sincronizarFundingPendientes,
   obtenerCuentaDefault,
   establecerDefault,
 } = require('../controllers/bankAccountController');
@@ -19,5 +22,8 @@ router.get('/default', verificarToken, obtenerCuentaDefault);
 router.post('/default', verificarToken, establecerDefault);
 router.post('/desvincular', verificarToken, desvincularCuenta);
 router.post('/recargar', verificarToken, recargarDesdeBanco);
+router.get('/funding/historial', verificarToken, obtenerFundingHistorial);
+router.post('/funding/sincronizar', verificarToken, sincronizarFundingTransfer);
+router.post('/funding/sincronizar-pendientes', verificarToken, sincronizarFundingPendientes);
 
 module.exports = router;

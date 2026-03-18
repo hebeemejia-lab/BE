@@ -86,6 +86,10 @@ export const bankAccountAPI = {
   establecerDefault: (datos) => API.post('/cuentas-bancarias/default', datos),
   desvincularCuenta: (cuentaId) => API.post('/cuentas-bancarias/desvincular', { cuentaId }),
   recargarDesdeBanco: (datos) => API.post('/cuentas-bancarias/recargar', datos),
+  depositarEnAlpaca: (datos) => API.post('/funding/alpaca/depositar', datos),
+  obtenerFundingHistorial: (limit = 20) => API.get('/funding/alpaca/historial', { params: { limit } }),
+  sincronizarFundingTransfer: (fundingTransferId) => API.post('/funding/alpaca/sincronizar', { fundingTransferId }),
+  sincronizarFundingPendientes: () => API.post('/funding/alpaca/sincronizar-pendientes'),
 };
 
 export default API;
