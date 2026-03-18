@@ -16,6 +16,7 @@ import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import ResendVerification from './pages/ResendVerification';
 import Dashboard from './pages/Dashboard';
+import Saldos from './pages/Saldos';
 import Transferencias from './pages/Transferencias';
 import TransferenciaBancaria from './pages/TransferenciaBancaria';
 import TransferenciasInternacionales from './pages/TransferenciasInternacionales';
@@ -42,6 +43,7 @@ const getTitleForPath = (pathname) => {
   if (pathname.startsWith('/verificar-email')) return 'BE - Verificar Email';
   if (pathname.startsWith('/reenviar-verificacion')) return 'BE - Reenviar Verificacion';
   if (pathname.startsWith('/dashboard')) return 'BE - Dashboard';
+  if (pathname.startsWith('/saldos')) return 'BE - Crypto Wallet';
   if (pathname.startsWith('/transferencias-internacionales')) return 'BE - Transferencias Internacionales';
   if (pathname.startsWith('/transferencias-bancarias')) return 'BE - Transferencia Bancaria';
   if (pathname.startsWith('/transferencias')) return 'BE - Transferencias';
@@ -110,6 +112,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/saldos"
+            element={
+              <ProtectedRoute>
+                <Saldos />
               </ProtectedRoute>
             }
           />

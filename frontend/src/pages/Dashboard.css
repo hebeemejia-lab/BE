@@ -188,6 +188,20 @@
   max-width: 12ch;
 }
 
+.db-hero-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.db-hero-summary {
+  margin: 0;
+  max-width: 48ch;
+  color: rgba(226, 232, 240, 0.74);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .db-hero-description {
   margin: 0;
   max-width: 58ch;
@@ -200,6 +214,95 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.db-hero-overview-btn {
+  min-width: 0;
+  padding: 11px 15px;
+  border-radius: 12px;
+  border: 1px solid rgba(125, 211, 252, 0.22);
+  background: rgba(15, 23, 42, 0.42);
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.db-hero-overview-btn:hover {
+  background: rgba(30, 41, 59, 0.62);
+  border-color: rgba(125, 211, 252, 0.38);
+}
+
+.db-hero-overview-btn:focus-visible {
+  outline: 2px solid #a7d8ff;
+  outline-offset: 3px;
+}
+
+.db-crypto-bar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.db-crypto-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(125, 211, 252, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f8fafc;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: transform 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.db-crypto-action:hover,
+.db-crypto-action:focus-visible {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(96, 165, 250, 0.28);
+  transform: translateY(-1px);
+}
+
+.db-crypto-action:focus-visible {
+  outline: 2px solid #a7d8ff;
+  outline-offset: 2px;
+}
+
+.db-crypto-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.9) 0%, rgba(14, 116, 144, 0.9) 100%);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.db-crypto-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.db-crypto-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.db-crypto-helper {
+  font-size: 11px;
+  color: rgba(226, 232, 240, 0.58);
 }
 
 .db-hero-metrics {
@@ -705,6 +808,7 @@
 @media (min-width: 640px) {
   .db-main    { padding: 24px 24px 0; gap: 24px; }
   .db-section { padding: 20px; }
+  .db-crypto-bar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .db-hero-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .db-cards-grid { grid-template-columns: repeat(4, 1fr); }
   .db-fav-grid   { grid-template-columns: repeat(4, 1fr); }
@@ -731,13 +835,13 @@
   .db-sidebar {
     display: flex;
     flex-direction: column;
-    width: 228px;
-    min-width: 228px;
+    width: 196px;
+    min-width: 196px;
     min-height: 100dvh;
     background: rgba(0, 8, 35, 0.88);
     backdrop-filter: blur(20px);
     border-right: 1px solid rgba(125, 211, 252, 0.1);
-    padding: 22px 12px 20px;
+    padding: 18px 10px 16px;
     position: sticky;
     top: 0;
     height: 100dvh;
@@ -775,7 +879,7 @@
     display: flex;
     align-items: center;
     gap: 11px;
-    padding: 10px 12px;
+    padding: 9px 10px;
     border-radius: 11px;
     border: none;
     background: transparent;
@@ -879,7 +983,7 @@
   /* ── HEADER (top bar) ─────────────────────────────────────────── */
   .db-header {
     top: 0;
-    padding: 14px 28px;
+    padding: 12px 20px;
     border-radius: 0;
     border: none;
     border-bottom: 1px solid rgba(167, 216, 255, 0.1);
@@ -893,8 +997,11 @@
 
   /* ── MAIN ─────────────────────────────────────────────────────── */
   .db-main {
-    padding: 24px 28px 32px;
-    gap: 22px;
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 18px 20px 28px;
+    gap: 18px;
     overflow-y: auto;
   }
 
@@ -902,9 +1009,9 @@
   .db-hero {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     min-height: auto;
-    padding: 22px 24px;
+    padding: 18px 20px;
     background:
       radial-gradient(circle at top right, rgba(96, 165, 250, 0.1), transparent 40%),
       linear-gradient(145deg, rgba(2, 6, 23, 0.52) 0%, rgba(15, 23, 42, 0.36) 100%);
@@ -913,42 +1020,70 @@
 
   .db-hero-welcome {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
+    gap: 14px;
     flex-wrap: nowrap;
   }
 
   .db-hero-title {
-    font-size: 1.65rem;
+    font-size: 1.35rem;
     max-width: none;
-    line-height: 1.15;
+    line-height: 1.12;
   }
 
-  .db-hero-kicker { font-size: 10px; margin-bottom: 2px; }
+  .db-hero-kicker { font-size: 10px; margin-bottom: 0; }
 
-  .db-hero-actions {
-    gap: 10px;
-    flex-wrap: nowrap;
-    flex-shrink: 0;
+  .db-hero-summary {
+    max-width: 52ch;
+    font-size: 12px;
   }
 
-  .db-hero-actions .db-primary-btn,
-  .db-hero-actions .db-secondary-btn {
-    width: auto;
-    padding: 10px 18px;
-    font-size: 13px;
+  .db-hero-overview-btn {
+    padding: 10px 13px;
+    font-size: 12px;
   }
 
-  /* KPI strip: 5 cards en fila */
+  .db-crypto-bar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .db-crypto-action {
+    min-height: 72px;
+    padding: 10px 12px;
+    gap: 9px;
+  }
+
+  .db-crypto-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 15px;
+    border-radius: 9px;
+  }
+
+  .db-crypto-label {
+    font-size: 12px;
+  }
+
+  .db-crypto-helper {
+    font-size: 10px;
+  }
+
   .db-kpi-strip {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 14px;
+    gap: 10px;
   }
 
-  .db-card { padding: 16px 18px; }
-  .db-card-amount { font-size: 20px; }
+  .db-card {
+    padding: 13px 14px;
+    min-height: 106px;
+  }
+
+  .db-card-amount { font-size: 17px; }
+  .db-card-sub { font-size: 10px; }
+  .db-card-btn { font-size: 11px; padding: 4px 10px; }
 
   /* métricas: fila horizontal con separadores */
   .db-hero-metrics {
@@ -967,26 +1102,26 @@
     border: none;
     border-right: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 0;
-    padding: 13px 20px;
+    padding: 11px 14px;
   }
 
   .db-hero-metric:last-child {
     border-right: none;
   }
 
-  .db-hero-metric-label { font-size: 10px; }
-  .db-hero-metric-value { font-size: 16px; }
+  .db-hero-metric-label { font-size: 9px; }
+  .db-hero-metric-value { font-size: 14px; }
 
   /* ── BOARD: 2 columnas ────────────────────────────────────────── */
   .db-board {
     display: grid;
-    grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.82fr);
+    grid-template-columns: minmax(0, 1.42fr) minmax(280px, 0.76fr);
     grid-template-areas:
       'quick     quick'
       'transfers favorites'
       'transfers market'
       'loans     investments';
-    gap: 20px;
+    gap: 16px;
     align-items: start;
   }
 
@@ -1028,47 +1163,51 @@
     overflow: visible;
     padding-bottom: 0;
     display: grid;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .db-teker {
     flex: none;
-    min-height: 96px;
+    min-height: 82px;
+    padding: 12px 8px;
     justify-content: center;
   }
 
+  .db-teker-icon { font-size: 22px; }
+  .db-teker-label { font-size: 10px; }
+
   .db-fav-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    gap: 10px;
   }
 
   .db-fav-card {
-    min-height: 96px;
-    padding: 14px 10px;
+    min-height: 82px;
+    padding: 12px 10px;
   }
 
   .db-market-card {
-    min-height: 200px;
+    min-height: 176px;
     flex-direction: column;
     align-items: stretch;
     justify-content: space-between;
   }
 
-  .db-market-rate { font-size: 30px; }
+  .db-market-rate { font-size: 26px; }
 
   .db-market-chart {
-    height: 90px;
-    gap: 5px;
+    height: 78px;
+    gap: 4px;
   }
 
-  .db-market-bar { width: 14px; }
+  .db-market-bar { width: 12px; }
 
-  .db-list-item { padding: 13px 16px; }
+  .db-list-item { padding: 11px 13px; }
 
   .db-primary-btn {
     width: auto;
-    min-width: 160px;
+    min-width: 144px;
     align-self: flex-start;
   }
 
