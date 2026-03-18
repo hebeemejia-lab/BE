@@ -102,6 +102,13 @@ export default function Dashboard() {
 
   const transferenciasEnviadas  = transferencias.filter(t => t.remitente?._id === usuario?._id);
   const transferenciasRecibidas = transferencias.filter(t => t.remitente?._id !== usuario?._id);
+  const nombreCompleto = [usuario?.nombre, usuario?.apellido].filter(Boolean).join(' ') || 'Usuario';
+  const patrimonioEstimado =
+    (Number(usuario?.saldo) || 0) + paypalTotal + saldoInversion + gananciaInversion - saldoPrestamos;
+  const actividadReciente = transferencias[0]?.fechaTransferencia
+    ? new Date(transferencias[0].fechaTransferencia).toLocaleDateString('es-ES')
+    : 'Sin movimientos recientes';
+  const operacionesMonitoreadas = transferencias.length + prestamos.length;
 
   if (loading) {
     return (
@@ -113,70 +120,113 @@ export default function Dashboard() {
 
   return (
     <div className="db-root">
-
-      {/* ── 1. HEADER MÓVIL ─────────────────────────────────────────── */}
-      <header className="db-header" role="banner">
-        <div className="db-header-left">
-          <img src="/imagen/BE (1) (1).png" alt="Banco Exclusivo" className="db-logo" />
-          <div>
-            <p className="db-welcome-label">Bienvenido,</p>
-            <p className="db-welcome-name">{usuario?.nombre} {usuario?.apellido}</p>
+      <div className="db-shell">
+        <header className="db-header" role="banner">
+          <div className="db-header-left">
+            <img src="/imagen/BE (1) (1).png" alt="Banco Exclusivo" className="db-logo" />
+            <div>
+              <p className="db-welcome-label">Bienvenido,</p>
+              <p className="db-welcome-name">{nombreCompleto}</p>
+            </div>
           </div>
-        </div>
-        <button
-          className="db-logout-btn"
-          onClick={() => { logout(); navigate('/login'); }}
-          aria-label="Cerrar sesión"
-        >
-          <span aria-hidden="true">🚪</span>
-          <span className="db-logout-text">Salir</span>
-        </button>
-      </header>
+          <button
+            className="db-logout-btn"
+            onClick={() => { logout(); navigate('/login'); }}
+            aria-label="Cerrar sesión"
+          >
+            <span aria-hidden="true">🚪</span>
+            <span className="db-logout-text">Salir</span>
+          </button>
+        </header>
 
-      <main className="db-main">
+        <main className="db-main" aria-label="Contenido principal del dashboard">
+          <section aria-labelledby="dashboard-overview-heading" className="db-section db-hero">
+            <div className="db-hero-copy">
+              <p className="db-hero-kicker">Versión móvil y escritorio</p>
+              <h1 id="dashboard-overview-heading" className="db-hero-title">
+                En móvil se prioriza rapidez. En PC se redistribuye el tablero para ganar centro y proporción.
+              </h1>
+              <p className="db-hero-description">
+                El contenido conserva la jerarquía operativa, pero en escritorio se separa en panel principal
+                y columna lateral para dar más foco a saldos, movimientos e inversión.
+              </p>
 
-        {/* ── 2. RESUMEN DE SALDOS ────────────────────────────────────── */}
-        <section aria-labelledby="saldos-heading" className="db-section">
-          <h2 id="saldos-heading" className="db-section-title">Resumen de saldos</h2>
-          <div className="db-cards-grid">
+              <div className="db-hero-actions">
+                <button
+                  className="db-primary-btn db-primary-btn--compact"
+                  onClick={() => navigate('/prestamos')}
+                  aria-label="Ir a préstamos"
+                >
+                  Ver préstamos
+                </button>
+                <button
+                  className="db-secondary-btn"
+                  onClick={() => navigate('/transferencias')}
+                  aria-label="Crear una transferencia"
+                >
+                  Nueva transferencia
+                </button>
+              </div>
 
-            <div className="db-card db-card--debt" role="region" aria-label="Préstamos activos">
-              <span className="db-card-label">Préstamos</span>
-              <span className="db-card-amount">-RD${formatMoney(saldoPrestamos)}</span>
-              <span className="db-card-sub">{prestamosActivos.length} activo(s)</span>
+              <div className="db-hero-metrics" role="list" aria-label="Indicadores principales">
+                <div className="db-hero-metric" role="listitem">
+                  <span className="db-hero-metric-label">Patrimonio estimado</span>
+                  <strong className="db-hero-metric-value">${formatMoney(patrimonioEstimado)}</strong>
+                </div>
+                <div className="db-hero-metric" role="listitem">
+                  <span className="db-hero-metric-label">Operaciones visibles</span>
+                  <strong className="db-hero-metric-value">{operacionesMonitoreadas}</strong>
+                </div>
+                <div className="db-hero-metric" role="listitem">
+                  <span className="db-hero-metric-label">Última actividad</span>
+                  <strong className="db-hero-metric-value">{actividadReciente}</strong>
+                </div>
+              </div>
             </div>
 
-            <div className="db-card db-card--paypal" role="region" aria-label="Recargas PayPal">
-              <span className="db-card-label">PayPal</span>
-              <span className="db-card-amount">${formatMoney(paypalTotal)}</span>
-              <span className="db-card-sub">Total recargado</span>
+            <div className="db-hero-panel">
+              <div className="db-section-header">
+                <h2 id="saldos-heading" className="db-section-title">Resumen de saldos</h2>
+                <span className="db-hero-caption">Vista rápida</span>
+              </div>
+              <div className="db-cards-grid">
+                <div className="db-card db-card--debt" role="region" aria-label="Préstamos activos">
+                  <span className="db-card-label">Préstamos</span>
+                  <span className="db-card-amount">-RD${formatMoney(saldoPrestamos)}</span>
+                  <span className="db-card-sub">{prestamosActivos.length} activo(s)</span>
+                </div>
+
+                <div className="db-card db-card--paypal" role="region" aria-label="Recargas PayPal">
+                  <span className="db-card-label">PayPal</span>
+                  <span className="db-card-amount">${formatMoney(paypalTotal)}</span>
+                  <span className="db-card-sub">Total recargado</span>
+                </div>
+
+                <div className="db-card db-card--invest" role="region" aria-label="Saldo de inversión">
+                  <span className="db-card-label">Inversión</span>
+                  <span className="db-card-amount">${formatMoney(saldoInversion + gananciaInversion)}</span>
+                  <span className="db-card-sub">
+                    {cargandoInversion ? 'Cargando...' : `+$${formatMoney(gananciaInversion)} ganancia`}
+                  </span>
+                </div>
+
+                <div className="db-card db-card--group" role="region" aria-label="Tu grupo de ahorro">
+                  <span className="db-card-label">Grupo</span>
+                  <span className="db-card-amount db-card-emoji" aria-hidden="true">👥</span>
+                  <button
+                    className="db-card-btn"
+                    onClick={() => navigate('/tu-grupo')}
+                    aria-label="Ver mi grupo de ahorro"
+                  >
+                    Ver grupo
+                  </button>
+                </div>
+              </div>
             </div>
+          </section>
 
-            <div className="db-card db-card--invest" role="region" aria-label="Saldo de inversión">
-              <span className="db-card-label">Inversión</span>
-              <span className="db-card-amount">${formatMoney(saldoInversion + gananciaInversion)}</span>
-              <span className="db-card-sub">
-                {cargandoInversion ? 'Cargando...' : `+$${formatMoney(gananciaInversion)} ganancia`}
-              </span>
-            </div>
-
-            <div className="db-card db-card--group" role="region" aria-label="Tu grupo de ahorro">
-              <span className="db-card-label">Grupo</span>
-              <span className="db-card-amount db-card-emoji" aria-hidden="true">👥</span>
-              <button
-                className="db-card-btn"
-                onClick={() => navigate('/tu-grupo')}
-                aria-label="Ver mi grupo de ahorro"
-              >
-                Ver grupo
-              </button>
-            </div>
-
-          </div>
-        </section>
-
-        {/* ── 3. CARUSEL DE TEKERS ────────────────────────────────────── */}
-        <section aria-labelledby="tekers-heading" className="db-section">
+          <div className="db-board">
+            <section aria-labelledby="tekers-heading" className="db-section db-section--quick">
           <h2 id="tekers-heading" className="db-section-title">Acciones rápidas</h2>
           <div className="db-carousel" role="list" aria-label="Acciones destacadas">
             {TEKERS.map(teker => (
@@ -193,10 +243,9 @@ export default function Dashboard() {
               </button>
             ))}
           </div>
-        </section>
+            </section>
 
-        {/* ── 4. FAVORITOS ────────────────────────────────────────────── */}
-        <section aria-labelledby="favoritos-heading" className="db-section">
+            <section aria-labelledby="favoritos-heading" className="db-section db-section--favorites">
           <h2 id="favoritos-heading" className="db-section-title">Favoritos</h2>
           <div className="db-fav-grid" role="list" aria-label="Activos favoritos">
             {FAVORITES.map(fav => (
@@ -216,10 +265,9 @@ export default function Dashboard() {
               </button>
             ))}
           </div>
-        </section>
+            </section>
 
-        {/* ── 5. TENDENCIA DEL MERCADO ────────────────────────────────── */}
-        <section aria-labelledby="mercado-heading" className="db-section">
+            <section aria-labelledby="mercado-heading" className="db-section db-section--market">
           <h2 id="mercado-heading" className="db-section-title">Tendencia del mercado</h2>
           <div className="db-market-card">
             <div className="db-market-info">
@@ -233,10 +281,9 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
-        </section>
+            </section>
 
-        {/* ── 6. TRANSFERENCIAS ───────────────────────────────────────── */}
-        <section aria-labelledby="transf-heading" className="db-section">
+            <section aria-labelledby="transf-heading" className="db-section db-section--transfers">
           <div className="db-section-header">
             <h2 id="transf-heading" className="db-section-title">Transferencias</h2>
             <button
@@ -288,18 +335,17 @@ export default function Dashboard() {
               })}
             </ul>
           )}
-        </section>
+            </section>
 
-        {/* ── 7. PRÉSTAMOS ────────────────────────────────────────────── */}
-        <section aria-labelledby="prestamos-heading" className="db-section">
+            <section aria-labelledby="prestamos-heading" className="db-section db-section--loans">
           <div className="db-section-header">
             <h2 id="prestamos-heading" className="db-section-title">Préstamos</h2>
             <button
               className="db-link-btn"
-              onClick={() => navigate('/saldos')}
-              aria-label="Ir a sala de saldos"
+              onClick={() => navigate('/prestamos')}
+              aria-label="Ver detalle de préstamos"
             >
-              Sala de saldos
+              Ver detalle
             </button>
           </div>
 
@@ -334,10 +380,9 @@ export default function Dashboard() {
           >
             + Solicitar préstamo
           </button>
-        </section>
+            </section>
 
-        {/* ── 8. INVERSIONES ──────────────────────────────────────────── */}
-        <section aria-labelledby="inversion-heading" className="db-section db-section--last">
+            <section aria-labelledby="inversion-heading" className="db-section db-section--investments db-section--last">
           <div className="db-section-header">
             <h2 id="inversion-heading" className="db-section-title">Inversiones</h2>
             <button
@@ -373,9 +418,10 @@ export default function Dashboard() {
           >
             Gestionar inversiones
           </button>
-        </section>
-
-      </main>
+            </section>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

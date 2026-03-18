@@ -12,6 +12,14 @@
   color: #f1f5f9;
   display: flex;
   flex-direction: column;
+  padding: 0 0 24px;
+}
+
+.db-shell {
+  width: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── SPINNER ───────────────────────────────────────────────────── */
@@ -129,6 +137,117 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin: 0;
+}
+
+/* ── HERO / DESKTOP SPLIT ─────────────────────────────────────── */
+.db-hero {
+  position: relative;
+  overflow: hidden;
+  gap: 16px;
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.18), transparent 34%),
+    linear-gradient(145deg, rgba(2, 6, 23, 0.46) 0%, rgba(15, 23, 42, 0.25) 45%, rgba(30, 64, 175, 0.22) 100%);
+  border-color: rgba(125, 211, 252, 0.14);
+}
+
+.db-hero::after {
+  content: '';
+  position: absolute;
+  inset: auto -10% -40% auto;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.18), transparent 68%);
+  pointer-events: none;
+}
+
+.db-hero-copy,
+.db-hero-panel {
+  position: relative;
+  z-index: 1;
+}
+
+.db-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.db-hero-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #7dd3fc;
+}
+
+.db-hero-title {
+  margin: 0;
+  font-size: clamp(1.8rem, 6vw, 2.6rem);
+  line-height: 1.05;
+  max-width: 12ch;
+}
+
+.db-hero-description {
+  margin: 0;
+  max-width: 58ch;
+  color: rgba(226, 232, 240, 0.78);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.db-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.db-hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.db-hero-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.db-hero-metric-label {
+  font-size: 11px;
+  color: rgba(226, 232, 240, 0.56);
+}
+
+.db-hero-metric-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.db-hero-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.db-hero-caption {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(125, 211, 252, 0.7);
+}
+
+.db-board {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 /* ── BALANCE CARDS GRID ────────────────────────────────────────── */
@@ -493,6 +612,39 @@
   outline-offset: 3px;
 }
 
+.db-primary-btn--compact {
+  width: auto;
+  min-width: 0;
+}
+
+.db-secondary-btn {
+  min-width: 0;
+  padding: 13px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.35);
+  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.db-secondary-btn:hover {
+  background: rgba(30, 41, 59, 0.55);
+  border-color: rgba(125, 211, 252, 0.3);
+}
+
+.db-secondary-btn:active {
+  transform: scale(0.97);
+}
+
+.db-secondary-btn:focus-visible {
+  outline: 2px solid #a7d8ff;
+  outline-offset: 3px;
+}
+
 .db-link-btn {
   background: none;
   border: none;
@@ -521,6 +673,7 @@
 @media (min-width: 640px) {
   .db-main    { padding: 24px 24px 0; gap: 24px; }
   .db-section { padding: 20px; }
+  .db-hero-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .db-cards-grid { grid-template-columns: repeat(4, 1fr); }
   .db-fav-grid   { grid-template-columns: repeat(4, 1fr); }
   .db-section-title { font-size: 16px; }
@@ -528,6 +681,188 @@
 }
 
 @media (min-width: 1024px) {
-  .db-root { max-width: 900px; margin: 0 auto; }
-  .db-header { border-radius: 0 0 16px 16px; }
+  .db-root {
+    padding: 28px 32px 40px;
+  }
+
+  .db-shell {
+    max-width: 1480px;
+    min-height: calc(100dvh - 56px);
+    margin: 0 auto;
+  }
+
+  .db-header {
+    top: 28px;
+    padding: 18px 24px;
+    border: 1px solid rgba(167, 216, 255, 0.14);
+    border-radius: 20px;
+    box-shadow: 0 18px 40px rgba(2, 6, 23, 0.22);
+  }
+
+  .db-welcome-name {
+    max-width: none;
+    font-size: 18px;
+  }
+
+  .db-main {
+    padding: 28px 0 0;
+    gap: 28px;
+  }
+
+  .db-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.42fr) minmax(450px, 0.88fr);
+    align-items: stretch;
+    gap: 30px;
+    min-height: 440px;
+    padding: 32px;
+  }
+
+  .db-hero-copy {
+    justify-content: center;
+    padding-right: 10px;
+  }
+
+  .db-hero-title {
+    max-width: 15ch;
+    font-size: clamp(2.7rem, 4.6vw, 4rem);
+  }
+
+  .db-hero-description {
+    max-width: 62ch;
+    font-size: 15px;
+  }
+
+  .db-hero-panel {
+    padding: 18px;
+    border-radius: 24px;
+    background: linear-gradient(155deg, rgba(15, 23, 42, 0.78) 0%, rgba(30, 41, 59, 0.68) 100%);
+    border: 1px solid rgba(125, 211, 252, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 22px 40px rgba(2, 6, 23, 0.2);
+  }
+
+  .db-hero-actions .db-primary-btn,
+  .db-hero-actions .db-secondary-btn {
+    flex: 0 0 auto;
+  }
+
+  .db-board {
+    display: grid;
+    grid-template-columns: minmax(0, 1.58fr) minmax(380px, 0.84fr);
+    grid-template-areas:
+      'quick quick'
+      'transfers favorites'
+      'transfers market'
+      'loans investments';
+    gap: 28px;
+    align-items: start;
+  }
+
+  .db-section--favorites,
+  .db-section--market,
+  .db-section--investments {
+    position: relative;
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.64) 100%);
+    border-color: rgba(125, 211, 252, 0.16);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 20px 38px rgba(2, 6, 23, 0.2);
+  }
+
+  .db-section--favorites::before,
+  .db-section--market::before,
+  .db-section--investments::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    border-radius: 16px 0 0 16px;
+    background: linear-gradient(180deg, #38bdf8 0%, #6366f1 100%);
+  }
+
+  .db-section--transfers,
+  .db-section--loans {
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.55) 0%, rgba(15, 23, 42, 0.35) 100%);
+    border-color: rgba(148, 163, 184, 0.1);
+  }
+
+  .db-section--quick {
+    grid-area: quick;
+  }
+
+  .db-section--favorites {
+    grid-area: favorites;
+  }
+
+  .db-section--market {
+    grid-area: market;
+  }
+
+  .db-section--transfers {
+    grid-area: transfers;
+  }
+
+  .db-section--loans {
+    grid-area: loans;
+  }
+
+  .db-section--investments {
+    grid-area: investments;
+  }
+
+  .db-carousel {
+    overflow: visible;
+    padding-bottom: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .db-teker {
+    flex: none;
+    min-height: 120px;
+    justify-content: center;
+  }
+
+  .db-fav-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .db-fav-card {
+    min-height: 118px;
+    padding: 18px 14px;
+  }
+
+  .db-market-card {
+    min-height: 240px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+  }
+
+  .db-market-rate {
+    font-size: 34px;
+  }
+
+  .db-market-chart {
+    height: 116px;
+    gap: 6px;
+  }
+
+  .db-market-bar {
+    width: 18px;
+  }
+
+  .db-list-item {
+    padding: 15px 18px;
+  }
+
+  .db-primary-btn {
+    width: auto;
+    min-width: 220px;
+    align-self: flex-start;
+  }
+
+  .db-section--last {
+    margin-bottom: 0;
+  }
 }
