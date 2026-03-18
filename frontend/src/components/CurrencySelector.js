@@ -10,8 +10,7 @@ const CurrencySelector = () => {
     loading,
     fetchExchangeRates,
     availableCurrencies,
-    currencyNames,
-    getCurrencySymbol
+    currencyNames
   } = useContext(CurrencyContext);
 
   const handleCurrencyChange = (e) => {

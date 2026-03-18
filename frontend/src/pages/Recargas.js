@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import GooglePayButton from '../components/GooglePayButton';
 import axios from 'axios';
 import './Recargas.css'; // El nombre del archivo CSS puede mantenerse
@@ -17,7 +17,7 @@ export default function Deposita() {
   const paypalButtonRef = useRef(null);
   const depositoIdRef = useRef(null);
   // --- FUNCIONES AUXILIARES ---
-  const renderButtons = () => {
+  const renderButtons = useCallback(() => {
     if (!window.paypal || !paypalButtonRef.current) return;
     paypalButtonRef.current.innerHTML = '';
     window.paypal.Buttons({
@@ -109,7 +109,7 @@ export default function Deposita() {
         return actions.resolve();
       }
     }).render(paypalButtonRef.current);
-  };
+  }, [monto]);
 
 
   // (Duplicated) const verificarBackend removed to avoid redeclaration error
@@ -134,7 +134,7 @@ export default function Deposita() {
       script.onload = renderButtons;
       document.body.appendChild(script);
     }
-  }, [activeTab, monto]);
+  }, [activeTab, monto, renderButtons]);
         
 
   const verificarRetornoPayPal = async () => {
