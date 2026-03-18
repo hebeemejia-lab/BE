@@ -669,6 +669,38 @@
   padding: 16px 0;
 }
 
+/* ── SIDEBAR (oculto en móvil) ─────────────────────────────────── */
+.db-sidebar { display: none; }
+
+.db-content-area {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+/* ── HERO WELCOME ──────────────────────────────────────────────── */
+.db-hero-welcome {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ── KPI STRIP (móvil: 2×N) ────────────────────────────────────── */
+.db-kpi-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ── BALANCE CARD ──────────────────────────────────────────────── */
+.db-card--balance {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 60%, #1e3a8a 100%);
+  border-color: rgba(96, 165, 250, 0.4);
+}
+
 /* ── RESPONSIVE: tablet/desktop ────────────────────────────────── */
 @media (min-width: 640px) {
   .db-main    { padding: 24px 24px 0; gap: 24px; }
@@ -681,90 +713,303 @@
 }
 
 @media (min-width: 1024px) {
+
+  /* ── ROOT & SHELL ─────────────────────────────────────────────── */
   .db-root {
-    padding: 28px 32px 40px;
+    padding: 0;
   }
 
   .db-shell {
-    max-width: 1480px;
-    min-height: calc(100dvh - 56px);
-    margin: 0 auto;
+    max-width: none;
+    min-height: 100dvh;
+    flex-direction: row;
+    align-items: stretch;
+    margin: 0;
   }
 
+  /* ── SIDEBAR ──────────────────────────────────────────────────── */
+  .db-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 228px;
+    min-width: 228px;
+    min-height: 100dvh;
+    background: rgba(0, 8, 35, 0.88);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(125, 211, 252, 0.1);
+    padding: 22px 12px 20px;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+    flex-shrink: 0;
+    scrollbar-width: none;
+  }
+  .db-sidebar::-webkit-scrollbar { display: none; }
+
+  .db-sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 6px 20px;
+    border-bottom: 1px solid rgba(125, 211, 252, 0.1);
+    margin-bottom: 18px;
+  }
+
+  .db-sidebar-brand-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #f1f5f9;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  .db-sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+  }
+
+  .db-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px;
+    border-radius: 11px;
+    border: none;
+    background: transparent;
+    color: rgba(241, 245, 249, 0.65);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    width: 100%;
+    transition: background 0.13s, color 0.13s;
+  }
+
+  .db-nav-item:hover {
+    background: color-mix(in srgb, var(--nav-color, #1d4ed8) 22%, rgba(255,255,255,0.04));
+    color: #fff;
+  }
+
+  .db-nav-item:focus-visible {
+    outline: 2px solid #a7d8ff;
+    outline-offset: 2px;
+  }
+
+  .db-nav-icon {
+    font-size: 19px;
+    line-height: 1;
+    flex-shrink: 0;
+    width: 24px;
+    text-align: center;
+  }
+
+  .db-nav-label {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .db-sidebar-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 6px 0;
+    border-top: 1px solid rgba(125, 211, 252, 0.1);
+    margin-top: 12px;
+  }
+
+  .db-sidebar-user-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .db-sidebar-user-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #f1f5f9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .db-sidebar-user-role {
+    font-size: 10px;
+    color: rgba(241, 245, 249, 0.45);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .db-sidebar-logout {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 17px;
+    padding: 7px;
+    border-radius: 8px;
+    transition: background 0.13s;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .db-sidebar-logout:hover {
+    background: rgba(248, 113, 113, 0.15);
+  }
+
+  .db-sidebar-logout:focus-visible {
+    outline: 2px solid #f87171;
+    outline-offset: 2px;
+  }
+
+  /* ── CONTENT AREA ─────────────────────────────────────────────── */
+  .db-content-area {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── HEADER (top bar) ─────────────────────────────────────────── */
   .db-header {
-    top: 28px;
-    padding: 18px 24px;
-    border: 1px solid rgba(167, 216, 255, 0.14);
-    border-radius: 20px;
-    box-shadow: 0 18px 40px rgba(2, 6, 23, 0.22);
+    top: 0;
+    padding: 14px 28px;
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid rgba(167, 216, 255, 0.1);
+    box-shadow: none;
   }
 
   .db-welcome-name {
     max-width: none;
-    font-size: 18px;
-  }
-
-  .db-main {
-    padding: 28px 0 0;
-    gap: 28px;
-  }
-
-  .db-hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1.42fr) minmax(450px, 0.88fr);
-    align-items: stretch;
-    gap: 30px;
-    min-height: 440px;
-    padding: 32px;
-  }
-
-  .db-hero-copy {
-    justify-content: center;
-    padding-right: 10px;
-  }
-
-  .db-hero-title {
-    max-width: 15ch;
-    font-size: clamp(2.7rem, 4.6vw, 4rem);
-  }
-
-  .db-hero-description {
-    max-width: 62ch;
     font-size: 15px;
   }
 
-  .db-hero-panel {
-    padding: 18px;
-    border-radius: 24px;
-    background: linear-gradient(155deg, rgba(15, 23, 42, 0.78) 0%, rgba(30, 41, 59, 0.68) 100%);
-    border: 1px solid rgba(125, 211, 252, 0.18);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 22px 40px rgba(2, 6, 23, 0.2);
+  /* ── MAIN ─────────────────────────────────────────────────────── */
+  .db-main {
+    padding: 24px 28px 32px;
+    gap: 22px;
+    overflow-y: auto;
+  }
+
+  /* ── HERO → welcome bar + KPI strip ──────────────────────────── */
+  .db-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: auto;
+    padding: 22px 24px;
+    background:
+      radial-gradient(circle at top right, rgba(96, 165, 250, 0.1), transparent 40%),
+      linear-gradient(145deg, rgba(2, 6, 23, 0.52) 0%, rgba(15, 23, 42, 0.36) 100%);
+    border-color: rgba(125, 211, 252, 0.11);
+  }
+
+  .db-hero-welcome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: nowrap;
+  }
+
+  .db-hero-title {
+    font-size: 1.65rem;
+    max-width: none;
+    line-height: 1.15;
+  }
+
+  .db-hero-kicker { font-size: 10px; margin-bottom: 2px; }
+
+  .db-hero-actions {
+    gap: 10px;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
   }
 
   .db-hero-actions .db-primary-btn,
   .db-hero-actions .db-secondary-btn {
-    flex: 0 0 auto;
+    width: auto;
+    padding: 10px 18px;
+    font-size: 13px;
   }
 
+  /* KPI strip: 5 cards en fila */
+  .db-kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .db-card { padding: 16px 18px; }
+  .db-card-amount { font-size: 20px; }
+
+  /* métricas: fila horizontal con separadores */
+  .db-hero-metrics {
+    display: flex;
+    gap: 0;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+  }
+
+  .db-hero-metric {
+    flex: 1;
+    background: none;
+    border: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 0;
+    padding: 13px 20px;
+  }
+
+  .db-hero-metric:last-child {
+    border-right: none;
+  }
+
+  .db-hero-metric-label { font-size: 10px; }
+  .db-hero-metric-value { font-size: 16px; }
+
+  /* ── BOARD: 2 columnas ────────────────────────────────────────── */
   .db-board {
     display: grid;
-    grid-template-columns: minmax(0, 1.58fr) minmax(380px, 0.84fr);
+    grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.82fr);
     grid-template-areas:
-      'quick quick'
+      'quick     quick'
       'transfers favorites'
       'transfers market'
-      'loans investments';
-    gap: 28px;
+      'loans     investments';
+    gap: 20px;
     align-items: start;
+  }
+
+  .db-section--quick       { grid-area: quick; }
+  .db-section--favorites   { grid-area: favorites; }
+  .db-section--market      { grid-area: market; }
+  .db-section--transfers   { grid-area: transfers; }
+  .db-section--loans       { grid-area: loans; }
+  .db-section--investments { grid-area: investments; }
+
+  .db-section--transfers,
+  .db-section--loans {
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.55) 0%, rgba(15, 23, 42, 0.32) 100%);
+    border-color: rgba(148, 163, 184, 0.1);
   }
 
   .db-section--favorites,
   .db-section--market,
   .db-section--investments {
     position: relative;
-    background: linear-gradient(160deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.64) 100%);
-    border-color: rgba(125, 211, 252, 0.16);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 20px 38px rgba(2, 6, 23, 0.2);
+    background: linear-gradient(160deg, rgba(10, 18, 46, 0.85) 0%, rgba(22, 35, 68, 0.72) 100%);
+    border-color: rgba(125, 211, 252, 0.14);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 18px 36px rgba(2, 6, 23, 0.22);
   }
 
   .db-section--favorites::before,
@@ -773,96 +1018,59 @@
     content: '';
     position: absolute;
     inset: 0 auto 0 0;
-    width: 4px;
+    width: 3px;
     border-radius: 16px 0 0 16px;
     background: linear-gradient(180deg, #38bdf8 0%, #6366f1 100%);
   }
 
-  .db-section--transfers,
-  .db-section--loans {
-    background: linear-gradient(160deg, rgba(15, 23, 42, 0.55) 0%, rgba(15, 23, 42, 0.35) 100%);
-    border-color: rgba(148, 163, 184, 0.1);
-  }
-
-  .db-section--quick {
-    grid-area: quick;
-  }
-
-  .db-section--favorites {
-    grid-area: favorites;
-  }
-
-  .db-section--market {
-    grid-area: market;
-  }
-
-  .db-section--transfers {
-    grid-area: transfers;
-  }
-
-  .db-section--loans {
-    grid-area: loans;
-  }
-
-  .db-section--investments {
-    grid-area: investments;
-  }
-
+  /* acciones rápidas: 8 botones en fila */
   .db-carousel {
     overflow: visible;
     padding-bottom: 0;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 12px;
   }
 
   .db-teker {
     flex: none;
-    min-height: 120px;
+    min-height: 96px;
     justify-content: center;
   }
 
   .db-fav-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
+    gap: 12px;
   }
 
   .db-fav-card {
-    min-height: 118px;
-    padding: 18px 14px;
+    min-height: 96px;
+    padding: 14px 10px;
   }
 
   .db-market-card {
-    min-height: 240px;
+    min-height: 200px;
     flex-direction: column;
     align-items: stretch;
     justify-content: space-between;
   }
 
-  .db-market-rate {
-    font-size: 34px;
-  }
+  .db-market-rate { font-size: 30px; }
 
   .db-market-chart {
-    height: 116px;
-    gap: 6px;
+    height: 90px;
+    gap: 5px;
   }
 
-  .db-market-bar {
-    width: 18px;
-  }
+  .db-market-bar { width: 14px; }
 
-  .db-list-item {
-    padding: 15px 18px;
-  }
+  .db-list-item { padding: 13px 16px; }
 
   .db-primary-btn {
     width: auto;
-    min-width: 220px;
+    min-width: 160px;
     align-self: flex-start;
   }
 
-  .db-section--last {
-    margin-bottom: 0;
-  }
+  .db-section--last { margin-bottom: 0; }
 }
