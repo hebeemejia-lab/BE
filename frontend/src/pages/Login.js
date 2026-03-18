@@ -1,9 +1,12 @@
-import React, { useState, useContext } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { AuthContext } from '../context/AuthContext';
 import { authAPI } from '../services/api';
+import GoogleAuthButton from '../components/GoogleAuthButton';
 import './Auth.css';
+
+const PENDING_GOOGLE_REGISTRATION_KEY = 'pendingGoogleRegistration';
 
 function LoginContent() {
   const [email, setEmail] = useState('');
@@ -12,9 +15,32 @@ function LoginContent() {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useContext(AuthContext);
+  const [googleClientId, setGoogleClientId] = useState('');
+  const { login, loginWithGoogle } = useContext(AuthContext);
   const navigate = useNavigate();
   const { executeRecaptcha } = useGoogleReCaptcha();
+
+  useEffect(() => {
+    let mounted = true;
+
+    const cargarGoogleConfig = async () => {
+      try {
+        const response = await authAPI.getGoogleConfig();
+        if (mounted) {
+          setGoogleClientId(response.data?.clientId || '');
+        }
+      } catch (configError) {
+        if (mounted) {
+          setGoogleClientId('');
+        }
+      }
+    };
+
+    cargarGoogleConfig();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,6 +79,38 @@ function LoginContent() {
       setInfo(response.data?.mensaje || 'Se envió un nuevo enlace de verificación');
     } catch (err) {
       setError(err.response?.data?.mensaje || 'No se pudo reenviar la verificación');
+    }
+  };
+
+  const handleGoogleCredential = async (credential) => {
+    setError('');
+    setInfo('');
+    setLoading(true);
+
+    try {
+      const response = await loginWithGoogle(credential);
+
+      if (response?.registroRequerido) {
+        sessionStorage.setItem(PENDING_GOOGLE_REGISTRATION_KEY, JSON.stringify({
+          googleFlow: true,
+          googleRegistrationToken: response.googleRegistrationToken,
+          prefill: response.prefill,
+        }));
+        navigate('/register', {
+          state: {
+            googleFlow: true,
+            googleRegistrationToken: response.googleRegistrationToken,
+            prefill: response.prefill,
+          },
+        });
+        return;
+      }
+
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.mensaje || err.message || 'Error con Google Sign-In');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -112,6 +170,21 @@ function LoginContent() {
             {loading ? 'Cargando...' : 'Iniciar Sesión'}
           </button>
         </form>
+
+        <div style={{ display: 'grid', gap: '14px', marginTop: '18px' }}>
+          <div style={{ textAlign: 'center', fontSize: '0.92rem', color: '#6b7280' }}>o continúa con</div>
+          {googleClientId ? (
+            <GoogleAuthButton
+              clientId={googleClientId}
+              onCredential={handleGoogleCredential}
+              disabled={loading}
+            />
+          ) : (
+            <div style={{ textAlign: 'center', fontSize: '0.9rem', color: '#6b7280' }}>
+              Google Sign-In no está disponible ahora mismo.
+            </div>
+          )}
+        </div>
 
         <div className="auth-footer">
           <p>¿No tienes cuenta? <a href="/register">Regístrate aquí</a></p>
