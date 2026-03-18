@@ -56,6 +56,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithGoogle = async (credential) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await authAPI.loginWithGoogle(credential);
+      const { token, usuario } = response.data;
+      if (token && usuario) {
+        localStorage.setItem('token', token);
+        setToken(token);
+        setUsuario(normalizarUsuario(usuario));
+      }
+      return response.data;
+    } catch (err) {
+      const mensaje = err.response?.data?.mensaje || 'Error con Google Sign-In';
+      setError(mensaje);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const register = async (datos) => {
     setLoading(true);
     setError(null);
@@ -75,6 +96,27 @@ export const AuthProvider = ({ children }) => {
       return response.data;
     } catch (err) {
       const mensaje = err.response?.data?.mensaje || 'Error en el registro';
+      setError(mensaje);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const completeGoogleRegistration = async (datos) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await authAPI.completeGoogleRegistration(datos);
+      const { token, usuario } = response.data;
+      if (token && usuario) {
+        localStorage.setItem('token', token);
+        setToken(token);
+        setUsuario(normalizarUsuario(usuario));
+      }
+      return response.data;
+    } catch (err) {
+      const mensaje = err.response?.data?.mensaje || 'Error completando registro con Google';
       setError(mensaje);
       throw err;
     } finally {
@@ -102,7 +144,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ usuario, token, loading, error, login, register, logout, refrescarPerfil }}>
+    <AuthContext.Provider value={{
+      usuario,
+      token,
+      loading,
+      error,
+      login,
+      loginWithGoogle,
+      register,
+      completeGoogleRegistration,
+      logout,
+      refrescarPerfil,
+    }}>
       {children}
     </AuthContext.Provider>
   );

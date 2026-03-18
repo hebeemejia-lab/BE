@@ -1,36 +1,107 @@
-// Actualizar perfil del usuario autenticado
-const updatePerfil = async (req, res) => {
-  try {
-    const usuario = await User.findByPk(req.usuario.id);
-    if (!usuario) {
-      return res.status(404).json({ mensaje: 'Usuario no encontrado' });
-    }
-    const { nombre, apellido, email } = req.body;
-    if (nombre) usuario.nombre = nombre;
-    if (apellido) usuario.apellido = apellido;
-    if (email) usuario.email = email;
-    await usuario.save();
-    res.json({
-      mensaje: 'Perfil actualizado',
-      usuario: {
-        id: usuario.id,
-        nombre: usuario.nombre,
-        apellido: usuario.apellido,
-        email: usuario.email,
-        saldo: parseFloat(usuario.saldo),
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const axios = require('axios');
 const { Op } = require('sequelize');
 const User = require('../models/User');
 const emailService = require('../services/emailService');
 
+const GOOGLE_REGISTRATION_TOKEN_TTL = '30m';
+
+const normalizarEmail = (email) => String(email || '').trim().toLowerCase();
+
+const splitNombreCompleto = (fullName = '') => {
+  const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return { nombre: '', apellido: '' };
+  }
+
+  if (parts.length === 1) {
+    return { nombre: parts[0], apellido: '' };
+  }
+
+  return {
+    nombre: parts[0],
+    apellido: parts.slice(1).join(' '),
+  };
+};
+
+const construirPayloadUsuario = (usuario) => ({
+  id: usuario.id,
+  nombre: usuario.nombre,
+  apellido: usuario.apellido,
+  email: usuario.email,
+  saldo: parseFloat(usuario.saldo),
+  rol: usuario.rol || 'cliente',
+  emailVerificado: usuario.emailVerificado,
+});
+
+const emitirTokenSesion = (usuario) => jwt.sign(
+  { id: usuario.id, email: usuario.email },
+  process.env.JWT_SECRET,
+  { expiresIn: '7d' },
+);
+
+const perfilRegistroCompleto = (usuario) => Boolean(
+  usuario?.nombre
+  && usuario?.apellido
+  && usuario?.email
+  && usuario?.cedula
+  && usuario?.telefono
+  && usuario?.direccion,
+);
+
+const construirPrefillGoogle = (googleData, usuario = null) => {
+  const fallbackNombre = splitNombreCompleto(googleData.name);
+
+  return {
+    nombre: usuario?.nombre || googleData.given_name || fallbackNombre.nombre || '',
+    apellido: usuario?.apellido || googleData.family_name || fallbackNombre.apellido || '',
+    email: usuario?.email || googleData.email || '',
+    cedula: usuario?.cedula || '',
+    telefono: usuario?.telefono || '',
+    direccion: usuario?.direccion || '',
+  };
+};
+
+const emitirGoogleRegistrationToken = (googleData) => jwt.sign(
+  {
+    tipo: 'google-registration',
+    email: normalizarEmail(googleData.email),
+    nombre: googleData.given_name || '',
+    apellido: googleData.family_name || '',
+    name: googleData.name || '',
+    picture: googleData.picture || null,
+  },
+  process.env.JWT_SECRET,
+  { expiresIn: GOOGLE_REGISTRATION_TOKEN_TTL },
+);
+
+const verificarGoogleIdToken = async (idToken) => {
+  const token = String(idToken || '').trim();
+  if (!token) {
+    throw new Error('Credencial de Google requerida');
+  }
+
+  const response = await axios.get('https://oauth2.googleapis.com/tokeninfo', {
+    params: { id_token: token },
+  });
+
+  const googleData = response.data || {};
+  const configuredClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
+
+  if (configuredClientId && googleData.aud !== configuredClientId) {
+    throw new Error('El token de Google no pertenece a este cliente');
+  }
+
+  if (!googleData.email || googleData.email_verified !== 'true') {
+    throw new Error('La cuenta de Google no tiene un email verificado');
+  }
+
+  return googleData;
+};
+
 // Registrar usuario
+
 const register = async (req, res) => {
   try {
     const { nombre, apellido, email, password, cedula, telefono, direccion, saldo } = req.body;
@@ -119,6 +190,166 @@ const register = async (req, res) => {
   }
 };
 
+const getGoogleConfig = async (req, res) => {
+  const clientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
+
+  if (!clientId) {
+    return res.status(503).json({
+      mensaje: 'Google Sign-In no está configurado',
+      enabled: false,
+    });
+  }
+
+  return res.json({
+    enabled: true,
+    clientId,
+  });
+};
+
+const loginConGoogle = async (req, res) => {
+  try {
+    const { credential } = req.body;
+    const googleData = await verificarGoogleIdToken(credential);
+    const email = normalizarEmail(googleData.email);
+    const usuario = await User.findOne({ where: { email } });
+
+    if (!usuario) {
+      return res.json({
+        mensaje: 'Completa tu registro para terminar de vincular Google.',
+        registroRequerido: true,
+        googleRegistrationToken: emitirGoogleRegistrationToken(googleData),
+        prefill: construirPrefillGoogle(googleData),
+      });
+    }
+
+    if (!perfilRegistroCompleto(usuario)) {
+      return res.json({
+        mensaje: 'Completa los datos faltantes de tu cuenta para usar Google.',
+        registroRequerido: true,
+        googleRegistrationToken: emitirGoogleRegistrationToken(googleData),
+        prefill: construirPrefillGoogle(googleData, usuario),
+      });
+    }
+
+    if (!usuario.emailVerificado && usuario.rol !== 'admin') {
+      usuario.emailVerificado = true;
+      usuario.emailVerificationToken = null;
+      usuario.emailVerificationExpires = null;
+      await usuario.save();
+    }
+
+    const token = emitirTokenSesion(usuario);
+
+    return res.json({
+      mensaje: 'Inicio de sesión con Google exitoso',
+      usuario: construirPayloadUsuario(usuario),
+      token,
+    });
+  } catch (error) {
+    console.error('❌ Error en login con Google:', error.message);
+    return res.status(400).json({
+      mensaje: 'No se pudo validar la cuenta de Google',
+      error: error.message,
+    });
+  }
+};
+
+const completarRegistroConGoogle = async (req, res) => {
+  try {
+    const {
+      googleRegistrationToken,
+      nombre,
+      apellido,
+      email,
+      password,
+      cedula,
+      telefono,
+      direccion,
+      saldo,
+    } = req.body;
+
+    if (!googleRegistrationToken) {
+      return res.status(400).json({ mensaje: 'googleRegistrationToken requerido' });
+    }
+
+    let googlePayload;
+    try {
+      googlePayload = jwt.verify(googleRegistrationToken, process.env.JWT_SECRET);
+    } catch (tokenError) {
+      return res.status(400).json({ mensaje: 'La sesión de Google expiró. Inicia con Google nuevamente.' });
+    }
+
+    if (googlePayload.tipo !== 'google-registration') {
+      return res.status(400).json({ mensaje: 'Token de registro de Google inválido' });
+    }
+
+    const emailNormalizado = normalizarEmail(email || googlePayload.email);
+    if (!emailNormalizado || emailNormalizado !== normalizarEmail(googlePayload.email)) {
+      return res.status(400).json({ mensaje: 'El email debe coincidir con la cuenta de Google' });
+    }
+
+    if (!nombre || !apellido || !cedula || !telefono || !direccion) {
+      return res.status(400).json({ mensaje: 'Todos los campos del registro son requeridos' });
+    }
+
+    let usuario = await User.findOne({ where: { email: emailNormalizado } });
+    const cedulaExistente = await User.findOne({
+      where: {
+        cedula,
+        ...(usuario ? { id: { [Op.ne]: usuario.id } } : {}),
+      },
+    });
+
+    if (cedulaExistente) {
+      return res.status(400).json({ mensaje: 'La cédula ya está registrada' });
+    }
+
+    if (usuario) {
+      usuario.nombre = nombre;
+      usuario.apellido = apellido;
+      usuario.cedula = cedula;
+      usuario.telefono = telefono;
+      usuario.direccion = direccion;
+      usuario.emailVerificado = true;
+      usuario.emailVerificationToken = null;
+      usuario.emailVerificationExpires = null;
+      await usuario.save();
+    } else {
+      if (!password) {
+        return res.status(400).json({ mensaje: 'Debes crear una contraseña para completar tu registro' });
+      }
+
+      usuario = await User.create({
+        nombre,
+        apellido,
+        email: emailNormalizado,
+        password,
+        cedula,
+        telefono,
+        direccion,
+        saldo: saldo || 0,
+        emailVerificado: true,
+        emailVerificationToken: null,
+        emailVerificationExpires: null,
+      });
+    }
+
+    const token = emitirTokenSesion(usuario);
+
+    return res.status(201).json({
+      mensaje: 'Cuenta vinculada con Google exitosamente',
+      usuario: construirPayloadUsuario(usuario),
+      token,
+    });
+  } catch (error) {
+    console.error('❌ Error completando registro con Google:', error.message);
+    return res.status(500).json({
+      mensaje: 'No se pudo completar el registro con Google',
+      error: error.message,
+    });
+  }
+};
+
 // Login usuario
 const login = async (req, res) => {
   try {
@@ -150,26 +381,36 @@ const login = async (req, res) => {
 
     console.log('✅ Login exitoso:', email);
 
-    const token = jwt.sign(
-      { id: usuario.id, email: usuario.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const token = emitirTokenSesion(usuario);
 
     res.json({
       mensaje: 'Inicio de sesión exitoso',
-      usuario: {
-        id: usuario.id,
-        nombre: usuario.nombre,
-        email: usuario.email,
-        saldo: parseFloat(usuario.saldo),
-        rol: usuario.rol || 'cliente',
-        emailVerificado: usuario.emailVerificado,
-      },
+      usuario: construirPayloadUsuario(usuario),
       token,
     });
   } catch (error) {
     console.error('❌ Error en login:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Actualizar perfil del usuario autenticado
+const updatePerfil = async (req, res) => {
+  try {
+    const usuario = await User.findByPk(req.usuario.id);
+    if (!usuario) {
+      return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+    }
+    const { nombre, apellido, email } = req.body;
+    if (nombre) usuario.nombre = nombre;
+    if (apellido) usuario.apellido = apellido;
+    if (email) usuario.email = normalizarEmail(email);
+    await usuario.save();
+    res.json({
+      mensaje: 'Perfil actualizado',
+      usuario: construirPayloadUsuario(usuario),
+    });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
@@ -255,4 +496,14 @@ const getPerfil = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getPerfil, updatePerfil, verifyEmail, resendVerification };
+module.exports = {
+  register,
+  login,
+  getGoogleConfig,
+  loginConGoogle,
+  completarRegistroConGoogle,
+  getPerfil,
+  updatePerfil,
+  verifyEmail,
+  resendVerification,
+};

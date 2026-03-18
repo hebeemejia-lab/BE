@@ -21,3 +21,67 @@ services:
         value: "6Ldb24QsAAAAAHc8P84G7K42FlYLuZ5qC0Fac5QP"
       - key: RECAPTCHA_THRESHOLD
         value: "0.5"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: BANCO_NOMBRE
+        sync: false
+      - key: BANCO_CUENTA
+        sync: false
+      - key: RECARGA_COMISION_FIJA
+        value: "0.01"
+      - key: RETIRO_COMISION_FIJA
+        value: "0.01"
+      - key: SISTEMA_MONTO_MINIMO
+        value: "0.10"
+      - key: PAYPAL_MONTO_MAXIMO
+        value: "10000.00"
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_MODE
+        value: "live"
+      - key: PAYPAL_BASE_URL
+        value: "https://api-m.paypal.com"
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: TWOCHECKOUT_MERCHANT_CODE
+        sync: false
+      - key: TWOCHECKOUT_PUBLISHABLE_KEY
+        sync: false
+      - key: TWOCHECKOUT_PRIVATE_KEY
+        sync: false
+      - key: ALPACA_API_KEY
+        sync: false
+      - key: ALPACA_SECRET_KEY
+        sync: false
+      - key: ALPACA_BASE_URL
+        value: "https://api.alpaca.markets"
+      - key: ALPACA_MODE
+        value: "live"
+      - key: ALPACA_BROKER_API_KEY
+        sync: false
+      - key: ALPACA_BROKER_SECRET_KEY
+        sync: false
+      - key: ALPACA_BROKER_BASE_URL
+        sync: false
+      - key: ALPACA_DATA_URL
+        value: "https://data.alpaca.markets"
