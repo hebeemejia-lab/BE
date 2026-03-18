@@ -5,6 +5,7 @@ const Loan = require('./Loan');
 const BankAccount = require('./BankAccount');
 const CuotaPrestamo = require('./CuotaPrestamo');
 const Inversion = require('./Inversion');
+const FundingTransfer = require('./FundingTransfer');
 const Transaction = require('./Transaction');
 const Budget = require('./Budget');
 
@@ -52,6 +53,34 @@ Inversion.belongsTo(User, {
   foreignKey: 'usuarioId'
 });
 
+// Usuario tiene muchas transferencias de fondeo (BE -> Alpaca)
+User.hasMany(FundingTransfer, {
+  foreignKey: 'usuarioId',
+  as: 'fundingTransfers',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+});
+
+FundingTransfer.belongsTo(User, {
+  foreignKey: 'usuarioId',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+});
+
+// Cuenta bancaria tiene muchas transferencias de fondeo
+BankAccount.hasMany(FundingTransfer, {
+  foreignKey: 'bankAccountId',
+  as: 'fundingTransfers',
+  onDelete: 'SET NULL',
+  onUpdate: 'CASCADE'
+});
+
+FundingTransfer.belongsTo(BankAccount, {
+  foreignKey: 'bankAccountId',
+  onDelete: 'SET NULL',
+  onUpdate: 'CASCADE'
+});
+
 // Usuario tiene muchas transacciones (gastos personales)
 User.hasMany(Transaction, {
   foreignKey: 'userId',
@@ -79,6 +108,7 @@ module.exports = {
   BankAccount,
   CuotaPrestamo,
   Inversion,
+  FundingTransfer,
   Transaction,
   Budget
 };

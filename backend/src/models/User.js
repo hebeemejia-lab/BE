@@ -56,8 +56,26 @@ const User = sequelize.define('User', {
     type: DataTypes.DECIMAL(15, 2),
     defaultValue: 0,
   },
+  saldoEnTransitoAlpaca: {
+    type: DataTypes.DECIMAL(15, 2),
+    defaultValue: 0,
+  },
   stripeCustomerId: {
     type: DataTypes.STRING,
+    allowNull: true,
+  },
+  alpacaAccountId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
+  },
+  alpacaAccountStatus: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'not_linked',
+  },
+  alpacaAchEnabledAt: {
+    type: DataTypes.DATE,
     allowNull: true,
   },
   rol: {

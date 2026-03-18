@@ -24,9 +24,17 @@ const BankAccount = sequelize.define('BankAccount', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  accountHolderName: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   numerosCuenta: {
     type: DataTypes.STRING, // Últimos 4 dígitos
     allowNull: false,
+  },
+  routingNumber: {
+    type: DataTypes.STRING,
+    allowNull: true,
   },
   banco: {
     type: DataTypes.STRING,
@@ -67,6 +75,28 @@ const BankAccount = sequelize.define('BankAccount', {
   },
   stripeBankAccountId: {
     type: DataTypes.STRING,
+    allowNull: true,
+  },
+  fundingSource: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'manual',
+  },
+  alpacaAchRelationshipId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  alpacaAchRelationshipStatus: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'not_configured',
+  },
+  alpacaProcessorToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  achRelationshipSyncedAt: {
+    type: DataTypes.DATE,
     allowNull: true,
   },
   esDefault: {

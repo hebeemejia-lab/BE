@@ -23,12 +23,12 @@ const CRYPTO_ACTIONS = [
   { id: 'crypto-wallet', label: 'Wallet', icon: 'W', helper: 'Panel completo', route: '/saldos' },
 ];
 
-// Activos favoritos (data estática, en una app real vendría del perfil de usuario)
-const FAVORITES = [
-  { id: 'btc',  label: 'Bitcoin',    symbol: 'BTC',  icon: '₿',    color: '#f7931a', change: '+2.4%',  up: true  },
-  { id: 'eth',  label: 'Ethereum',   symbol: 'ETH',  icon: 'Ξ',    color: '#627eea', change: '-0.8%',  up: false },
-  { id: 'dop',  label: 'Peso Dom.',  symbol: 'DOP',  icon: 'RD$',  color: '#003087', change: '+0.1%',  up: true  },
-  { id: 'aapl', label: 'Apple',      symbol: 'AAPL', icon: '',    color: '#6b7280', change: '+1.2%',  up: true  },
+// Activos favoritos - se cargan dinámicamente (precios reales)
+const INITIAL_FAVORITES = [
+  { id: 'btc',  label: 'Bitcoin',    symbol: 'BTC',  icon: '₿',    color: '#f7931a', change: '...',  up: null, price: '-' },
+  { id: 'eth',  label: 'Ethereum',   symbol: 'ETH',  icon: 'Ξ',    color: '#627eea', change: '...',  up: null, price: '-' },
+  { id: 'dop',  label: 'Peso Dom.',  symbol: 'DOP',  icon: 'RD$',  color: '#003087', change: '...',  up: null, price: '-' },
+  { id: 'aapl', label: 'Apple',      symbol: 'AAPL', icon: '',    color: '#6b7280', change: '...',  up: null, price: '-' },
 ];
 
 export default function Dashboard() {
@@ -41,6 +41,7 @@ export default function Dashboard() {
   const [saldoInversion, setSaldoInversion] = useState(0);
   const [gananciaInversion, setGananciaInversion] = useState(0);
   const [cargandoInversion, setCargandoInversion] = useState(true);
+  const [favorites, setFavorites] = useState(INITIAL_FAVORITES);
 
   const formatMoney = (value) => {
     const n = Number(value);
@@ -53,6 +54,32 @@ export default function Dashboard() {
   }, [usuario, loading, navigate]);
 
   useEffect(() => {
+    const fetchCryptoPrices = async () => {
+      try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true');
+        const data = await response.json();
+        
+        setFavorites(prev => [
+          {
+            ...prev[0],
+            price: `$${(data.bitcoin?.usd || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
+            change: `${(data.bitcoin?.['usd_24h_change'] || 0).toFixed(1)}%`,
+            up: (data.bitcoin?.['usd_24h_change'] || 0) >= 0
+          },
+          {
+            ...prev[1],
+            price: `$${(data.ethereum?.usd || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
+            change: `${(data.ethereum?.['usd_24h_change'] || 0).toFixed(1)}%`,
+            up: (data.ethereum?.['usd_24h_change'] || 0) >= 0
+          },
+          prev[2],
+          prev[3]
+        ]);
+      } catch (error) {
+        console.error('Error cargando precios de crypto:', error);
+      }
+    };
+
     const cargarDatos = async () => {
       try {
         const [transResponse, prestResponse, paypalResponse] = await Promise.all([
@@ -69,6 +96,8 @@ export default function Dashboard() {
         setLoadingDatos(false);
       }
     };
+    
+    fetchCryptoPrices();
     cargarDatos();
   }, []);
 
@@ -301,18 +330,19 @@ export default function Dashboard() {
             <section aria-labelledby="favoritos-heading" className="db-section db-section--favorites">
           <h2 id="favoritos-heading" className="db-section-title">Favoritos</h2>
           <div className="db-fav-grid" role="list" aria-label="Activos favoritos">
-            {FAVORITES.map(fav => (
+            {favorites.map(fav => (
               <button
                 key={fav.id}
                 className="db-fav-card"
                 style={{ '--fav-color': fav.color }}
                 onClick={() => navigate('/mi-inversion')}
                 role="listitem"
-                aria-label={`${fav.label}: ${fav.change}`}
+                aria-label={`${fav.label}: ${fav.price} ${fav.change}`}
               >
                 <span className="db-fav-icon" aria-hidden="true">{fav.icon}</span>
                 <span className="db-fav-symbol">{fav.symbol}</span>
-                <span className={`db-fav-change ${fav.up ? 'db-up' : 'db-down'}`}>
+                <span className="db-fav-price" style={{ fontSize: '0.85em', opacity: 0.8 }}>{fav.price}</span>
+                <span className={`db-fav-change ${fav.up ? 'db-up' : fav.up === false ? 'db-down' : ''}`}>
                   {fav.change}
                 </span>
               </button>
