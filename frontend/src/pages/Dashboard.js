@@ -121,6 +121,44 @@ export default function Dashboard() {
   return (
     <div className="db-root">
       <div className="db-shell">
+
+        {/* ── SIDEBAR (solo desktop) ── */}
+        <aside className="db-sidebar" aria-label="Menú principal">
+          <div className="db-sidebar-brand">
+            <img src="/imagen/BE (1) (1).png" alt="Banco Exclusivo" className="db-logo" />
+            <span className="db-sidebar-brand-name">Banco Exclusivo</span>
+          </div>
+          <nav className="db-sidebar-nav" aria-label="Acciones rápidas">
+            {TEKERS.map(teker => (
+              <button
+                key={teker.id}
+                className="db-nav-item"
+                style={{ '--nav-color': teker.color }}
+                onClick={() => navigate(teker.route)}
+                aria-label={teker.label}
+              >
+                <span className="db-nav-icon" aria-hidden="true">{teker.icon}</span>
+                <span className="db-nav-label">{teker.label}</span>
+              </button>
+            ))}
+          </nav>
+          <div className="db-sidebar-foot">
+            <div className="db-sidebar-user-info">
+              <span className="db-sidebar-user-name">{nombreCompleto}</span>
+              <span className="db-sidebar-user-role">Cliente</span>
+            </div>
+            <button
+              className="db-sidebar-logout"
+              onClick={() => { logout(); navigate('/login'); }}
+              aria-label="Cerrar sesión"
+            >
+              🚪
+            </button>
+          </div>
+        </aside>
+
+        {/* ── ÁREA DE CONTENIDO ── */}
+        <div className="db-content-area">
         <header className="db-header" role="banner">
           <div className="db-header-left">
             <img src="/imagen/BE (1) (1).png" alt="Banco Exclusivo" className="db-logo" />
@@ -141,86 +179,81 @@ export default function Dashboard() {
 
         <main className="db-main" aria-label="Contenido principal del dashboard">
           <section aria-labelledby="dashboard-overview-heading" className="db-section db-hero">
-            <div className="db-hero-copy">
-              <p className="db-hero-kicker">Versión móvil y escritorio</p>
-              <h1 id="dashboard-overview-heading" className="db-hero-title">
-                En móvil se prioriza rapidez. En PC se redistribuye el tablero para ganar centro y proporción.
-              </h1>
-              <p className="db-hero-description">
-                El contenido conserva la jerarquía operativa, pero en escritorio se separa en panel principal
-                y columna lateral para dar más foco a saldos, movimientos e inversión.
-              </p>
 
+            {/* Bienvenida + acciones */}
+            <div className="db-hero-welcome">
+              <div>
+                <p className="db-hero-kicker">Panel principal</p>
+                <h1 id="dashboard-overview-heading" className="db-hero-title">{nombreCompleto}</h1>
+              </div>
               <div className="db-hero-actions">
                 <button
                   className="db-primary-btn db-primary-btn--compact"
                   onClick={() => navigate('/prestamos')}
                   aria-label="Ir a préstamos"
                 >
-                  Ver préstamos
+                  + Préstamo
                 </button>
                 <button
                   className="db-secondary-btn"
                   onClick={() => navigate('/transferencias')}
                   aria-label="Crear una transferencia"
                 >
-                  Nueva transferencia
+                  ↗ Transferir
                 </button>
-              </div>
-
-              <div className="db-hero-metrics" role="list" aria-label="Indicadores principales">
-                <div className="db-hero-metric" role="listitem">
-                  <span className="db-hero-metric-label">Patrimonio estimado</span>
-                  <strong className="db-hero-metric-value">${formatMoney(patrimonioEstimado)}</strong>
-                </div>
-                <div className="db-hero-metric" role="listitem">
-                  <span className="db-hero-metric-label">Operaciones visibles</span>
-                  <strong className="db-hero-metric-value">{operacionesMonitoreadas}</strong>
-                </div>
-                <div className="db-hero-metric" role="listitem">
-                  <span className="db-hero-metric-label">Última actividad</span>
-                  <strong className="db-hero-metric-value">{actividadReciente}</strong>
-                </div>
               </div>
             </div>
 
-            <div className="db-hero-panel">
-              <div className="db-section-header">
-                <h2 id="saldos-heading" className="db-section-title">Resumen de saldos</h2>
-                <span className="db-hero-caption">Vista rápida</span>
+            {/* Tira de KPI cards */}
+            <div className="db-kpi-strip" role="list" aria-label="Resumen de saldos">
+              <div className="db-card db-card--balance" role="listitem" aria-label="Saldo disponible">
+                <span className="db-card-label">Saldo disponible</span>
+                <span className="db-card-amount">${formatMoney(usuario?.saldo)}</span>
+                <span className="db-card-sub">Cuenta principal</span>
               </div>
-              <div className="db-cards-grid">
-                <div className="db-card db-card--debt" role="region" aria-label="Préstamos activos">
-                  <span className="db-card-label">Préstamos</span>
-                  <span className="db-card-amount">-RD${formatMoney(saldoPrestamos)}</span>
-                  <span className="db-card-sub">{prestamosActivos.length} activo(s)</span>
-                </div>
+              <div className="db-card db-card--debt" role="listitem" aria-label="Préstamos activos">
+                <span className="db-card-label">Préstamos</span>
+                <span className="db-card-amount">-RD${formatMoney(saldoPrestamos)}</span>
+                <span className="db-card-sub">{prestamosActivos.length} activo(s)</span>
+              </div>
+              <div className="db-card db-card--invest" role="listitem" aria-label="Saldo de inversión">
+                <span className="db-card-label">Inversión</span>
+                <span className="db-card-amount">${formatMoney(saldoInversion + gananciaInversion)}</span>
+                <span className="db-card-sub">
+                  {cargandoInversion ? 'Cargando...' : `+$${formatMoney(gananciaInversion)} ganancia`}
+                </span>
+              </div>
+              <div className="db-card db-card--paypal" role="listitem" aria-label="Recargas PayPal">
+                <span className="db-card-label">PayPal</span>
+                <span className="db-card-amount">${formatMoney(paypalTotal)}</span>
+                <span className="db-card-sub">Total recargado</span>
+              </div>
+              <div className="db-card db-card--group" role="listitem" aria-label="Tu grupo de ahorro">
+                <span className="db-card-label">Grupo</span>
+                <span className="db-card-amount db-card-emoji" aria-hidden="true">👥</span>
+                <button
+                  className="db-card-btn"
+                  onClick={() => navigate('/tu-grupo')}
+                  aria-label="Ver mi grupo de ahorro"
+                >
+                  Ver grupo
+                </button>
+              </div>
+            </div>
 
-                <div className="db-card db-card--paypal" role="region" aria-label="Recargas PayPal">
-                  <span className="db-card-label">PayPal</span>
-                  <span className="db-card-amount">${formatMoney(paypalTotal)}</span>
-                  <span className="db-card-sub">Total recargado</span>
-                </div>
-
-                <div className="db-card db-card--invest" role="region" aria-label="Saldo de inversión">
-                  <span className="db-card-label">Inversión</span>
-                  <span className="db-card-amount">${formatMoney(saldoInversion + gananciaInversion)}</span>
-                  <span className="db-card-sub">
-                    {cargandoInversion ? 'Cargando...' : `+$${formatMoney(gananciaInversion)} ganancia`}
-                  </span>
-                </div>
-
-                <div className="db-card db-card--group" role="region" aria-label="Tu grupo de ahorro">
-                  <span className="db-card-label">Grupo</span>
-                  <span className="db-card-amount db-card-emoji" aria-hidden="true">👥</span>
-                  <button
-                    className="db-card-btn"
-                    onClick={() => navigate('/tu-grupo')}
-                    aria-label="Ver mi grupo de ahorro"
-                  >
-                    Ver grupo
-                  </button>
-                </div>
+            {/* Métricas de actividad */}
+            <div className="db-hero-metrics" role="list" aria-label="Indicadores de actividad">
+              <div className="db-hero-metric" role="listitem">
+                <span className="db-hero-metric-label">Patrimonio estimado</span>
+                <strong className="db-hero-metric-value">${formatMoney(patrimonioEstimado)}</strong>
+              </div>
+              <div className="db-hero-metric" role="listitem">
+                <span className="db-hero-metric-label">Operaciones visibles</span>
+                <strong className="db-hero-metric-value">{operacionesMonitoreadas}</strong>
+              </div>
+              <div className="db-hero-metric" role="listitem">
+                <span className="db-hero-metric-label">Última actividad</span>
+                <strong className="db-hero-metric-value">{actividadReciente}</strong>
               </div>
             </div>
           </section>
@@ -421,6 +454,7 @@ export default function Dashboard() {
             </section>
           </div>
         </main>
+        </div>{/* db-content-area */}
       </div>
     </div>
   );
