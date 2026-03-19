@@ -5,11 +5,12 @@
  * Live prices via useMarketData (simulated WebSocket)
  * Balance via useBalance (simulated REST)
  */
-import React, { useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../tailwind.css';
 import ActionBlock from '../components/ActionBlock';
 import { useMarketData, useBalance } from '../hooks/useMarketData';
+import { AuthContext } from '../context/AuthContext';
 
 const DASHBOARD_OPTIONS = [
   { id: 'casa', label: 'Casa', icon: '🏠' },
@@ -185,8 +186,11 @@ function WSBadge({ connected, lastUpdate }) {
 // ── Main dashboard ────────────────────────────────────────────────────────────
 export default function TradingDashboard() {
   const navigate  = useNavigate();
+  const { usuario } = useContext(AuthContext);
   const { prices, connected, lastUpdate } = useMarketData();
   const { balance, loading }              = useBalance();
+  const rolUsuario = String(usuario?.rol || '').toLowerCase();
+  const esAdmin = rolUsuario === 'admin' || rolUsuario === 'admin_lite' || rolUsuario === 'administrador';
 
   const [toast, setToast] = useState(null);
   const [activePanel, setActivePanel] = useState('casa');
@@ -198,6 +202,49 @@ export default function TradingDashboard() {
 
   // ── Action blocks config ─────────────────────────────────────────────────
   const actionBlocks = useMemo(() => [
+    {
+      category:    'casa',
+      title:       'Saldos',
+      icon:        '💼',
+      description: 'Consulta tu Saldo Chain, depósitos, compras y movimientos desde tu wallet.',
+      action:      'Ir a saldos',
+      accentColor: 'bg-blue-700',
+      badge:       'CLAVE',
+      badgeColor:  'bg-blue-500',
+      metric:      `Disponible: ${fmtUsd(balance?.usd)}`,
+      onClick:     () => navigate('/saldos'),
+    },
+    {
+      category:    'casa',
+      title:       'Transferencias',
+      icon:        '💸',
+      description: 'Envía y recibe fondos entre cuentas Banco Exclusivo con validaciones en tiempo real.',
+      action:      'Abrir transferencias',
+      accentColor: 'bg-cyan-700',
+      metric:      'Internas, bancarias e internacionales',
+      onClick:     () => navigate('/transferencias'),
+    },
+    {
+      category:    'casa',
+      title:       'Panel de control',
+      icon:        '⚙️',
+      description: esAdmin
+        ? 'Administra usuarios, depósitos, préstamos y configuración avanzada del sistema.'
+        : 'Acceso disponible solo para administradores autorizados.',
+      action:      esAdmin ? 'Abrir panel' : 'Solo admin',
+      accentColor: 'bg-violet-700',
+      badge:       esAdmin ? 'ADMIN' : 'RESTRINGIDO',
+      badgeColor:  esAdmin ? 'bg-violet-500' : 'bg-slate-600',
+      disabled:    !esAdmin,
+      metric:      esAdmin ? 'Acceso total' : 'Permisos insuficientes',
+      onClick:     () => {
+        if (esAdmin) {
+          navigate('/admin');
+          return;
+        }
+        notify('Este módulo requiere permisos de administrador.');
+      },
+    },
     {
       category:    'trading',
       title:       'Comprar activos digitales',
@@ -280,19 +327,19 @@ export default function TradingDashboard() {
         : '—',
       onClick:     () => notify('Tarjeta virtual — configuración en curso'),
     },
-  ], [balance, prices, navigate]);
+  ], [balance, prices, navigate, esAdmin]);
 
   const visibleActions = useMemo(() => {
+    if (activePanel === 'casa') {
+      return actionBlocks.filter((block) => block.category === 'casa');
+    }
+
     if (activePanel === 'trading') {
       return actionBlocks.filter((block) => block.category === 'trading');
     }
 
     if (activePanel === 'servicios') {
       return actionBlocks.filter((block) => block.category === 'servicios');
-    }
-
-    if (activePanel === 'casa') {
-      return actionBlocks.slice(0, 3);
     }
 
     return [];
@@ -302,7 +349,7 @@ export default function TradingDashboard() {
     ? 'Opciones de trading'
     : activePanel === 'servicios'
       ? 'Servicios financieros'
-      : 'Acciones destacadas';
+      : 'Accesos principales';
 
   // ── Sample transfers ──────────────────────────────────────────────────────
   const transfers = [

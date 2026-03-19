@@ -58,7 +58,7 @@ const Navbar = () => {
               </span>
               <span className="user-balance">Balance: {usuario && usuario.saldo ? formatMoney(usuario.saldo) : '$0'}</span>
             </div>
-            <div className="navbar-links" style={{overflowX: 'auto', whiteSpace: 'nowrap', width: '100vw', display: 'flex', gap: '8px', alignItems: 'center', height: '80px'}}>
+            <div className="navbar-links">
               <Link to="/dashboard" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
                 <img src="/imagen/BE (1) (1).png" alt="Dashboard" className="nav-icon" />
                 Dashboard
