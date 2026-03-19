@@ -25,10 +25,20 @@ const CRYPTO_ACTIONS = [
 
 // Activos favoritos - se cargan dinámicamente (precios reales)
 const INITIAL_FAVORITES = [
-  { id: 'btc',  label: 'Bitcoin',    symbol: 'BTC',  icon: '₿',    color: '#f7931a', change: '...',  up: null, price: '-' },
-  { id: 'eth',  label: 'Ethereum',   symbol: 'ETH',  icon: 'Ξ',    color: '#627eea', change: '...',  up: null, price: '-' },
-  { id: 'dop',  label: 'Peso Dom.',  symbol: 'DOP',  icon: 'RD$',  color: '#003087', change: '...',  up: null, price: '-' },
-  { id: 'aapl', label: 'Apple',      symbol: 'AAPL', icon: '',    color: '#6b7280', change: '...',  up: null, price: '-' },
+  { id: 'bitcoin',  label: 'Bitcoin',   symbol: 'BTC', icon: '₿',   color: '#f7931a', change: '...', up: null, price: '-' },
+  { id: 'ethereum', label: 'Ethereum',  symbol: 'ETH', icon: 'Ξ',   color: '#627eea', change: '...', up: null, price: '-' },
+  { id: 'solana',   label: 'Solana',    symbol: 'SOL', icon: '◎',   color: '#9945ff', change: '...', up: null, price: '-' },
+  { id: 'dop',      label: 'Peso Dom.', symbol: 'DOP', icon: 'RD$', color: '#003f87', change: '...', up: null, price: '-' },
+];
+
+// Lista completa de criptomonedas disponibles para comprar
+const CRYPTO_MARKET_INITIAL = [
+  { id: 'bitcoin',     label: 'Bitcoin',   symbol: 'BTC',  icon: '₿',   color: '#f7931a', price: '-', change: '...', trend: null },
+  { id: 'ethereum',   label: 'Ethereum',  symbol: 'ETH',  icon: 'Ξ',   color: '#627eea', price: '-', change: '...', trend: null },
+  { id: 'solana',     label: 'Solana',    symbol: 'SOL',  icon: '◎',   color: '#9945ff', price: '-', change: '...', trend: null },
+  { id: 'binancecoin',label: 'BNB',       symbol: 'BNB',  icon: 'B',   color: '#f0b90b', price: '-', change: '...', trend: null },
+  { id: 'dogecoin',   label: 'Dogecoin',  symbol: 'DOGE', icon: 'Ð',   color: '#c2a633', price: '-', change: '...', trend: null },
+  { id: 'cardano',    label: 'Cardano',   symbol: 'ADA',  icon: '₳',   color: '#0033ad', price: '-', change: '...', trend: null },
 ];
 
 export default function Dashboard() {
@@ -42,6 +52,7 @@ export default function Dashboard() {
   const [gananciaInversion, setGananciaInversion] = useState(0);
   const [cargandoInversion, setCargandoInversion] = useState(true);
   const [favorites, setFavorites] = useState(INITIAL_FAVORITES);
+  const [marketPrices, setMarketPrices] = useState(CRYPTO_MARKET_INITIAL);
   const rolUsuario = String(usuario?.rol || '').toLowerCase();
   const esAdmin = rolUsuario === 'admin' || rolUsuario === 'admin_lite' || rolUsuario === 'administrador';
   const etiquetaRol = esAdmin ? 'Admin' : 'Cliente';
@@ -65,25 +76,64 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchCryptoPrices = async () => {
       try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true');
-        const data = await response.json();
-        
+        const COINS = 'bitcoin,ethereum,solana,binancecoin,dogecoin,cardano';
+        const [cryptoRes, fxRes] = await Promise.allSettled([
+          fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${COINS}&vs_currencies=usd&include_24hr_change=true`),
+          fetch('https://open.er-api.com/v6/latest/USD'),
+        ]);
+
+        let cd = {};
+        let fx = {};
+        if (cryptoRes.status === 'fulfilled' && cryptoRes.value.ok) cd = await cryptoRes.value.json();
+        if (fxRes.status === 'fulfilled' && fxRes.value.ok) fx = await fxRes.value.json();
+
+        const fmtPrice = (usd) => {
+          if (usd == null) return null;
+          if (usd >= 1000) return `$${usd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+          if (usd >= 1)    return `$${usd.toFixed(2)}`;
+          return `$${usd.toFixed(4)}`;
+        };
+        const fmtChg = (c) => c != null ? `${c.toFixed(1)}%` : null;
+
         setFavorites(prev => [
           {
             ...prev[0],
-            price: `$${(data.bitcoin?.usd || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
-            change: `${(data.bitcoin?.['usd_24h_change'] || 0).toFixed(1)}%`,
-            up: (data.bitcoin?.['usd_24h_change'] || 0) >= 0
+            price:  fmtPrice(cd.bitcoin?.usd)   ?? prev[0].price,
+            change: fmtChg(cd.bitcoin?.usd_24h_change)  ?? prev[0].change,
+            up: cd.bitcoin?.usd_24h_change  != null ? cd.bitcoin.usd_24h_change  >= 0 : prev[0].up,
           },
           {
             ...prev[1],
-            price: `$${(data.ethereum?.usd || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
-            change: `${(data.ethereum?.['usd_24h_change'] || 0).toFixed(1)}%`,
-            up: (data.ethereum?.['usd_24h_change'] || 0) >= 0
+            price:  fmtPrice(cd.ethereum?.usd)  ?? prev[1].price,
+            change: fmtChg(cd.ethereum?.usd_24h_change) ?? prev[1].change,
+            up: cd.ethereum?.usd_24h_change != null ? cd.ethereum.usd_24h_change >= 0 : prev[1].up,
           },
-          prev[2],
-          prev[3]
+          {
+            ...prev[2],
+            price:  fmtPrice(cd.solana?.usd)    ?? prev[2].price,
+            change: fmtChg(cd.solana?.usd_24h_change)   ?? prev[2].change,
+            up: cd.solana?.usd_24h_change   != null ? cd.solana.usd_24h_change   >= 0 : prev[2].up,
+          },
+          {
+            ...prev[3],
+            price:  fx.rates?.DOP != null ? `RD$${fx.rates.DOP.toFixed(2)}` : prev[3].price,
+            change: fx.rates?.DOP != null ? '/ USD' : prev[3].change,
+            up: null,
+          },
         ]);
+
+        if (Object.keys(cd).length > 0) {
+          setMarketPrices(prev => prev.map(coin => {
+            const d = cd[coin.id];
+            if (!d) return coin;
+            return {
+              ...coin,
+              price:  fmtPrice(d.usd) ?? coin.price,
+              change: fmtChg(d.usd_24h_change) ?? coin.change,
+              trend:  d.usd_24h_change != null ? (d.usd_24h_change >= 0 ? 'up' : 'down') : null,
+            };
+          }));
+        }
       } catch (error) {
         console.error('Error cargando precios de crypto:', error);
       }
@@ -348,6 +398,40 @@ export default function Dashboard() {
           </div>
             </section>
 
+            {/* ── MERCADO CRIPTO ── */}
+            <section aria-labelledby="crypto-mkt-heading" className="db-section db-section--crypto-mkt">
+          <div className="db-section-header">
+            <h2 id="crypto-mkt-heading" className="db-section-title">Comprar criptomonedas</h2>
+            <button className="db-link-btn" onClick={() => navigate('/mi-inversion')} aria-label="Ir a inversiones">
+              Invertir
+            </button>
+          </div>
+          <div className="db-cml-list" role="list" aria-label="Lista de criptomonedas disponibles">
+            {marketPrices.map(coin => (
+              <button
+                key={coin.id}
+                className="db-cml-item"
+                onClick={() => navigate('/mi-inversion')}
+                role="listitem"
+                aria-label={`Comprar ${coin.label}: ${coin.price}`}
+              >
+                <span className="db-cml-icon" style={{ color: coin.color }} aria-hidden="true">{coin.icon}</span>
+                <div className="db-cml-meta">
+                  <span className="db-cml-name">{coin.label}</span>
+                  <span className="db-cml-symbol">{coin.symbol}</span>
+                </div>
+                <div className="db-cml-right">
+                  <span className="db-cml-price">{coin.price}</span>
+                  <span className={`db-cml-chg ${coin.trend === 'up' ? 'db-up' : coin.trend === 'down' ? 'db-down' : ''}`}>
+                    {coin.change}
+                  </span>
+                </div>
+                <span className="db-cml-buy" aria-hidden="true">+ Comprar</span>
+              </button>
+            ))}
+          </div>
+            </section>
+
             <section aria-labelledby="favoritos-heading" className="db-section db-section--favorites">
           <h2 id="favoritos-heading" className="db-section-title">Favoritos</h2>
           <div className="db-fav-grid" role="list" aria-label="Activos favoritos">
@@ -523,6 +607,18 @@ export default function Dashboard() {
             Gestionar inversiones
           </button>
             </section>
+          </div>
+
+          {/* ── CERRAR SESIÓN MÓVIL ── */}
+          <div className="db-mobile-actions">
+            <button
+              className="db-mobile-logout-btn"
+              onClick={() => { logout(); navigate('/login'); }}
+              aria-label="Cerrar sesión"
+            >
+              <span aria-hidden="true">🚪</span>
+              Cerrar sesión
+            </button>
           </div>
         </main>
         </div>{/* db-content-area */}
