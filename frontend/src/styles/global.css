@@ -54,66 +54,32 @@ html, body, #root {
 #root {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
+  min-height: 100vh;
+  width: 100%;
   padding-top: 70px;
 }
 
 @media (max-width: 600px) {
   #root {
-    padding-top: 0;
-    padding-bottom: 90px;
+    padding-top: 80px;
+    padding-bottom: 0;
   }
 }
 
-/* Sidebar con menú hamburguesa */
+/* Layout base: evita imponer geometría global de sidebar/main.
+   Cada página maneja su propio layout para no superponerse con el navbar fijo. */
 nav {
-  width: 250px;
-  height: 100vh;
-  flex-shrink: 0;
-  overflow-y: auto;
-  position: fixed;
-  left: -250px;
-  top: 0;
-  z-index: 1000;
-  transition: left 0.3s ease;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  width: auto;
+  height: auto;
 }
 
-nav::-webkit-scrollbar {
-  display: none;
-}
-
-nav.open {
-  left: 0;
-}
-
-/* Contenido ocupa todo el ancho */
 main {
-  margin-left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow-y: scroll !important;
-  overflow-x: hidden;
-  padding: 80px 60px 40px;
-  background: #001a4d;
-  position: relative;
-  box-sizing: border-box;
-  display: flex;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-main::-webkit-scrollbar {
-  display: none;
-}
-
-/* Asegurar que TODOS los containers respeten el layout */
-main > div {
-  max-width: 100%;
-  box-sizing: border-box;
   width: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: visible;
+  display: block;
 }
 
 /* Forzar scroll en todos los containers de páginas */
@@ -132,55 +98,7 @@ main > div {
   box-sizing: border-box;
 }
 
-/* Scrollbar */
-main::-webkit-scrollbar {
-  width: 10px;
-}
-
-main::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-main::-webkit-scrollbar-thumb {
-  background: #cc0000;
-  border-radius: 5px;
-}
-
-main::-webkit-scrollbar-thumb:hover {
-  background: #ff3333;
-}
-
 @media (max-width: 768px) {
-  nav {
-    position: fixed;
-    width: 100%;
-    height: 65px;
-    left: 0;
-    z-index: 10000;
-  }
-  
-  main {
-    margin-left: 0;
-    margin-top: 65px;
-    width: 100%;
-    min-height: calc(100vh - 65px);
-    height: auto;
-    padding: 20px 15px;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  main::-webkit-scrollbar {
-    display: none;
-  }
-
-  main > div {
-    width: 100%;
-    max-width: 100%;
-  }
-
   .recargas-container,
   .perfil-container,
   .dashboard-container,
@@ -190,6 +108,7 @@ main::-webkit-scrollbar-thumb:hover {
   .transferencia-bancaria-container,
   .vincular-container,
   .admin-panel-container {
+    max-width: 100%;
     padding: 0;
   }
 }
@@ -256,12 +175,6 @@ main::-webkit-scrollbar-thumb:hover {
 }
 
 @media (max-width: 480px) {
-  main {
-    margin-top: 58px;
-    min-height: calc(100vh - 58px);
-    padding: 16px 12px;
-  }
-
   input,
   select,
   textarea {

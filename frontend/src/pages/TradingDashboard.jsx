@@ -317,7 +317,7 @@ export default function TradingDashboard() {
   return (
     // #tw-root scopes Tailwind's base/reset so it doesn't break MUI globally
     <div id="tw-root" className="w-full">
-      <div className="min-h-screen bg-[#0a0d14] text-slate-100 font-sans pt-[84px] sm:pt-4">
+      <div className="min-h-screen bg-[#0a0d14] text-slate-100 font-sans">
 
       {/* ── Toast notification ── */}
       {toast && (
