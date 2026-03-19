@@ -15,6 +15,9 @@ const formatMoney = (value) => `$${value}`;
 const Navbar = () => {
   const { usuario, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const rolUsuario = String(usuario?.rol || '').toLowerCase();
+  const esAdmin = rolUsuario === 'admin' || rolUsuario === 'admin_lite' || rolUsuario === 'administrador';
+  const esAdminFull = rolUsuario === 'admin' || rolUsuario === 'administrador';
   const [menuOpen, setMenuOpen] = useState(false);
   const [devMode, setDevMode] = useState(false);
   const handleMenuClose = () => setMenuOpen(false);
@@ -60,6 +63,9 @@ const Navbar = () => {
                 <img src="/imagen/BE (1) (1).png" alt="Dashboard" className="nav-icon" />
                 Dashboard
               </Link>
+              {esAdmin && (
+                <Link to="/admin" className="nav-link admin-link" onClick={handleMenuClose}>⚙️ Panel de Control</Link>
+              )}
               <Link to="/saldos" className="nav-link nav-link-with-img" onClick={handleMenuClose}>
                 <img src="/imagen/BE (6) (1).png" alt="Crypto Wallet" className="nav-icon" />
                 Crypto Wallet
@@ -98,10 +104,7 @@ const Navbar = () => {
                 <img src="/imagen/BE (15).png" alt="Préstamos" className="nav-icon" />
                 Préstamos
               </Link>
-              {(usuario && (usuario.rol === 'admin' || usuario.rol === 'admin_lite')) && (
-                <Link to="/admin" className="nav-link admin-link" onClick={handleMenuClose}>⚙️ Panel de Control</Link>
-              )}
-              {usuario && usuario.rol === 'admin' && (
+              {esAdminFull && (
                 <FloatingDropdown label="Desarrolladores">
                   <button
                     type="button"

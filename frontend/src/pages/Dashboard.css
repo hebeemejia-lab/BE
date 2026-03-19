@@ -102,6 +102,37 @@
   outline-offset: 2px;
 }
 
+.db-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.db-admin-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  background: rgba(16, 185, 129, 0.1);
+  color: #6ee7b7;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.db-admin-btn:hover,
+.db-admin-btn:focus-visible {
+  background: rgba(16, 185, 129, 0.24);
+  color: #ecfdf5;
+  border-color: rgba(52, 211, 153, 0.75);
+  outline: 2px solid rgba(16, 185, 129, 0.45);
+  outline-offset: 2px;
+}
+
 /* ── MAIN SCROLL AREA ──────────────────────────────────────────── */
 .db-main {
   flex: 1;

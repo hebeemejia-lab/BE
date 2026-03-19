@@ -42,6 +42,15 @@ export default function Dashboard() {
   const [gananciaInversion, setGananciaInversion] = useState(0);
   const [cargandoInversion, setCargandoInversion] = useState(true);
   const [favorites, setFavorites] = useState(INITIAL_FAVORITES);
+  const rolUsuario = String(usuario?.rol || '').toLowerCase();
+  const esAdmin = rolUsuario === 'admin' || rolUsuario === 'admin_lite' || rolUsuario === 'administrador';
+  const etiquetaRol = esAdmin ? 'Admin' : 'Cliente';
+  const accionesSidebar = esAdmin
+    ? [
+        ...TEKERS,
+        { id: 'panel-control', label: 'Panel de Control', icon: '⚙️', route: '/admin', color: '#0f766e' },
+      ]
+    : TEKERS;
 
   const formatMoney = (value) => {
     const n = Number(value);
@@ -166,7 +175,7 @@ export default function Dashboard() {
             <span className="db-sidebar-brand-name">Banco Exclusivo</span>
           </div>
           <nav className="db-sidebar-nav" aria-label="Acciones rápidas">
-            {TEKERS.map(teker => (
+            {accionesSidebar.map(teker => (
               <button
                 key={teker.id}
                 className="db-nav-item"
@@ -182,7 +191,7 @@ export default function Dashboard() {
           <div className="db-sidebar-foot">
             <div className="db-sidebar-user-info">
               <span className="db-sidebar-user-name">{nombreCompleto}</span>
-              <span className="db-sidebar-user-role">Cliente</span>
+              <span className="db-sidebar-user-role">{etiquetaRol}</span>
             </div>
             <button
               className="db-sidebar-logout"
@@ -204,14 +213,26 @@ export default function Dashboard() {
               <p className="db-welcome-name">{nombreCompleto}</p>
             </div>
           </div>
-          <button
-            className="db-logout-btn"
-            onClick={() => { logout(); navigate('/login'); }}
-            aria-label="Cerrar sesión"
-          >
-            <span aria-hidden="true">🚪</span>
-            <span className="db-logout-text">Salir</span>
-          </button>
+          <div className="db-header-actions">
+            {esAdmin && (
+              <button
+                className="db-admin-btn"
+                onClick={() => navigate('/admin')}
+                aria-label="Ir al panel de control"
+              >
+                <span aria-hidden="true">⚙️</span>
+                <span>Panel</span>
+              </button>
+            )}
+            <button
+              className="db-logout-btn"
+              onClick={() => { logout(); navigate('/login'); }}
+              aria-label="Cerrar sesión"
+            >
+              <span aria-hidden="true">🚪</span>
+              <span className="db-logout-text">Salir</span>
+            </button>
+          </div>
         </header>
 
         <main className="db-main" aria-label="Contenido principal del dashboard">
