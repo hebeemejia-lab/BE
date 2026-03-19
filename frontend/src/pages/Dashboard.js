@@ -343,10 +343,10 @@ export default function Dashboard() {
                   {cargandoInversion ? 'Cargando...' : `+$${formatMoney(gananciaInversion)} ganancia`}
                 </span>
               </div>
-              <div className="db-card db-card--paypal" role="listitem" aria-label="Recargas PayPal">
-                <span className="db-card-label">PayPal</span>
+              <div className="db-card db-card--paypal" role="listitem" aria-label="Saldo Chain">
+                <span className="db-card-label">Saldo Chain</span>
                 <span className="db-card-amount">${formatMoney(paypalTotal)}</span>
-                <span className="db-card-sub">Total recargado</span>
+                <span className="db-card-sub">Depósitos acumulados</span>
               </div>
               <div className="db-card db-card--group" role="listitem" aria-label="Tu grupo de ahorro">
                 <span className="db-card-label">Grupo</span>
@@ -411,9 +411,9 @@ export default function Dashboard() {
               <button
                 key={coin.id}
                 className="db-cml-item"
-                onClick={() => navigate('/mi-inversion')}
+                onClick={() => navigate(`/crypto/${coin.id}`)}
                 role="listitem"
-                aria-label={`Comprar ${coin.label}: ${coin.price}`}
+                aria-label={`Ver ${coin.label}: ${coin.price}`}
               >
                 <span className="db-cml-icon" style={{ color: coin.color }} aria-hidden="true">{coin.icon}</span>
                 <div className="db-cml-meta">

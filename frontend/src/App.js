@@ -32,6 +32,7 @@ import ActivosPasivos from './pages/ActivosPasivos';
 import EconomiaEmergente from './pages/EconomiaEmergente';
 import BeneficiosAhorro from './pages/BeneficiosAhorro';
 import Certificado from './pages/Certificado';
+import CryptoDetail from './pages/CryptoDetail';
 
 // Estilos
 import './styles/global.css';
@@ -47,6 +48,7 @@ const getTitleForPath = (pathname) => {
   if (pathname.startsWith('/transferencias-internacionales')) return 'BE - Transferencias Internacionales';
   if (pathname.startsWith('/transferencias-bancarias')) return 'BE - Transferencia Bancaria';
   if (pathname.startsWith('/transferencias')) return 'BE - Transferencias';
+  if (pathname.startsWith('/crypto')) return 'BE - Crypto';
   if (pathname.startsWith('/mi-inversion')) return 'BE - Inversion';
   if (pathname.startsWith('/gastos-personales')) return 'BE - Gastos Personales';
   if (pathname.startsWith('/recargas')) return 'BE - Recargas';
@@ -203,6 +205,14 @@ function App() {
            <Route path="/cursos/economia-emergente" element={<EconomiaEmergente />} />
            <Route path="/cursos/beneficios-ahorro" element={<BeneficiosAhorro />} />
            <Route path="/certificado" element={<Certificado />} />
+          <Route
+            path="/crypto/:coinId"
+            element={
+              <ProtectedRoute>
+                <CryptoDetail />
+              </ProtectedRoute>
+            }
+          />
           
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
