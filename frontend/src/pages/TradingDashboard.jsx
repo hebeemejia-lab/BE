@@ -1,0 +1,353 @@
+/**
+ * TradingDashboard.jsx
+ * Mobile-first React + Tailwind dashboard
+ * Blocks: ACCIONES RÁPIDAS (7 módulos) + TRANSFERENCIAS
+ * Live prices via useMarketData (simulated WebSocket)
+ * Balance via useBalance (simulated REST)
+ */
+import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import '../tailwind.css';
+import ActionBlock from '../components/ActionBlock';
+import { useMarketData, useBalance } from '../hooks/useMarketData';
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function fmtUsd(n, decimals = 2) {
+  if (n == null) return '—';
+  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)}B`;
+  if (n >= 1_000_000)     return `$${(n / 1_000_000).toFixed(1)}M`;
+  return `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+}
+
+function fmtChange(c) {
+  const sign = c >= 0 ? '+' : '';
+  return `${sign}${c.toFixed(2)}%`;
+}
+
+// ── Ticker strip (live) ───────────────────────────────────────────────────────
+function TickerBar({ prices }) {
+  const items = Object.entries(prices);
+  return (
+    <div className="overflow-hidden bg-[#0a0d14] border-b border-white/5 py-2">
+      <div className="flex gap-8 animate-marquee whitespace-nowrap px-4 overflow-x-auto scrollbar-none">
+        {items.map(([sym, d]) => (
+          <span key={sym} className="inline-flex items-center gap-2 text-xs font-mono">
+            <span className="font-bold text-white">{sym}</span>
+            <span className="text-slate-300">{fmtUsd(d.price, d.price >= 1 ? 2 : 6)}</span>
+            <span className={d.change24h >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+              {fmtChange(d.change24h)}
+            </span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Balance card ─────────────────────────────────────────────────────────────
+function BalanceCard({ balance, loading }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-900/40 to-[#111827] p-5 shadow-lg">
+      <p className="text-xs font-bold tracking-widest uppercase text-slate-400 mb-3">Saldo Chain / Portfolio</p>
+      {loading ? (
+        <div className="h-10 w-40 bg-white/10 animate-pulse rounded-lg" />
+      ) : (
+        <>
+          <p className="text-3xl font-extrabold text-white tracking-tight">
+            {fmtUsd(balance?.usd)}
+          </p>
+          <div className="mt-3 grid grid-cols-3 gap-3">
+            {[
+              { label: 'Staked',      val: fmtUsd(balance?.staked) },
+              { label: 'Colateral',   val: fmtUsd(balance?.collateral) },
+              { label: 'NFTs',        val: balance?.nfts },
+            ].map(({ label, val }) => (
+              <div key={label} className="bg-white/5 rounded-xl p-2 text-center">
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider">{label}</p>
+                <p className="text-sm font-bold text-slate-200 mt-0.5">{val}</p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Mini price table (REST-style snapshot) ───────────────────────────────────
+function PriceTable({ prices }) {
+  const rows = Object.entries(prices).slice(0, 5);
+  return (
+    <section>
+      <h2 className="text-xs font-bold tracking-widest uppercase text-slate-400 mb-3">
+        Mercado en vivo
+      </h2>
+      <div className="rounded-2xl border border-white/10 overflow-hidden">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-white/5 text-slate-500 text-left">
+              <th className="px-4 py-2 font-semibold">Par</th>
+              <th className="px-4 py-2 font-semibold text-right">Precio</th>
+              <th className="px-4 py-2 font-semibold text-right">24h</th>
+              <th className="px-4 py-2 font-semibold text-right hidden sm:table-cell">Volumen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(([sym, d]) => (
+              <tr key={sym} className="border-t border-white/5 hover:bg-white/5 transition-colors">
+                <td className="px-4 py-2.5 font-bold text-white">{sym}/USD</td>
+                <td className="px-4 py-2.5 text-right font-mono text-slate-200">
+                  {fmtUsd(d.price, d.price >= 1 ? 2 : 6)}
+                </td>
+                <td className={`px-4 py-2.5 text-right font-mono font-semibold ${d.change24h >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {fmtChange(d.change24h)}
+                </td>
+                <td className="px-4 py-2.5 text-right text-slate-500 hidden sm:table-cell">
+                  {fmtUsd(d.volume24h)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+// ── Transfer row ─────────────────────────────────────────────────────────────
+function TransferRow({ emoji, label, sub, amount, out }) {
+  return (
+    <li className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors rounded-xl">
+      <span className="text-2xl" aria-hidden="true">{emoji}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-slate-200 truncate">{label}</p>
+        <p className="text-xs text-slate-500 truncate">{sub}</p>
+      </div>
+      <span className={`text-sm font-bold font-mono ${out ? 'text-red-400' : 'text-emerald-400'}`}>
+        {out ? '-' : '+'}{fmtUsd(amount)}
+      </span>
+    </li>
+  );
+}
+
+// ── Connection badge ──────────────────────────────────────────────────────────
+function WSBadge({ connected, lastUpdate }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest">
+      <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+      <span className={connected ? 'text-emerald-400' : 'text-slate-500'}>
+        {connected ? 'WS conectado' : 'Conectando...'}
+      </span>
+      {lastUpdate && (
+        <span className="text-slate-600 ml-1 normal-case tracking-normal">
+          · {lastUpdate.toLocaleTimeString()}
+        </span>
+      )}
+    </span>
+  );
+}
+
+// ── Main dashboard ────────────────────────────────────────────────────────────
+export default function TradingDashboard() {
+  const navigate  = useNavigate();
+  const { prices, connected, lastUpdate } = useMarketData();
+  const { balance, loading }              = useBalance();
+
+  const [toast, setToast] = useState(null);
+
+  const notify = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2800);
+  };
+
+  // ── Action blocks config ─────────────────────────────────────────────────
+  const actionBlocks = useMemo(() => [
+    {
+      title:       'Comprar activos digitales',
+      icon:        '💳',
+      description: 'Deposita USD vía PayPal, convierte a saldo Chain y compra cualquier activo digital al instante.',
+      action:      'Comprar ahora',
+      accentColor: 'bg-indigo-600',
+      badge:       'DIRECTO',
+      badgeColor:  'bg-indigo-500',
+      metric:      `Saldo: ${fmtUsd(balance?.usd)}`,
+      onClick:     () => navigate('/saldos', { state: { openFlow: 'deposit' } }),
+    },
+    {
+      title:       'Trading básico',
+      icon:        '📈',
+      description: 'Compra y vende activos al precio de mercado con liquidación inmediata.',
+      action:      'Ir al trading',
+      accentColor: 'bg-emerald-600',
+      badge:       'LIVE',
+      badgeColor:  'bg-emerald-500',
+      metric:      `BTC ${fmtUsd(prices.BTC?.price)} · ETH ${fmtUsd(prices.ETH?.price)}`,
+      onClick:     () => navigate('/mi-inversion'),
+    },
+    {
+      title:       'Trading avanzado',
+      icon:        '⚡',
+      description: 'Apalancamiento hasta 10×, contratos perpetuos y opciones sobre activos clave.',
+      action:      'Abrir posición',
+      accentColor: 'bg-amber-600',
+      badge:       'BETA',
+      badgeColor:  'bg-amber-500',
+      metric:      `SOL ${fmtUsd(prices.SOL?.price)} · BNB ${fmtUsd(prices.BNB?.price)}`,
+      onClick:     () => notify('Trading avanzado — próximamente disponible'),
+    },
+    {
+      title:       'Staking & Ahorro',
+      icon:        '🏦',
+      description: 'Bloquea tus activos y gana recompensas de hasta 18 % APY en stablecoins y PoS tokens.',
+      action:      'Ver rendimientos',
+      accentColor: 'bg-teal-600',
+      badge:       'APY 18%',
+      badgeColor:  'bg-teal-500',
+      metric:      `En staking: ${fmtUsd(balance?.staked)}`,
+      onClick:     () => notify('Staking abierto — flujo de configuración próximamente'),
+    },
+    {
+      title:       'Préstamos con colateral',
+      icon:        '🔐',
+      description: 'Obtén liquidez en USD usando tus cripto como garantía sin venderlas. LTV hasta 70 %.',
+      action:      'Solicitar préstamo',
+      accentColor: 'bg-rose-700',
+      metric:      `Colateral bloqueado: ${fmtUsd(balance?.collateral)}`,
+      onClick:     () => navigate('/prestamos'),
+    },
+    {
+      title:       'Marketplace NFT',
+      icon:        '🖼️',
+      description: 'Compra, vende o subasta coleccionables digitales únicos verificados en blockchain.',
+      action:      'Explorar colección',
+      accentColor: 'bg-purple-700',
+      badge:       'NUEVO',
+      badgeColor:  'bg-purple-500',
+      metric:      `NFTs en cartera: ${balance?.nfts ?? '—'}`,
+      onClick:     () => notify('Marketplace NFT — disponible pronto'),
+    },
+    {
+      title:       'Tarjeta virtual & pagos',
+      icon:        '💎',
+      description: 'Paga en cualquier comercio con tu saldo Chain. Límite mensual configurable.',
+      action:      'Gestionar tarjeta',
+      accentColor: 'bg-sky-700',
+      metric:      balance
+        ? `Usado: ${fmtUsd(balance.cardSpent)} / ${fmtUsd(balance.cardLimit)}`
+        : '—',
+      onClick:     () => notify('Tarjeta virtual — configuración en curso'),
+    },
+  ], [balance, prices, navigate]);
+
+  // ── Sample transfers ──────────────────────────────────────────────────────
+  const transfers = [
+    { emoji: '📤', label: 'Compra ETH',          sub: 'Trading básico · hace 5 min',   amount: 350.00, out: true  },
+    { emoji: '📥', label: 'Depósito PayPal',      sub: 'Saldo Chain · hace 23 min',     amount: 500.00, out: false },
+    { emoji: '📤', label: 'Préstamo — colateral', sub: 'Bloqueado BTC · hace 1 h',      amount: 1_200, out: true  },
+    { emoji: '📥', label: 'Recompensa Staking',   sub: 'ADA yield · hace 3 h',          amount: 14.82, out: false },
+    { emoji: '📤', label: 'Compra NFT #0472',     sub: 'Marketplace · hace 1 día',      amount: 89.00, out: true  },
+    { emoji: '💳', label: 'Pago tarjeta virtual', sub: 'Amazon.com · hace 2 días',      amount: 47.50, out: true  },
+  ];
+
+  return (
+    // #tw-root scopes Tailwind's base/reset so it doesn't break MUI globally
+    <div id="tw-root" className="min-h-screen bg-[#0a0d14] text-slate-100 font-sans">
+
+      {/* ── Toast notification ── */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-xl animate-[fadeIn_0.3s_ease-out]">
+          {toast}
+        </div>
+      )}
+
+      {/* ── Live ticker ── */}
+      <TickerBar prices={prices} />
+
+      {/* ── Header ── */}
+      <header className="px-4 pt-6 pb-2 sm:px-6">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-xl font-extrabold tracking-tight text-white">
+              Banco Exclusivo <span className="text-indigo-400">Trade</span>
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">Panel de productos financieros</p>
+          </div>
+          <WSBadge connected={connected} lastUpdate={lastUpdate} />
+        </div>
+      </header>
+
+      {/* ── Main content ── */}
+      <main className="px-4 pb-20 sm:px-6 space-y-8 max-w-5xl mx-auto mt-4">
+
+        {/* Balance */}
+        <BalanceCard balance={balance} loading={loading} />
+
+        {/* Cotizaciones en vivo */}
+        <PriceTable prices={prices} />
+
+        {/* ── ACCIONES RÁPIDAS ── */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xs font-bold tracking-widest uppercase text-slate-400">
+              Acciones rápidas
+            </h2>
+            <span className="text-[10px] text-slate-600 uppercase tracking-wider">
+              {actionBlocks.length} módulos
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {actionBlocks.map((block) => (
+              <ActionBlock key={block.title} {...block} />
+            ))}
+          </div>
+        </section>
+
+        {/* ── TRANSFERENCIAS ── */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xs font-bold tracking-widest uppercase text-slate-400">
+              Transferencias recientes
+            </h2>
+            <button
+              onClick={() => navigate('/transferencias')}
+              className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold transition-colors"
+            >
+              Ver todas →
+            </button>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#1e2535] to-[#111827] overflow-hidden">
+            {/* Totals row */}
+            <div className="grid grid-cols-2 divide-x divide-white/10 border-b border-white/10">
+              <div className="px-4 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">Enviado</p>
+                <p className="text-base font-extrabold text-red-400 font-mono">
+                  {fmtUsd(transfers.filter(t => t.out).reduce((s, t) => s + t.amount, 0))}
+                </p>
+              </div>
+              <div className="px-4 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">Recibido</p>
+                <p className="text-base font-extrabold text-emerald-400 font-mono">
+                  {fmtUsd(transfers.filter(t => !t.out).reduce((s, t) => s + t.amount, 0))}
+                </p>
+              </div>
+            </div>
+
+            {/* Transfer list */}
+            <ul>
+              {transfers.map((t) => (
+                <TransferRow key={`${t.label}-${t.amount}`} {...t} />
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* Footer note */}
+        <p className="text-center text-[11px] text-slate-700 pb-4">
+          Precios simulados · Para producción conectar WS real · Banco Exclusivo © 2026
+        </p>
+      </main>
+    </div>
+  );
+}
