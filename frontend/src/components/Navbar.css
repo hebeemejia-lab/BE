@@ -1,260 +1,128 @@
 
 @media (max-width: 600px) {
   .navbar {
-    display: flex !important;
-    position: fixed !important;
-    left: 0 !important;
-    width: 100vw !important;
-    min-width: 100vw !important;
-    max-width: 100vw !important;
-    height: 80px !important;
-    top: 0 !important;
-    bottom: auto !important;
-    z-index: 10000 !important;
-    background: linear-gradient(180deg, #001a4d 0%, #003d99 100%) !important;
-    border-bottom: 3px solid #a7d8ff !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    transition: none !important;
-    overflow: visible !important;
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 80px;
+    z-index: 11000;
+    background: linear-gradient(180deg, #001a4d 0%, #003d99 100%);
+    border-bottom: 2px solid rgba(167, 216, 255, 0.45);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
   }
-  
+
   .navbar-container {
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: center !important;
-    height: 80px !important;
-    padding: 0 !important;
-    width: 100vw !important;
-    gap: 0 !important;
-    max-width: 100vw !important;
+    height: 80px;
+    width: 100%;
+    max-width: 100%;
+    padding: 0 12px;
+    gap: 10px;
   }
-  
+
   .navbar-header {
-    display: flex !important;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
   }
-  
-  /* keep hamburger visible on mobile now that drawer lives on right */
+
   .hamburger {
-    display: flex !important;
+    display: flex;
   }
-  
-  .hamburger-icon {
-    width: 28px !important;
-    height: 28px !important;
-    filter: brightness(0) invert(1) !important;
-    pointer-events: none !important;
+
+  .hamburger.active {
+    right: 12px;
   }
-  
+
   .navbar-right {
-    position: static !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 0 !important;
-    width: 100vw !important;
-    height: 80px !important;
-    background: transparent !important;
-    padding: 0 !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    max-width: 100vw !important;
-    display: flex !important;
-    -webkit-overflow-scrolling: touch !important;
-    /* Ocultar scrollbar pero mantener funcionalidad */
-    -ms-overflow-style: none !important;
-    scrollbar-width: none !important;
+    position: fixed;
+    right: -300px;
+    top: 0;
+    width: 300px;
+    max-width: 88vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, #001a4d 0%, #003d99 100%);
+    padding: 84px 14px 16px;
+    gap: 12px;
+    overflow-y: auto;
+    box-shadow: -2px 0 12px rgba(0, 0, 0, 0.3);
+    transition: right 0.25s ease;
+    z-index: 11001;
   }
 
-  /* when the hamburger drawer is open, convert the navbar-right into a right-side panel */
   .navbar-right.open {
-    position: fixed !important;
-    right: 0 !important;
-    left: auto !important;
-    top: 0 !important;
-    width: 280px !important;
-    height: 100vh !important;
-    flex-direction: column !important;
-    padding: 80px 20px 20px 20px !important;
-    gap: 15px !important;
-    background: linear-gradient(135deg, #001a4d 0%, #003d99 100%) !important;
-    box-shadow: -2px 0 12px rgba(0, 0, 0, 0.3) !important;
-    overflow-y: auto !important;
-    z-index: 10001 !important;
+    right: 0;
   }
 
-  /* hide bottom bar when drawer active */
-  .navbar.open {
-    bottom: 0 !important;
-    top: 0 !important;
-    height: 80px !important;
-    overflow: visible !important;
-  }
-  
-  /* Webkit browsers (Chrome, Safari, Edge) */
-  .navbar-right::-webkit-scrollbar {
-    display: none !important;
-  }
-  
   .user-info {
-    display: flex !important;
-  }
-  
-  .navbar-links {
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 8px !important;
-    width: 100vw !important;
-    height: 80px !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    display: flex !important;
-    padding: 0 8px !important;
-    -ms-overflow-style: none !important;
-    scrollbar-width: none !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    white-space: nowrap !important;
-  }
-  .navbar-links::-webkit-scrollbar {
-    height: 8px;
-    background: #001a4d;
-  }
-  .navbar-links::-webkit-scrollbar-thumb {
-    background: #a7d8ff;
-    border-radius: 4px;
+    display: flex;
+    width: 100%;
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
   }
 
-  /* Webkit browsers (Chrome, Safari, Edge) - Hide scrollbar for navbar-links */
-  .navbar-links::-webkit-scrollbar {
-    display: none !important;
+  .navbar-links {
+    position: static;
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+    overflow: visible;
+    white-space: normal;
   }
-  
-  .nav-link, .nav-button, .admin-link {
-    font-size: 11px !important;
-    padding: 8px 10px !important;
-    border-radius: 8px !important;
-    min-width: 70px !important;
-    width: auto !important;
-    height: 80px !important;
-    background: transparent !important;
-    color: #fff !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 4px !important;
-    border: none !important;
-    margin: 0 2px !important;
-    text-align: center !important;
-    box-shadow: none !important;
-    transition: all 0.2s ease !important;
-    white-space: nowrap !important;
-  }
-  
-  .nav-link:hover, .nav-button:hover, .admin-link:hover,
-  .nav-link:active, .nav-button:active, .admin-link:active {
-    background: rgba(204,0,0,0.2) !important;
-    color: #ff3333 !important;
-    transform: translateY(-2px) !important;
-  }
-  
-  /* Separar opciones de admin y cerrar sesión en móvil */
+
+  .nav-link,
+  .nav-button,
   .admin-link {
-    margin-left: 20px !important;
-    padding-left: 20px !important;
-    border-left: 2px solid rgba(255,255,255,0.2) !important;
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    flex-direction: row;
+    text-align: left;
+    border-radius: 8px;
   }
-  
-  .nav-dropdown {
-    position: relative !important;
-    margin-left: 20px !important;
-    padding-left: 20px !important;
-    border-left: 2px solid rgba(255,255,255,0.2) !important;
+
+  .nav-icon {
+    width: 18px;
+    height: 18px;
+    margin: 0;
   }
-  
-  .logout-btn {
-    margin-left: 20px !important;
-    padding-left: 20px !important;
-    border-left: 2px solid rgba(247, 245, 245, 0.2) !important;
-  }
-  
-  /* Separador visual para opciones de footer */
+
+  .admin-link,
+  .logout-btn,
   .nav-link[href*="perfil"],
   .nav-link[href*="politica"] {
-    margin-left: 20px !important;
-    padding-left: 20px !important;
-    border-left: 2px solid rgba(255,255,255,0.2) !important;
+    margin-left: 0;
+    padding-left: 12px;
+    border-left: none;
   }
-  
-  .nav-icon {
-    width: 24px !important;
-    height: 24px !important;
-    margin-right: 0 !important;
-    margin-bottom: 2px !important;
-  }
-  
-  .dropdown-toggle {
-    cursor: pointer !important;
-  }
-  
-  /* floating dropdown menu shared by FloatingDropdown component;
-     items pop out of whatever container they live in (bar or drawer) */
+
   .dropdown-menu {
-    position: absolute !important;
-    bottom: 85px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    background: linear-gradient(135deg, #001a4d 0%, #003d99 100%) !important;
-    border-radius: 8px !important;
-    padding: 8px !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
-    min-width: 200px !important;
-    z-index: 10001 !important;
-  }
-  
-  .dropdown-item {
-    padding: 10px 12px !important;
-    color: #fff !important;
-    text-decoration: none !important;
-    display: block !important;
-    border-radius: 4px !important;
-    font-size: 13px !important;
-    transition: all 0.2s ease !important;
-    }
-  
-    /* FloatingDropdown como contenedor simple */
-    .dropdown-menu {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      padding-left: 0;
-      margin-top: 0;
-      border-left: none;
-      margin-left: 0;
-    }
-  
-    .dropdown-item {
-      color: #ffffff;
-      text-decoration: none;
-      font-weight: 400;
-      padding: 10px 15px;
-      border-radius: 6px;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: none;
-      border: none;
-      cursor: pointer;
-    }
-  
-  .dropdown-item:hover {
-    background: none;
-    color: #ff3333;
+    position: static;
     transform: none;
+    bottom: auto;
+    left: auto;
+    min-width: 100%;
+    margin-top: 6px;
+    border-radius: 8px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: none;
   }
 }
 
@@ -340,7 +208,7 @@
 
 .hamburger.active {
   /* optional shift when drawer opens, keeps it visible */
-  right: 292px;
+  right: 12px;
 }
 
 .hamburger-icon {
@@ -787,26 +655,20 @@
     font-size: 11px;
   }
 
-  /* drawer links: show horizontally and allow scrolling so items don't wrap */
+  /* drawer links: stacked list for better readability on mobile */
   .navbar-right.open .navbar-links {
-    flex-direction: row;
+    flex-direction: column;
     width: 100%;
     gap: 8px;
-    overflow-x: auto;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-    padding: 0 8px;
-    white-space: nowrap;
-  }
-
-  .navbar-right.open .navbar-links::-webkit-scrollbar {
-    display: none;
+    overflow: visible;
+    padding: 0;
+    white-space: normal;
   }
 
   .nav-link {
     padding: 12px 16px;
     font-size: 15px;
-    width: auto;
+    width: 100%;
     text-align: left;
     border-radius: 6px;
     display: flex;
