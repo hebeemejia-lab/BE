@@ -28,10 +28,13 @@ function fmtChange(c) {
 function TickerBar({ prices }) {
   const items = Object.entries(prices);
   return (
-    <div className="overflow-hidden bg-[#0a0d14] border-b border-white/5 py-2">
-      <div className="flex gap-8 animate-marquee whitespace-nowrap px-4 overflow-x-auto scrollbar-none">
+    <div className="bg-[#0a0d14] border-b border-white/10 py-2">
+      <div className="flex gap-2 px-3 sm:px-4 overflow-x-auto whitespace-nowrap">
         {items.map(([sym, d]) => (
-          <span key={sym} className="inline-flex items-center gap-2 text-xs font-mono">
+          <span
+            key={sym}
+            className="inline-flex items-center gap-2 text-[11px] sm:text-xs font-mono rounded-full border border-white/10 bg-white/5 px-2.5 py-1"
+          >
             <span className="font-bold text-white">{sym}</span>
             <span className="text-slate-300">{fmtUsd(d.price, d.price >= 1 ? 2 : 6)}</span>
             <span className={d.change24h >= 0 ? 'text-emerald-400' : 'text-red-400'}>
@@ -46,23 +49,28 @@ function TickerBar({ prices }) {
 
 // ── Balance card ─────────────────────────────────────────────────────────────
 function BalanceCard({ balance, loading }) {
+  const miniStats = [
+    { label: 'Staked', val: fmtUsd(balance?.staked) },
+    { label: 'Colateral', val: fmtUsd(balance?.collateral) },
+    { label: 'NFTs', val: balance?.nfts },
+  ];
+
   return (
-    <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-900/40 to-[#111827] p-5 shadow-lg">
-      <p className="text-xs font-bold tracking-widest uppercase text-slate-400 mb-3">Saldo Chain / Portfolio</p>
+    <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-900/40 to-[#111827] p-4 sm:p-5 shadow-lg">
+      <p className="text-[11px] font-bold tracking-widest uppercase text-slate-300 mb-3">Saldo Chain / Portfolio</p>
       {loading ? (
         <div className="h-10 w-40 bg-white/10 animate-pulse rounded-lg" />
       ) : (
         <>
-          <p className="text-3xl font-extrabold text-white tracking-tight">
+          <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight break-all sm:break-normal">
             {fmtUsd(balance?.usd)}
           </p>
-          <div className="mt-3 grid grid-cols-3 gap-3">
-            {[
-              { label: 'Staked',      val: fmtUsd(balance?.staked) },
-              { label: 'Colateral',   val: fmtUsd(balance?.collateral) },
-              { label: 'NFTs',        val: balance?.nfts },
-            ].map(({ label, val }) => (
-              <div key={label} className="bg-white/5 rounded-xl p-2 text-center">
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+            {miniStats.map(({ label, val }, index) => (
+              <div
+                key={label}
+                className={`bg-white/5 rounded-xl p-2 sm:p-2.5 text-center ${index === 2 ? 'col-span-2 sm:col-span-1' : ''}`}
+              >
                 <p className="text-[10px] text-slate-500 uppercase tracking-wider">{label}</p>
                 <p className="text-sm font-bold text-slate-200 mt-0.5">{val}</p>
               </div>
@@ -79,17 +87,36 @@ function PriceTable({ prices }) {
   const rows = Object.entries(prices).slice(0, 5);
   return (
     <section>
-      <h2 className="text-xs font-bold tracking-widest uppercase text-slate-400 mb-3">
+      <h2 className="text-[11px] font-bold tracking-widest uppercase text-slate-300 mb-3">
         Mercado en vivo
       </h2>
-      <div className="rounded-2xl border border-white/10 overflow-hidden">
+      {/* Mobile cards */}
+      <div className="sm:hidden grid grid-cols-1 gap-2">
+        {rows.map(([sym, d]) => (
+          <div key={sym} className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-bold text-white">{sym}/USD</p>
+              <p className={`text-xs font-bold ${d.change24h >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {fmtChange(d.change24h)}
+              </p>
+            </div>
+            <p className="mt-1 text-sm font-mono text-slate-200">
+              {fmtUsd(d.price, d.price >= 1 ? 2 : 6)}
+            </p>
+            <p className="mt-1 text-[11px] text-slate-500">Volumen: {fmtUsd(d.volume24h)}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block rounded-2xl border border-white/10 overflow-hidden">
         <table className="w-full text-xs">
           <thead>
-            <tr className="bg-white/5 text-slate-500 text-left">
+            <tr className="bg-white/5 text-slate-400 text-left">
               <th className="px-4 py-2 font-semibold">Par</th>
               <th className="px-4 py-2 font-semibold text-right">Precio</th>
               <th className="px-4 py-2 font-semibold text-right">24h</th>
-              <th className="px-4 py-2 font-semibold text-right hidden sm:table-cell">Volumen</th>
+              <th className="px-4 py-2 font-semibold text-right">Volumen</th>
             </tr>
           </thead>
           <tbody>
@@ -102,7 +129,7 @@ function PriceTable({ prices }) {
                 <td className={`px-4 py-2.5 text-right font-mono font-semibold ${d.change24h >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                   {fmtChange(d.change24h)}
                 </td>
-                <td className="px-4 py-2.5 text-right text-slate-500 hidden sm:table-cell">
+                <td className="px-4 py-2.5 text-right text-slate-500">
                   {fmtUsd(d.volume24h)}
                 </td>
               </tr>
@@ -117,13 +144,13 @@ function PriceTable({ prices }) {
 // ── Transfer row ─────────────────────────────────────────────────────────────
 function TransferRow({ emoji, label, sub, amount, out }) {
   return (
-    <li className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors rounded-xl">
+    <li className="flex items-start sm:items-center gap-3 px-3 sm:px-4 py-3 hover:bg-white/5 transition-colors rounded-xl">
       <span className="text-2xl" aria-hidden="true">{emoji}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-200 truncate">{label}</p>
-        <p className="text-xs text-slate-500 truncate">{sub}</p>
+        <p className="text-sm font-semibold text-slate-200 leading-tight break-words">{label}</p>
+        <p className="text-xs text-slate-500 mt-1 leading-tight break-words">{sub}</p>
       </div>
-      <span className={`text-sm font-bold font-mono ${out ? 'text-red-400' : 'text-emerald-400'}`}>
+      <span className={`text-sm font-bold font-mono shrink-0 ${out ? 'text-red-400' : 'text-emerald-400'}`}>
         {out ? '-' : '+'}{fmtUsd(amount)}
       </span>
     </li>
@@ -139,7 +166,7 @@ function WSBadge({ connected, lastUpdate }) {
         {connected ? 'WS conectado' : 'Conectando...'}
       </span>
       {lastUpdate && (
-        <span className="text-slate-600 ml-1 normal-case tracking-normal">
+        <span className="hidden sm:inline text-slate-600 ml-1 normal-case tracking-normal">
           · {lastUpdate.toLocaleTimeString()}
         </span>
       )}
@@ -251,7 +278,8 @@ export default function TradingDashboard() {
 
   return (
     // #tw-root scopes Tailwind's base/reset so it doesn't break MUI globally
-    <div id="tw-root" className="min-h-screen bg-[#0a0d14] text-slate-100 font-sans">
+    <div id="tw-root" className="w-full">
+      <div className="min-h-screen bg-[#0a0d14] text-slate-100 font-sans pt-[84px] sm:pt-4">
 
       {/* ── Toast notification ── */}
       {toast && (
@@ -264,20 +292,20 @@ export default function TradingDashboard() {
       <TickerBar prices={prices} />
 
       {/* ── Header ── */}
-      <header className="px-4 pt-6 pb-2 sm:px-6">
+      <header className="px-3 sm:px-6 pt-4 sm:pt-6 pb-2">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-xl font-extrabold tracking-tight text-white">
+            <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-white leading-tight">
               Banco Exclusivo <span className="text-indigo-400">Trade</span>
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">Panel de productos financieros</p>
+            <p className="text-xs text-slate-400 mt-0.5">Panel de productos financieros</p>
           </div>
           <WSBadge connected={connected} lastUpdate={lastUpdate} />
         </div>
       </header>
 
       {/* ── Main content ── */}
-      <main className="px-4 pb-20 sm:px-6 space-y-8 max-w-5xl mx-auto mt-4">
+      <main className="px-3 sm:px-6 pb-28 sm:pb-16 space-y-6 sm:space-y-8 max-w-5xl mx-auto mt-2 sm:mt-4">
 
         {/* Balance */}
         <BalanceCard balance={balance} loading={loading} />
@@ -287,11 +315,11 @@ export default function TradingDashboard() {
 
         {/* ── ACCIONES RÁPIDAS ── */}
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-bold tracking-widest uppercase text-slate-400">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h2 className="text-[11px] font-bold tracking-widest uppercase text-slate-300">
               Acciones rápidas
             </h2>
-            <span className="text-[10px] text-slate-600 uppercase tracking-wider">
+            <span className="text-[10px] text-slate-500 uppercase tracking-wider">
               {actionBlocks.length} módulos
             </span>
           </div>
@@ -305,8 +333,8 @@ export default function TradingDashboard() {
 
         {/* ── TRANSFERENCIAS ── */}
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-bold tracking-widest uppercase text-slate-400">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h2 className="text-[11px] font-bold tracking-widest uppercase text-slate-300">
               Transferencias recientes
             </h2>
             <button
@@ -320,13 +348,13 @@ export default function TradingDashboard() {
           <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#1e2535] to-[#111827] overflow-hidden">
             {/* Totals row */}
             <div className="grid grid-cols-2 divide-x divide-white/10 border-b border-white/10">
-              <div className="px-4 py-3">
+              <div className="px-3 sm:px-4 py-3">
                 <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">Enviado</p>
                 <p className="text-base font-extrabold text-red-400 font-mono">
                   {fmtUsd(transfers.filter(t => t.out).reduce((s, t) => s + t.amount, 0))}
                 </p>
               </div>
-              <div className="px-4 py-3">
+              <div className="px-3 sm:px-4 py-3">
                 <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">Recibido</p>
                 <p className="text-base font-extrabold text-emerald-400 font-mono">
                   {fmtUsd(transfers.filter(t => !t.out).reduce((s, t) => s + t.amount, 0))}
@@ -348,6 +376,7 @@ export default function TradingDashboard() {
           Precios simulados · Para producción conectar WS real · Banco Exclusivo © 2026
         </p>
       </main>
+      </div>
     </div>
   );
 }
