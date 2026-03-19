@@ -11,6 +11,14 @@ import '../tailwind.css';
 import ActionBlock from '../components/ActionBlock';
 import { useMarketData, useBalance } from '../hooks/useMarketData';
 
+const DASHBOARD_OPTIONS = [
+  { id: 'casa', label: 'Casa', icon: '🏠' },
+  { id: 'datos', label: 'Datos', icon: '📊' },
+  { id: 'trading', label: 'Trading', icon: '📈' },
+  { id: 'transferencias', label: 'Transferencias', icon: '💸' },
+  { id: 'servicios', label: 'Servicios', icon: '🧩' },
+];
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function fmtUsd(n, decimals = 2) {
   if (n == null) return '—';
@@ -181,6 +189,7 @@ export default function TradingDashboard() {
   const { balance, loading }              = useBalance();
 
   const [toast, setToast] = useState(null);
+  const [activePanel, setActivePanel] = useState('casa');
 
   const notify = (msg) => {
     setToast(msg);
@@ -190,6 +199,7 @@ export default function TradingDashboard() {
   // ── Action blocks config ─────────────────────────────────────────────────
   const actionBlocks = useMemo(() => [
     {
+      category:    'trading',
       title:       'Comprar activos digitales',
       icon:        '💳',
       description: 'Deposita USD vía PayPal, convierte a saldo Chain y compra cualquier activo digital al instante.',
@@ -201,6 +211,7 @@ export default function TradingDashboard() {
       onClick:     () => navigate('/saldos', { state: { openFlow: 'deposit' } }),
     },
     {
+      category:    'trading',
       title:       'Trading básico',
       icon:        '📈',
       description: 'Compra y vende activos al precio de mercado con liquidación inmediata.',
@@ -212,6 +223,7 @@ export default function TradingDashboard() {
       onClick:     () => navigate('/mi-inversion'),
     },
     {
+      category:    'trading',
       title:       'Trading avanzado',
       icon:        '⚡',
       description: 'Apalancamiento hasta 10×, contratos perpetuos y opciones sobre activos clave.',
@@ -223,6 +235,7 @@ export default function TradingDashboard() {
       onClick:     () => notify('Trading avanzado — próximamente disponible'),
     },
     {
+      category:    'trading',
       title:       'Staking & Ahorro',
       icon:        '🏦',
       description: 'Bloquea tus activos y gana recompensas de hasta 18 % APY en stablecoins y PoS tokens.',
@@ -234,6 +247,7 @@ export default function TradingDashboard() {
       onClick:     () => notify('Staking abierto — flujo de configuración próximamente'),
     },
     {
+      category:    'servicios',
       title:       'Préstamos con colateral',
       icon:        '🔐',
       description: 'Obtén liquidez en USD usando tus cripto como garantía sin venderlas. LTV hasta 70 %.',
@@ -243,6 +257,7 @@ export default function TradingDashboard() {
       onClick:     () => navigate('/prestamos'),
     },
     {
+      category:    'servicios',
       title:       'Marketplace NFT',
       icon:        '🖼️',
       description: 'Compra, vende o subasta coleccionables digitales únicos verificados en blockchain.',
@@ -254,6 +269,7 @@ export default function TradingDashboard() {
       onClick:     () => notify('Marketplace NFT — disponible pronto'),
     },
     {
+      category:    'servicios',
       title:       'Tarjeta virtual & pagos',
       icon:        '💎',
       description: 'Paga en cualquier comercio con tu saldo Chain. Límite mensual configurable.',
@@ -265,6 +281,28 @@ export default function TradingDashboard() {
       onClick:     () => notify('Tarjeta virtual — configuración en curso'),
     },
   ], [balance, prices, navigate]);
+
+  const visibleActions = useMemo(() => {
+    if (activePanel === 'trading') {
+      return actionBlocks.filter((block) => block.category === 'trading');
+    }
+
+    if (activePanel === 'servicios') {
+      return actionBlocks.filter((block) => block.category === 'servicios');
+    }
+
+    if (activePanel === 'casa') {
+      return actionBlocks.slice(0, 3);
+    }
+
+    return [];
+  }, [actionBlocks, activePanel]);
+
+  const actionsTitle = activePanel === 'trading'
+    ? 'Opciones de trading'
+    : activePanel === 'servicios'
+      ? 'Servicios financieros'
+      : 'Acciones destacadas';
 
   // ── Sample transfers ──────────────────────────────────────────────────────
   const transfers = [
@@ -307,31 +345,75 @@ export default function TradingDashboard() {
       {/* ── Main content ── */}
       <main className="px-3 sm:px-6 pb-28 sm:pb-16 space-y-6 sm:space-y-8 max-w-5xl mx-auto mt-2 sm:mt-4">
 
-        {/* Balance */}
-        <BalanceCard balance={balance} loading={loading} />
-
-        {/* Cotizaciones en vivo */}
-        <PriceTable prices={prices} />
-
-        {/* ── ACCIONES RÁPIDAS ── */}
+        {/* ── Opciones del dashboard ── */}
         <section>
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <div className="flex items-center justify-between mb-3">
             <h2 className="text-[11px] font-bold tracking-widest uppercase text-slate-300">
-              Acciones rápidas
+              Opciones del dashboard
             </h2>
             <span className="text-[10px] text-slate-500 uppercase tracking-wider">
-              {actionBlocks.length} módulos
+              Vista activa: {DASHBOARD_OPTIONS.find((opt) => opt.id === activePanel)?.label}
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {actionBlocks.map((block) => (
-              <ActionBlock key={block.title} {...block} />
-            ))}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            {DASHBOARD_OPTIONS.map((option) => {
+              const active = activePanel === option.id;
+
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setActivePanel(option.id)}
+                  className={`
+                    shrink-0 rounded-xl px-3 py-2 text-xs font-semibold border transition-colors
+                    ${
+                      active
+                        ? 'bg-indigo-600 border-indigo-400 text-white'
+                        : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                    }
+                  `}
+                >
+                  <span className="mr-1" aria-hidden="true">{option.icon}</span>
+                  {option.label}
+                </button>
+              );
+            })}
           </div>
         </section>
 
+        {/* Balance */}
+        {(activePanel === 'casa' || activePanel === 'datos') && (
+          <BalanceCard balance={balance} loading={loading} />
+        )}
+
+        {/* Cotizaciones en vivo */}
+        {(activePanel === 'casa' || activePanel === 'datos') && (
+          <PriceTable prices={prices} />
+        )}
+
+        {/* ── ACCIONES RÁPIDAS ── */}
+        {(activePanel === 'casa' || activePanel === 'trading' || activePanel === 'servicios') && (
+          <section>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-[11px] font-bold tracking-widest uppercase text-slate-300">
+                {actionsTitle}
+              </h2>
+              <span className="text-[10px] text-slate-500 uppercase tracking-wider">
+                {visibleActions.length} módulos
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {visibleActions.map((block) => (
+                <ActionBlock key={block.title} {...block} />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* ── TRANSFERENCIAS ── */}
+        {(activePanel === 'casa' || activePanel === 'transferencias') && (
         <section>
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <h2 className="text-[11px] font-bold tracking-widest uppercase text-slate-300">
@@ -370,6 +452,7 @@ export default function TradingDashboard() {
             </ul>
           </div>
         </section>
+        )}
 
         {/* Footer note */}
         <p className="text-center text-[11px] text-slate-700 pb-4">
