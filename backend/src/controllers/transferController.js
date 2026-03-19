@@ -4,6 +4,7 @@ const User = require('../models/User');
 const stripeService = require('../services/stripeService');
 
 const TRANSFER_SAFE_ATTRS = ['id', 'nombre', 'apellido', 'email', 'cedula', 'saldo', 'rol'];
+const ADMIN_ID = 1; // Used as placeholder destinatario for crypto withdrawals
 
 // Realizar transferencia
 const realizarTransferencia = async (req, res) => {
@@ -77,7 +78,57 @@ const realizarTransferencia = async (req, res) => {
   }
 };
 
-// Obtener historial de transferencias
+// Solicitar retiro a wallet externa (crypto)
+const solicitarRetiroCrypto = async (req, res) => {
+  try {
+    const { walletAddress, coin, network, monto } = req.body;
+    const usuarioId = req.usuario.id;
+
+    if (!walletAddress || !coin || !network || !monto || Number(monto) <= 0) {
+      return res.status(400).json({ mensaje: 'Datos del retiro incompletos.' });
+    }
+
+    const direccion = String(walletAddress).trim();
+    if (direccion.length < 20 || direccion.length > 200) {
+      return res.status(400).json({ mensaje: 'Dirección de wallet inválida.' });
+    }
+
+    const montoNum = parseFloat(monto);
+    const usuario = await User.findByPk(usuarioId, { attributes: TRANSFER_SAFE_ATTRS });
+    if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado.' });
+
+    if (parseFloat(usuario.saldo) < montoNum) {
+      return res.status(400).json({ mensaje: 'Saldo insuficiente para el retiro.' });
+    }
+
+    if (usuarioId === ADMIN_ID) {
+      return res.status(400).json({ mensaje: 'Operación no permitida.' });
+    }
+
+    const maskedAddr = `${direccion.slice(0, 6)}...${direccion.slice(-4)}`;
+
+    usuario.saldo = parseFloat(usuario.saldo) - montoNum;
+    await usuario.save();
+
+    await Transfer.create({
+      remitenteId:    usuarioId,
+      destinatarioId: ADMIN_ID,
+      monto:          montoNum,
+      concepto:       `Retiro crypto: ${String(coin).toUpperCase()} (${network}) → ${maskedAddr}`,
+      estado:         'pendiente',
+    });
+
+    res.status(201).json({
+      mensaje: `Retiro de ${montoNum} USD en ${String(coin).toUpperCase()} solicitado. Será procesado en 24-48 h.`,
+      monto: montoNum,
+      coin,
+      network,
+      walletAddress: maskedAddr,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 const obtenerHistorial = async (req, res) => {
   try {
     const usuarioId = req.usuario.id;
@@ -245,4 +296,5 @@ module.exports = {
   obtenerEnviadas,
   obtenerRecibidas,
   transferenciaBancaria,
+  solicitarRetiroCrypto,
 };

@@ -34,6 +34,17 @@ import SouthWestRoundedIcon from '@mui/icons-material/SouthWestRounded';
 import { AuthContext } from '../context/AuthContext';
 import { depositoAPI, inversionesAPI, transferAPI } from '../services/api';
 
+const CRYPTO_COINS = [
+  { value: 'BTC',  label: 'Bitcoin (BTC)',  networks: ['Bitcoin Network'] },
+  { value: 'ETH',  label: 'Ethereum (ETH)', networks: ['ERC-20 (Ethereum)', 'Arbitrum', 'Optimism'] },
+  { value: 'SOL',  label: 'Solana (SOL)',   networks: ['Solana Network'] },
+  { value: 'BNB',  label: 'BNB',            networks: ['BEP-20 (BSC)'] },
+  { value: 'DOGE', label: 'Dogecoin (DOGE)',networks: ['Dogecoin Network'] },
+  { value: 'ADA',  label: 'Cardano (ADA)',  networks: ['Cardano Network'] },
+  { value: 'USDT', label: 'USDT',           networks: ['ERC-20 (Ethereum)', 'TRC-20 (TRON)', 'BEP-20 (BSC)'] },
+  { value: 'USDC', label: 'USDC',           networks: ['ERC-20 (Ethereum)', 'Solana', 'Arbitrum'] },
+];
+
 const panelSx = {
   borderRadius: '24px',
   border: '1px solid rgba(167, 216, 255, 0.12)',
@@ -90,7 +101,9 @@ function Saldos() {
 
   const [depositForm, setDepositForm] = useState({ method: 'paypal', amount: '', code: '' });
   const [buyForm, setBuyForm] = useState({ symbol: '', cantidad: '' });
-  const [transferForm, setTransferForm] = useState({ cedula: '', monto: '', concepto: 'Transferencia crypto' });
+  const [transferForm, setTransferForm] = useState({ modo: 'cedula', cedula: '', walletId: '', monto: '', concepto: 'Transferencia crypto' });
+  const [withdrawForm, setWithdrawForm] = useState({ coin: 'BTC', network: 'Bitcoin Network', walletAddress: '', monto: '' });
+  const [availableNetworks, setAvailableNetworks] = useState(CRYPTO_COINS[0].networks);
   const [assetQuery, setAssetQuery] = useState('');
   const [assetOptions, setAssetOptions] = useState([]);
   const [assetsLoading, setAssetsLoading] = useState(false);
@@ -165,6 +178,18 @@ function Saldos() {
     if (state.openFlow === 'transfer') {
       setActiveFlow('transfer');
     }
+    if (state.openFlow === 'withdraw-crypto') {
+      const requestedCoin = String(state.coin || 'BTC').toUpperCase();
+      const coinMeta = CRYPTO_COINS.find((c) => c.value === requestedCoin) || CRYPTO_COINS[0];
+      setAvailableNetworks(coinMeta.networks);
+      setWithdrawForm({
+        coin: coinMeta.value,
+        network: coinMeta.networks[0],
+        walletAddress: '',
+        monto: '',
+      });
+      setActiveFlow('withdraw-crypto');
+    }
   }, [location.state]);
 
   useEffect(() => {
@@ -206,7 +231,11 @@ function Saldos() {
 
   const resetDeposit = () => setDepositForm({ method: 'paypal', amount: '', code: '' });
   const resetBuy = () => setBuyForm({ symbol: '', cantidad: '' });
-  const resetTransfer = () => setTransferForm({ cedula: '', monto: '', concepto: 'Transferencia crypto' });
+  const resetTransfer = () => setTransferForm({ modo: 'cedula', cedula: '', walletId: '', monto: '', concepto: 'Transferencia crypto' });
+  const resetWithdraw = () => {
+    setAvailableNetworks(CRYPTO_COINS[0].networks);
+    setWithdrawForm({ coin: 'BTC', network: 'Bitcoin Network', walletAddress: '', monto: '' });
+  };
 
   const handleDepositConfirm = async () => {
     if (processing) return;
@@ -285,8 +314,12 @@ function Saldos() {
     if (processing) return;
 
     try {
-      if (!transferForm.cedula.trim()) {
+      if (transferForm.modo === 'cedula' && !transferForm.cedula.trim()) {
         openFeedback('error', 'Ingresa la cédula del destinatario.');
+        return;
+      }
+      if (transferForm.modo === 'wallet' && !transferForm.walletId.trim()) {
+        openFeedback('error', 'Ingresa el ID de wallet (BE-XXXXXX).');
         return;
       }
       if (!isPositiveAmount(transferForm.monto)) {
@@ -295,18 +328,56 @@ function Saldos() {
       }
 
       setProcessing(true);
-      const response = await transferAPI.realizar({
-        cedula_destinatario: transferForm.cedula.trim(),
+      const payload = {
         monto: Number(transferForm.monto),
         concepto: transferForm.concepto.trim() || 'Transferencia crypto',
-      });
+      };
+      if (transferForm.modo === 'wallet') {
+        payload.wallet_id = transferForm.walletId.trim();
+      } else {
+        payload.cedula_destinatario = transferForm.cedula.trim();
+      }
 
+      const response = await transferAPI.realizar(payload);
       openFeedback('success', response?.data?.mensaje || 'Transferencia realizada correctamente.');
       setActiveFlow(null);
       resetTransfer();
       await loadWalletStats();
     } catch (error) {
       openFeedback('error', getErrorMessage(error, 'No se pudo realizar la transferencia.'));
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleWithdrawCryptoConfirm = async () => {
+    if (processing) return;
+
+    try {
+      const addr = withdrawForm.walletAddress.trim();
+      if (!addr) {
+        openFeedback('error', 'Ingresa la dirección de wallet destino.');
+        return;
+      }
+      if (!isPositiveAmount(withdrawForm.monto)) {
+        openFeedback('error', 'Ingresa un monto mayor que cero.');
+        return;
+      }
+
+      setProcessing(true);
+      const response = await transferAPI.retiroCryptoWallet({
+        walletAddress: addr,
+        coin:          withdrawForm.coin,
+        network:       withdrawForm.network,
+        monto:         Number(withdrawForm.monto),
+      });
+
+      openFeedback('success', response?.data?.mensaje || 'Retiro solicitado correctamente.');
+      setActiveFlow(null);
+      resetWithdraw();
+      await loadWalletStats();
+    } catch (error) {
+      openFeedback('error', getErrorMessage(error, 'No se pudo procesar el retiro.'));
     } finally {
       setProcessing(false);
     }
@@ -335,10 +406,17 @@ function Saldos() {
     },
     {
       id: 'transfer',
-      title: 'Transferir crypto',
-      subtitle: 'Envío entre cuentas BE',
+      title: 'Transferir',
+      subtitle: 'Cédula o ID de wallet BE',
       icon: <SendRoundedIcon sx={{ fontSize: 28 }} />,
       onClick: () => setActiveFlow('transfer'),
+    },
+    {
+      id: 'withdraw-crypto',
+      title: 'Retirar a wallet',
+      subtitle: 'Binance, Coinbase, etc.',
+      icon: <SouthWestRoundedIcon sx={{ fontSize: 28, transform: 'rotate(180deg)' }} />,
+      onClick: () => setActiveFlow('withdraw-crypto'),
     },
   ]), []);
 
@@ -368,12 +446,12 @@ function Saldos() {
 
   const walletMetrics = [
     {
-      label: 'Saldo disponible',
+      label: 'Saldo Chain',
       value: `USD ${formatUsd(walletStats.saldoDisponible)}`,
-      helper: 'Saldo actual del usuario autenticado',
+      helper: 'Saldo disponible en tu cuenta',
     },
     {
-      label: 'Recargas exitosas',
+      label: 'Depósitos exitosos',
       value: String(walletStats.recargasExitosas),
       helper: `Total recargado: USD ${formatUsd(walletStats.totalRecargado)}`,
     },
@@ -694,23 +772,52 @@ function Saldos() {
       </Dialog>
 
       <Dialog open={activeFlow === 'transfer'} onClose={() => setActiveFlow(null)} fullWidth maxWidth="sm" fullScreen={fullScreenDialog}>
-        <DialogTitle sx={{ fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Transfiere</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Transferir</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ pt: 0.5 }}>
-            <Alert severity="info">Este flujo usa /transferencias/realizar con validaciones reales del backend.</Alert>
-            <TextField
-              fullWidth
-              label="Cédula del destinatario"
-              value={transferForm.cedula}
-              onChange={(event) => setTransferForm((prev) => ({ ...prev, cedula: event.target.value }))}
-              inputProps={{ 'aria-label': 'Cédula del destinatario' }}
-            />
+            <Alert severity="info">Envía a otra cuenta Banco Exclusivo por cédula o por ID de wallet (BE-XXXXXX).</Alert>
+
+            <FormControl fullWidth>
+              <InputLabel id="transfer-mode-label">Buscar destinatario por</InputLabel>
+              <Select
+                labelId="transfer-mode-label"
+                label="Buscar destinatario por"
+                value={transferForm.modo}
+                onChange={(e) => setTransferForm((prev) => ({ ...prev, modo: e.target.value, cedula: '', walletId: '' }))}
+                inputProps={{ 'aria-label': 'Método de búsqueda' }}
+              >
+                <MenuItem value="cedula">🧒 Cédula</MenuItem>
+                <MenuItem value="wallet">💼 ID de Wallet (BE-XXXXXX)</MenuItem>
+              </Select>
+            </FormControl>
+
+            {transferForm.modo === 'cedula' ? (
+              <TextField
+                fullWidth
+                label="Cédula del destinatario"
+                value={transferForm.cedula}
+                onChange={(e) => setTransferForm((prev) => ({ ...prev, cedula: e.target.value }))}
+                inputProps={{ 'aria-label': 'Cédula del destinatario' }}
+                placeholder="001-1234567-8"
+              />
+            ) : (
+              <TextField
+                fullWidth
+                label="ID de wallet del destinatario"
+                value={transferForm.walletId}
+                onChange={(e) => setTransferForm((prev) => ({ ...prev, walletId: e.target.value }))}
+                inputProps={{ 'aria-label': 'ID de wallet', style: { fontWeight: 700, letterSpacing: '0.06em' } }}
+                placeholder="BE-000001"
+                helperText="Formato: BE-XXXXXX"
+              />
+            )}
+
             <TextField
               fullWidth
               label="Monto"
               type="number"
               value={transferForm.monto}
-              onChange={(event) => setTransferForm((prev) => ({ ...prev, monto: event.target.value }))}
+              onChange={(e) => setTransferForm((prev) => ({ ...prev, monto: e.target.value }))}
               inputProps={{ min: 0, step: '0.01', 'aria-label': 'Monto a transferir' }}
               InputProps={{ startAdornment: <InputAdornment position="start">USD</InputAdornment> }}
             />
@@ -718,7 +825,7 @@ function Saldos() {
               fullWidth
               label="Concepto"
               value={transferForm.concepto}
-              onChange={(event) => setTransferForm((prev) => ({ ...prev, concepto: event.target.value }))}
+              onChange={(e) => setTransferForm((prev) => ({ ...prev, concepto: e.target.value }))}
               inputProps={{ 'aria-label': 'Concepto de la transferencia' }}
             />
           </Stack>
@@ -727,6 +834,91 @@ function Saldos() {
           <Button onClick={() => { setActiveFlow(null); resetTransfer(); }} disabled={processing}>Cancelar</Button>
           <Button variant="contained" onClick={handleTransferConfirm} disabled={processing}>
             {processing ? 'Procesando...' : 'Confirmar envío'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={activeFlow === 'withdraw-crypto'}
+        onClose={() => {
+          setActiveFlow(null);
+          resetWithdraw();
+        }}
+        fullWidth
+        maxWidth="sm"
+        fullScreen={fullScreenDialog}
+      >
+        <DialogTitle sx={{ fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Retirar a wallet externa</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ pt: 0.5 }}>
+            <Alert severity="warning">
+              El retiro se procesa en 24-48 h. Asegúrate de que la dirección y la red sean correctas; los retiros a direcciones incorrectas son irreversibles.
+            </Alert>
+
+            <FormControl fullWidth>
+              <InputLabel id="withdraw-coin-label">Moneda</InputLabel>
+              <Select
+                labelId="withdraw-coin-label"
+                label="Moneda"
+                value={withdrawForm.coin}
+                onChange={(e) => {
+                  const selected = CRYPTO_COINS.find(c => c.value === e.target.value);
+                  setAvailableNetworks(selected?.networks || []);
+                  setWithdrawForm((prev) => ({
+                    ...prev,
+                    coin: e.target.value,
+                    network: selected?.networks[0] || '',
+                  }));
+                }}
+                inputProps={{ 'aria-label': 'Moneda a retirar' }}
+              >
+                {CRYPTO_COINS.map((c) => (
+                  <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel id="withdraw-network-label">Red</InputLabel>
+              <Select
+                labelId="withdraw-network-label"
+                label="Red"
+                value={withdrawForm.network}
+                onChange={(e) => setWithdrawForm((prev) => ({ ...prev, network: e.target.value }))}
+                inputProps={{ 'aria-label': 'Red blockchain' }}
+              >
+                {availableNetworks.map((n) => (
+                  <MenuItem key={n} value={n}>{n}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <TextField
+              fullWidth
+              label="Dirección de wallet destino"
+              value={withdrawForm.walletAddress}
+              onChange={(e) => setWithdrawForm((prev) => ({ ...prev, walletAddress: e.target.value }))}
+              inputProps={{ 'aria-label': 'Dirección de wallet', style: { fontFamily: 'monospace', fontSize: '0.85rem' } }}
+              placeholder="Ej: 1A1zP1eP5QGefi2DMPTfTL5SLmv7Divf..."
+              helperText="Verifica que la dirección corresponda a la red seleccionada"
+            />
+
+            <TextField
+              fullWidth
+              label="Monto a retirar"
+              type="number"
+              value={withdrawForm.monto}
+              onChange={(e) => setWithdrawForm((prev) => ({ ...prev, monto: e.target.value }))}
+              inputProps={{ min: 0.01, step: '0.01', 'aria-label': 'Monto a retirar' }}
+              InputProps={{ startAdornment: <InputAdornment position="start">USD</InputAdornment> }}
+              helperText={`Saldo Chain disponible: USD ${formatUsd(walletStats.saldoDisponible)}`}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => { setActiveFlow(null); resetWithdraw(); }} disabled={processing}>Cancelar</Button>
+          <Button variant="contained" color="warning" onClick={handleWithdrawCryptoConfirm} disabled={processing}>
+            {processing ? 'Procesando...' : 'Solicitar retiro'}
           </Button>
         </DialogActions>
       </Dialog>

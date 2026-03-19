@@ -44,6 +44,7 @@ export const authAPI = {
 export const transferAPI = {
   realizar: (datos) => API.post('/transferencias/realizar', datos),
   transferenciaBancaria: (datos) => API.post('/transferencias/bancaria', datos),
+  retiroCryptoWallet: (datos) => API.post('/transferencias/retiro-crypto', datos),
   obtenerHistorial: () => API.get('/transferencias/historial'),
   obtenerEnviadas: () => API.get('/transferencias/enviadas'),
   obtenerRecibidas: () => API.get('/transferencias/recibidas'),
