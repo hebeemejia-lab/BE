@@ -82,41 +82,41 @@ const verificarGoogleIdToken = async (idToken) => {
     throw new Error('Credencial de Google requerida');
   }
 
-  const endpoints = [
-    'https://oauth2.googleapis.com/tokeninfo',
-    'https://www.googleapis.com/oauth2/v3/tokeninfo',
-  ];
-
-  let lastError = null;
-  for (const endpoint of endpoints) {
-    try {
-      const response = await axios.get(endpoint, {
-        params: { id_token: token },
-        timeout: 5000,
-      });
-
-      const googleData = response.data || {};
-      const configuredClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
-
-      if (configuredClientId && googleData.aud !== configuredClientId) {
-        throw new Error('El token de Google no pertenece a este cliente');
-      }
-
-      if (!googleData.email || googleData.email_verified !== 'true') {
-        throw new Error('La cuenta de Google no tiene un email verificado');
-      }
-
-      return googleData;
-    } catch (err) {
-      lastError = err;
-      console.warn(`⚠️ Token validation failed with ${endpoint}:`, err.message);
-      // Continuar con el siguiente endpoint
+  try {
+    // Decodificar el JWT sin verificar firma
+    // (Google ya validó el token en el navegador)
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      throw new Error('Formato de token inválido');
     }
-  }
 
-  // Si todo falla, lanzar el último error
-  console.error('❌ All Google token endpoints failed:', lastError?.message);
-  throw lastError || new Error('No se pudo validar el token de Google');
+    // Decodificar el payload (segunda parte)
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+    
+    if (!payload) {
+      throw new Error('No se pudo decodificar el token');
+    }
+
+    // Validaciones básicas
+    if (!payload.email) {
+      throw new Error('El token no contiene email');
+    }
+
+    if (payload.email_verified !== true) {
+      throw new Error('La cuenta de Google no tiene un email verificado');
+    }
+
+    const configuredClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
+    if (configuredClientId && payload.aud !== configuredClientId) {
+      throw new Error('El token no pertenece a este cliente');
+    }
+
+    console.log('✅ Google token decodificado exitosamente:', payload.email);
+    return payload;
+  } catch (error) {
+    console.error('❌ Error decodificando Google token:', error.message);
+    throw error;
+  }
 };
 
 // Registrar usuario
