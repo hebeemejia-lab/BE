@@ -2,8 +2,7 @@
  * TradingDashboard.jsx
  * Mobile-first React + Tailwind dashboard
  * Blocks: ACCIONES RÁPIDAS (7 módulos) + TRANSFERENCIAS
- * Live prices via useMarketData (simulated WebSocket)
- * Balance via useBalance (simulated REST)
+ * Live prices and balances via backend production endpoints
  */
 import React, { useContext, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -44,7 +43,7 @@ function TickerBar({ prices }) {
             key={sym}
             className="inline-flex items-center gap-2 text-[11px] sm:text-xs font-mono rounded-full border border-white/10 bg-white/5 px-2.5 py-1"
           >
-            <span className="font-bold text-white">{sym}</span>
+            <span className="font-bold text-white">{d.label ? `${sym} · ${d.label}` : sym}</span>
             <span className="text-slate-300">{fmtUsd(d.price, d.price >= 1 ? 2 : 6)}</span>
             <span className={d.change24h >= 0 ? 'text-emerald-400' : 'text-red-400'}>
               {fmtChange(d.change24h)}
@@ -93,7 +92,16 @@ function BalanceCard({ balance, loading }) {
 
 // ── Mini price table (REST-style snapshot) ───────────────────────────────────
 function PriceTable({ prices }) {
-  const rows = Object.entries(prices).slice(0, 5);
+  const rows = Object.entries(prices).slice(0, 6);
+
+  const rowLabel = (sym, data) => {
+    if (data?.market === 'crypto') {
+      return `${sym}/USD`;
+    }
+
+    return data?.label ? `${sym} · ${data.label}` : sym;
+  };
+
   return (
     <section>
       <h2 className="text-[11px] font-bold tracking-widest uppercase text-slate-300 mb-3">
@@ -104,7 +112,7 @@ function PriceTable({ prices }) {
         {rows.map(([sym, d]) => (
           <div key={sym} className="rounded-xl border border-white/10 bg-white/5 p-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-bold text-white">{sym}/USD</p>
+              <p className="text-sm font-bold text-white">{rowLabel(sym, d)}</p>
               <p className={`text-xs font-bold ${d.change24h >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {fmtChange(d.change24h)}
               </p>
@@ -131,7 +139,7 @@ function PriceTable({ prices }) {
           <tbody>
             {rows.map(([sym, d]) => (
               <tr key={sym} className="border-t border-white/5 hover:bg-white/5 transition-colors">
-                <td className="px-4 py-2.5 font-bold text-white">{sym}/USD</td>
+                <td className="px-4 py-2.5 font-bold text-white">{rowLabel(sym, d)}</td>
                 <td className="px-4 py-2.5 text-right font-mono text-slate-200">
                   {fmtUsd(d.price, d.price >= 1 ? 2 : 6)}
                 </td>
@@ -172,7 +180,7 @@ function WSBadge({ connected, lastUpdate }) {
     <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest">
       <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
       <span className={connected ? 'text-emerald-400' : 'text-slate-500'}>
-        {connected ? 'WS conectado' : 'Conectando...'}
+        {connected ? 'Feed en vivo' : 'Sin feed'}
       </span>
       {lastUpdate && (
         <span className="hidden sm:inline text-slate-600 ml-1 normal-case tracking-normal">
@@ -278,8 +286,32 @@ export default function TradingDashboard() {
       accentColor: 'bg-amber-600',
       badge:       'BETA',
       badgeColor:  'bg-amber-500',
-      metric:      `SOL ${fmtUsd(prices.SOL?.price)} · BNB ${fmtUsd(prices.BNB?.price)}`,
+      metric:      `SOL ${fmtUsd(prices.SOL?.price)} · SPY ${fmtUsd(prices.SPY?.price)}`,
       onClick:     () => notify('Trading avanzado — próximamente disponible'),
+    },
+    {
+      category:    'trading',
+      title:       'S&P 500',
+      icon:        '🇺🇸',
+      description: 'Sigue en tiempo real el S&P 500 mediante SPY para decisiones de trading macro.',
+      action:      'Ver SPY',
+      accentColor: 'bg-blue-700',
+      badge:       'INDEX',
+      badgeColor:  'bg-blue-500',
+      metric:      `SPY ${fmtUsd(prices.SPY?.price)} · ${fmtChange(prices.SPY?.change24h || 0)}`,
+      onClick:     () => navigate('/mi-inversion'),
+    },
+    {
+      category:    'trading',
+      title:       'Dow Jones',
+      icon:        '🏛️',
+      description: 'Monitorea el Dow Jones Industrial Average a traves de DIA.',
+      action:      'Ver DIA',
+      accentColor: 'bg-slate-700',
+      badge:       'INDEX',
+      badgeColor:  'bg-slate-500',
+      metric:      `DIA ${fmtUsd(prices.DIA?.price)} · ${fmtChange(prices.DIA?.change24h || 0)}`,
+      onClick:     () => navigate('/mi-inversion'),
     },
     {
       category:    'trading',
@@ -504,7 +536,7 @@ export default function TradingDashboard() {
 
         {/* Footer note */}
         <p className="text-center text-[11px] text-slate-700 pb-4">
-          Precios simulados · Para producción conectar WS real · Banco Exclusivo © 2026
+          Cotizaciones y portfolio en vivo desde el backend de inversiones · Banco Exclusivo © 2026
         </p>
       </main>
       </div>

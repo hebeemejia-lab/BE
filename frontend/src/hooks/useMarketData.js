@@ -1,101 +1,195 @@
 /**
  * useMarketData
- * Simulates a WebSocket feed for live crypto/stock prices.
- * In production replace the mock with a real WS endpoint:
- *   const ws = new WebSocket('wss://your-exchange.com/stream');
+ * Production feed backed by backend trading endpoints.
+ * Fetches live quotes and recent bars, then refreshes on an interval.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { inversionesAPI } from '../services/api';
+
+const MARKET_WATCHLIST = [
+  { key: 'BTC', symbol: 'BTCUSD', label: 'Bitcoin', market: 'crypto' },
+  { key: 'ETH', symbol: 'ETHUSD', label: 'Ethereum', market: 'crypto' },
+  { key: 'SOL', symbol: 'SOLUSD', label: 'Solana', market: 'crypto' },
+  { key: 'DOGE', symbol: 'DOGEUSD', label: 'Dogecoin', market: 'crypto' },
+  { key: 'SPY', symbol: 'SPY', label: 'S&P 500', market: 'index' },
+  { key: 'DIA', symbol: 'DIA', label: 'Dow Jones', market: 'index' },
+];
 
 const INITIAL_PRICES = {
-  BTC:  { price: 68_420.50, change24h:  1.84, volume24h: 38_400_000_000 },
-  ETH:  { price:  3_512.30, change24h: -0.73, volume24h: 18_200_000_000 },
-  SOL:  { price:    175.80, change24h:  3.12, volume24h:  4_900_000_000 },
-  BNB:  { price:    601.40, change24h:  0.45, volume24h:  2_100_000_000 },
-  ADA:  { price:      0.62, change24h: -1.20, volume24h:    820_000_000 },
-  DOGE: { price:      0.18, change24h:  5.33, volume24h:  1_500_000_000 },
+  BTC: { price: 0, change24h: 0, volume24h: 0, market: 'crypto', label: 'Bitcoin' },
+  ETH: { price: 0, change24h: 0, volume24h: 0, market: 'crypto', label: 'Ethereum' },
+  SOL: { price: 0, change24h: 0, volume24h: 0, market: 'crypto', label: 'Solana' },
+  DOGE: { price: 0, change24h: 0, volume24h: 0, market: 'crypto', label: 'Dogecoin' },
+  SPY: { price: 0, change24h: 0, volume24h: 0, market: 'index', label: 'S&P 500' },
+  DIA: { price: 0, change24h: 0, volume24h: 0, market: 'index', label: 'Dow Jones' },
 };
 
-function jitter(value, pct = 0.003) {
-  return value * (1 + (Math.random() * 2 - 1) * pct);
-}
+const toNumber = (value, fallback = 0) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+};
+
+const calcPctChange = (current, previous) => {
+  if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0) {
+    return 0;
+  }
+  return ((current - previous) / previous) * 100;
+};
+
+const fetchMarketEntry = async (item) => {
+  const [quoteResult, historyResult] = await Promise.allSettled([
+    inversionesAPI.obtenerCotizacion(item.symbol),
+    inversionesAPI.obtenerHistorial(item.symbol, { timeframe: '1Day', limit: 2 }),
+  ]);
+
+  let price = 0;
+  let change24h = 0;
+  let volume24h = 0;
+
+  if (quoteResult.status === 'fulfilled') {
+    const quote = quoteResult.value?.data || {};
+    price = toNumber(quote.precioCompra || quote.precio || quote.precioVenta, 0);
+  }
+
+  if (historyResult.status === 'fulfilled') {
+    const bars = historyResult.value?.data?.datos || [];
+    const lastBar = bars[bars.length - 1];
+    const prevBar = bars[bars.length - 2];
+
+    if (lastBar) {
+      const close = toNumber(lastBar.close, price);
+      const prevClose = toNumber(prevBar?.close, close);
+      price = price || close;
+      volume24h = toNumber(lastBar.volume, 0);
+      change24h = calcPctChange(close, prevClose);
+    }
+  }
+
+  if (!price) {
+    throw new Error(`No se pudo obtener cotizacion para ${item.symbol}`);
+  }
+
+  return [
+    item.key,
+    {
+      price,
+      change24h: Number(change24h.toFixed(2)),
+      volume24h,
+      market: item.market,
+      label: item.label,
+      symbol: item.symbol,
+    },
+  ];
+};
 
 /**
- * @returns {{ prices: typeof INITIAL_PRICES, connected: boolean, lastUpdate: Date }}
+ * @returns {{ prices: typeof INITIAL_PRICES, connected: boolean, lastUpdate: Date|null, error: string|null }}
  */
 export function useMarketData() {
   const [prices, setPrices] = useState(INITIAL_PRICES);
   const [connected, setConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [error, setError] = useState(null);
   const intervalRef = useRef(null);
+  const inFlightRef = useRef(false);
 
-  const connect = useCallback(() => {
-    // Simulate WS "open" after 600 ms
-    const connectTimer = setTimeout(() => setConnected(true), 600);
+  const refreshQuotes = useCallback(async () => {
+    if (inFlightRef.current) {
+      return;
+    }
 
-    // Tick every 2 s – simulates incoming WS messages
-    intervalRef.current = setInterval(() => {
+    inFlightRef.current = true;
+    try {
+      const results = await Promise.allSettled(MARKET_WATCHLIST.map(fetchMarketEntry));
+
+      const successful = results.filter((result) => result.status === 'fulfilled');
+      if (successful.length === 0) {
+        setConnected(false);
+        setError('No se pudieron actualizar cotizaciones en vivo.');
+        return;
+      }
+
       setPrices((prev) => {
-        const next = {};
-        for (const [sym, data] of Object.entries(prev)) {
-          const newPrice  = Math.max(0.0001, jitter(data.price));
-          const newChange = data.change24h + (Math.random() - 0.5) * 0.04;
-          const newVol    = Math.max(0, jitter(data.volume24h, 0.005));
-          next[sym] = { price: newPrice, change24h: Number(newChange.toFixed(2)), volume24h: newVol };
-        }
-        return next;
+        const merged = { ...prev };
+        successful.forEach((result) => {
+          const [key, data] = result.value;
+          merged[key] = data;
+        });
+        return merged;
       });
-      setLastUpdate(new Date());
-    }, 2000);
 
-    return connectTimer;
+      setConnected(true);
+      setLastUpdate(new Date());
+      setError(null);
+    } catch (err) {
+      setConnected(false);
+      setError(err?.message || 'Error consultando cotizaciones');
+    } finally {
+      inFlightRef.current = false;
+    }
   }, []);
 
   useEffect(() => {
-    const connectTimer = connect();
-    return () => {
-      clearTimeout(connectTimer);
-      clearInterval(intervalRef.current);
-      setConnected(false);
-    };
-  }, [connect]);
+    refreshQuotes();
 
-  return { prices, connected, lastUpdate };
+    intervalRef.current = setInterval(() => {
+      refreshQuotes();
+    }, 15000);
+
+    return () => {
+      clearInterval(intervalRef.current);
+    };
+  }, [refreshQuotes]);
+
+  return { prices, connected, lastUpdate, error };
 }
 
 /**
  * useBalance
- * Simulates a REST call to GET /api/user/balance.
- * Replace fetchBalance with a real axios call in production.
+ * Production balance from backend portfolio endpoint.
  */
 export function useBalance() {
-  const [balance, setBalance]   = useState(null);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState(null);
+  const [balance, setBalance] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const intervalRef = useRef(null);
+
+  const refreshBalance = useCallback(async () => {
+    try {
+      const response = await inversionesAPI.obtenerPortfolio();
+      const portfolio = response?.data || {};
+      const stats = portfolio?.estadisticas || {};
+
+      setBalance({
+        usd: toNumber(portfolio.saldoDisponible, 0),
+        staked: toNumber(stats.gananciaNoRealizada, 0),
+        collateral: toNumber(portfolio.valorPortfolio, 0),
+        nfts: 0,
+        cardLimit: 0,
+        cardSpent: 0,
+        valorTotal: toNumber(portfolio.valorTotal, 0),
+        gananciaRealizada: toNumber(stats.gananciaRealizada, 0),
+        posicionesAbiertas: toNumber(stats.totalPosicionesAbiertas, 0),
+      });
+      setError(null);
+    } catch (err) {
+      setError(err?.message || 'Error obteniendo balance');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    const fetchBalance = () =>
-      new Promise((resolve) =>
-        setTimeout(
-          () =>
-            resolve({
-              usd:        12_480.30,
-              staked:      2_150.00,
-              collateral:  5_000.00,
-              nfts:            8,
-              cardLimit:   1_000.00,
-              cardSpent:     247.50,
-            }),
-          800,
-        ),
-      );
+    refreshBalance();
 
-    fetchBalance()
-      .then((data) => { if (!cancelled) { setBalance(data); setLoading(false); } })
-      .catch((e)   => { if (!cancelled) { setError(e.message); setLoading(false); } });
+    intervalRef.current = setInterval(() => {
+      refreshBalance();
+    }, 30000);
 
-    return () => { cancelled = true; };
-  }, []);
+    return () => {
+      clearInterval(intervalRef.current);
+    };
+  }, [refreshBalance]);
 
   return { balance, loading, error };
 }
