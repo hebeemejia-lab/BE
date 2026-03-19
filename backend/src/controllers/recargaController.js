@@ -4,7 +4,7 @@ const procesarRecargaGooglePay = async (req, res) => {
   try {
     const { nonce, monto } = req.body;
     const usuarioId = req.usuario.id;
-    const usuario = await User.findByPk(usuarioId);
+    const usuario = await findUserSafeByPk(usuarioId);
 
     if (!nonce || !monto) {
       return res.status(400).json({ mensaje: 'Nonce y monto son requeridos' });
@@ -76,6 +76,12 @@ const { calcularComisionRecarga, calcularMontoNeto } = require('../config/comisi
 // Configuración de límites desde variables de entorno
 const SISTEMA_MONTO_MINIMO = parseFloat(process.env.SISTEMA_MONTO_MINIMO || '1.00');
 const PAYPAL_MONTO_MAXIMO = parseFloat(process.env.PAYPAL_MONTO_MAXIMO || '10000.00');
+const USER_SAFE_ATTRS = ['id', 'saldo', 'email', 'nombre', 'apellido', 'pais'];
+
+const findUserSafeByPk = (usuarioId, extraAttrs = []) => {
+  const attributes = Array.from(new Set([...USER_SAFE_ATTRS, ...extraAttrs]));
+  return User.findByPk(usuarioId, { attributes });
+};
 
 console.log('✅ RecargaController loaded - v2.2 with configurable amount limits');
 console.log('   Monto mínimo del sistema: $' + SISTEMA_MONTO_MINIMO.toFixed(2));
@@ -149,7 +155,7 @@ const crearRecargaRapyd = async (req, res) => {
   try {
     const { monto } = req.body;
     const usuarioId = req.usuario.id;
-    const usuario = await User.findByPk(usuarioId);
+    const usuario = await findUserSafeByPk(usuarioId);
 
     if (monto === undefined || monto === null || monto === '') {
       return res.status(400).json({ mensaje: 'Monto es requerido' });
@@ -319,7 +325,7 @@ const procesarRecargaTarjeta = async (req, res) => {
         await recarga.save();
 
         // Actualizar saldo del usuario
-        const usuario = await User.findByPk(usuarioId);
+        const usuario = await findUserSafeByPk(usuarioId);
         usuario.saldo = parseFloat(usuario.saldo) + parseFloat(recarga.montoNeto);
         await usuario.save();
 
@@ -360,7 +366,7 @@ const crearRecargaPayPal = async (req, res) => {
   try {
     const { monto } = req.body;
     const usuarioId = req.usuario.id;
-    const usuario = await User.findByPk(usuarioId);
+    const usuario = await findUserSafeByPk(usuarioId);
 
     console.log('🔍 Controller - req.body completo:', req.body);
     console.log('🔍 Controller - Monto recibido:', monto, 'Tipo:', typeof monto);
@@ -568,7 +574,7 @@ const capturarRecargaPayPal = async (req, res) => {
     // Si ya fue capturada exitosamente, no volver a capturar
     if (recarga.estado === 'exitosa') {
       console.log('ℹ️ Recarga ya capturada exitosamente. Retornando estado existente.');
-      const usuario = await User.findByPk(recarga.usuarioId);
+      const usuario = await findUserSafeByPk(recarga.usuarioId);
       return res.json({
         mensaje: 'Pago PayPal ya había sido completado',
         recargaId: recarga.id,
@@ -687,7 +693,7 @@ const capturarRecargaPayPal = async (req, res) => {
     recarga.fechaProcesamiento = new Date();
     await recarga.save();
 
-    const usuario = await User.findByPk(recarga.usuarioId);
+    const usuario = await findUserSafeByPk(recarga.usuarioId);
     if (usuario) {
       usuario.saldo = parseFloat(usuario.saldo) + parseFloat(recarga.montoNeto);
       await usuario.save();
@@ -732,7 +738,7 @@ const procesarRecargaExitosa = async (req, res) => {
     await recarga.save();
 
     // Agregar saldo al usuario
-    const usuario = await User.findByPk(usuarioId);
+    const usuario = await findUserSafeByPk(usuarioId);
     usuario.saldo = parseFloat(usuario.saldo) + parseFloat(recarga.montoNeto);
     await usuario.save();
 
@@ -798,7 +804,7 @@ const canjearcoCodigo = async (req, res) => {
     }
 
     // Canjear código
-    const usuario = await User.findByPk(usuarioId);
+    const usuario = await findUserSafeByPk(usuarioId);
     usuario.saldo = parseFloat(usuario.saldo) + parseFloat(codigoRecarga.monto);
     await usuario.save();
 
@@ -900,7 +906,7 @@ const crearRecargaTwoCheckout = async (req, res) => {
       return res.status(400).json({ mensaje: 'Monto debe ser mayor a 0' });
     }
 
-    const user = await User.findByPk(usuarioId);
+    const user = await findUserSafeByPk(usuarioId);
     if (!user) {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     }
@@ -993,7 +999,7 @@ const webhookRapyd = async (req, res) => {
         await recarga.save();
 
         // Actualizar saldo del usuario
-        const usuario = await User.findByPk(recarga.usuarioId);
+        const usuario = await findUserSafeByPk(recarga.usuarioId);
         if (usuario) {
           usuario.saldo = parseFloat(usuario.saldo) + parseFloat(recarga.montoNeto);
           await usuario.save();
@@ -1071,7 +1077,7 @@ const webhookPayPal = async (req, res) => {
         await recarga.save();
 
         // Actualizar saldo del usuario
-        const usuario = await User.findByPk(recarga.usuarioId);
+        const usuario = await findUserSafeByPk(recarga.usuarioId);
         if (usuario) {
           usuario.saldo += recarga.montoNeto;
           await usuario.save();
@@ -1120,7 +1126,7 @@ const webhookPayPal = async (req, res) => {
 
         if (recargaReembolso && recargaReembolso.estado === 'exitosa') {
           // Revertir saldo
-          const usuarioReembolso = await User.findByPk(recargaReembolso.usuarioId);
+          const usuarioReembolso = await findUserSafeByPk(recargaReembolso.usuarioId);
           if (usuarioReembolso) {
             usuarioReembolso.saldo -= recargaReembolso.montoNeto;
             await usuarioReembolso.save();
