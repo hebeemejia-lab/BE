@@ -6,7 +6,7 @@ const axios = require('axios');
  */
 const verificarRecaptcha = async (req, res, next) => {
   try {
-    const recaptchaToken = req.body.recaptchaToken;
+    const recaptchaToken = req.body?.recaptchaToken;
 
     // Si no hay token, permitir (reCAPTCHA puede no haber cargado)
     if (!recaptchaToken) {
@@ -31,7 +31,7 @@ const verificarRecaptcha = async (req, res, next) => {
         timeout: 5000,
       });
 
-      const { success, score, action } = response.data;
+      const { success, score } = response.data;
       const threshold = parseFloat(process.env.RECAPTCHA_THRESHOLD) || 0.5;
 
       if (!success || score < threshold) {
@@ -56,7 +56,5 @@ const verificarRecaptcha = async (req, res, next) => {
     return next();
   }
 };
-
-module.exports = verificarRecaptcha;
 
 module.exports = verificarRecaptcha;
