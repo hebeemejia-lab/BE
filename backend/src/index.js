@@ -1,4 +1,10 @@
-require('dotenv').config();
+const isRenderRuntime = process.env.RENDER === 'true' || Boolean(process.env.RENDER_EXTERNAL_URL);
+
+// In Render production, rely on platform environment variables.
+// This prevents local backend/.env values (e.g. PORT=5000) from leaking into deployment.
+if (!isRenderRuntime) {
+  require('dotenv').config();
+}
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -144,8 +150,22 @@ app.use((req, res) => {
 });
 
 // Iniciar servidor
-const PORT = process.env.PORT || 5000;
+const parsedPort = Number.parseInt(process.env.PORT, 10);
+const PORT = Number.isInteger(parsedPort) && parsedPort > 0
+  ? parsedPort
+  : (process.env.NODE_ENV === 'production' ? 10000 : 5000);
 const HOST = '0.0.0.0'; // Escuchar en todas las interfaces, no solo localhost
+
+if (process.env.NODE_ENV === 'production' && !process.env.PORT) {
+  console.warn('⚠️  process.env.PORT no definido en producción. Usando fallback 10000.');
+}
+
+console.log('📌 Runtime env:', {
+  NODE_ENV: process.env.NODE_ENV,
+  RENDER: process.env.RENDER,
+  PORT_ENV: process.env.PORT || '(undefined)',
+  PORT_USADO: PORT,
+});
 
 const server = app.listen(PORT, HOST, () => {
   console.log(`\n╔════════════════════════════════════╗`);
