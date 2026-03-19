@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 // Componente básico FloatingDropdown
@@ -14,6 +14,7 @@ const formatMoney = (value) => `$${value}`;
 
 const Navbar = () => {
   const { usuario, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [devMode, setDevMode] = useState(false);
   const handleMenuClose = () => setMenuOpen(false);
@@ -22,6 +23,7 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     handleMenuClose();
+    navigate('/login');
   };
 
   return (
