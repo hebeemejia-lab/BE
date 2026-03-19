@@ -7,6 +7,40 @@ const emailService = require('../services/emailService');
 
 const GOOGLE_REGISTRATION_TOKEN_TTL = '30m';
 
+// Lista de atributos compatible con esquemas de base de datos legacy
+// para evitar errores cuando existen columnas en el modelo que aun no
+// han sido migradas en el entorno remoto.
+const AUTH_SAFE_USER_ATTRIBUTES = [
+  'id',
+  'nombre',
+  'apellido',
+  'email',
+  'emailVerificado',
+  'emailVerificationToken',
+  'emailVerificationExpires',
+  'password',
+  'cedula',
+  'telefono',
+  'direccion',
+  'saldo',
+  'rol',
+];
+
+const AUTH_CREATE_FIELDS = [
+  'nombre',
+  'apellido',
+  'email',
+  'password',
+  'cedula',
+  'telefono',
+  'direccion',
+  'saldo',
+  'emailVerificado',
+  'emailVerificationToken',
+  'emailVerificationExpires',
+  'rol',
+];
+
 const normalizarEmail = (email) => String(email || '').trim().toLowerCase();
 
 const splitNombreCompleto = (fullName = '') => {
@@ -90,8 +124,10 @@ const verificarGoogleIdToken = async (idToken) => {
       throw new Error('Formato de token inválido');
     }
 
-    // Decodificar el payload (segunda parte)
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+    // Decodificar payload JWT en base64url
+    const base64Payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const paddedPayload = base64Payload.padEnd(Math.ceil(base64Payload.length / 4) * 4, '=');
+    const payload = JSON.parse(Buffer.from(paddedPayload, 'base64').toString('utf8'));
     
     if (!payload) {
       throw new Error('No se pudo decodificar el token');
@@ -102,7 +138,8 @@ const verificarGoogleIdToken = async (idToken) => {
       throw new Error('El token no contiene email');
     }
 
-    if (payload.email_verified !== true) {
+    const emailVerificado = payload.email_verified === true || payload.email_verified === 'true';
+    if (!emailVerificado) {
       throw new Error('La cuenta de Google no tiene un email verificado');
     }
 
@@ -123,23 +160,37 @@ const verificarGoogleIdToken = async (idToken) => {
 
 const register = async (req, res) => {
   try {
-    const { nombre, apellido, email, password, cedula, telefono, direccion, saldo } = req.body;
+    const { nombre, apellido, email, password, cedula, telefono, direccion, saldo } = req.body || {};
+    const emailNormalizado = normalizarEmail(email);
 
-    console.log('📝 Registro - Datos recibidos:', { nombre, apellido, email, cedula, telefono, direccion });
+    console.log('📝 Registro - Datos recibidos:', {
+      nombre,
+      apellido,
+      email: emailNormalizado,
+      cedula,
+      telefono,
+      direccion,
+    });
 
-    if (!nombre || !apellido || !email || !password || !cedula || !telefono || !direccion) {
+    if (!nombre || !apellido || !emailNormalizado || !password || !cedula || !telefono || !direccion) {
       console.warn('⚠️ Registro - Faltan campos requeridos');
       return res.status(400).json({ mensaje: 'Todos los campos son requeridos' });
     }
 
-    const usuarioExistente = await User.findOne({ where: { email } });
+    const usuarioExistente = await User.findOne({
+      where: { email: emailNormalizado },
+      attributes: ['id', 'email'],
+    });
     if (usuarioExistente) {
-      console.warn('⚠️ Registro - Email ya registrado:', email);
+      console.warn('⚠️ Registro - Email ya registrado:', emailNormalizado);
       return res.status(400).json({ mensaje: 'El email ya está registrado' });
     }
 
     // Verificar si la cédula ya existe
-    const cedulaExistente = await User.findOne({ where: { cedula } });
+    const cedulaExistente = await User.findOne({
+      where: { cedula },
+      attributes: ['id', 'cedula'],
+    });
     if (cedulaExistente) {
       console.warn('⚠️ Registro - Cédula ya registrada:', cedula);
       return res.status(400).json({ mensaje: 'La cédula ya está registrada' });
@@ -151,7 +202,7 @@ const register = async (req, res) => {
     const nuevoUsuario = await User.create({
       nombre,
       apellido,
-      email,
+      email: emailNormalizado,
       password,
       cedula,
       telefono,
@@ -160,6 +211,8 @@ const register = async (req, res) => {
       emailVerificado: false,
       emailVerificationToken: verificationToken,
       emailVerificationExpires: verificationExpires,
+    }, {
+      fields: AUTH_CREATE_FIELDS,
     });
 
     console.log('✅ Usuario creado:', nuevoUsuario.id);
@@ -227,10 +280,13 @@ const getGoogleConfig = async (req, res) => {
 
 const loginConGoogle = async (req, res) => {
   try {
-    const { credential } = req.body;
+    const { credential } = req.body || {};
     const googleData = await verificarGoogleIdToken(credential);
     const email = normalizarEmail(googleData.email);
-    const usuario = await User.findOne({ where: { email } });
+    const usuario = await User.findOne({
+      where: { email },
+      attributes: AUTH_SAFE_USER_ATTRIBUTES,
+    });
 
     if (!usuario) {
       return res.json({
@@ -285,7 +341,7 @@ const completarRegistroConGoogle = async (req, res) => {
       telefono,
       direccion,
       saldo,
-    } = req.body;
+    } = req.body || {};
 
     if (!googleRegistrationToken) {
       return res.status(400).json({ mensaje: 'googleRegistrationToken requerido' });
@@ -311,12 +367,16 @@ const completarRegistroConGoogle = async (req, res) => {
       return res.status(400).json({ mensaje: 'Todos los campos del registro son requeridos' });
     }
 
-    let usuario = await User.findOne({ where: { email: emailNormalizado } });
+    let usuario = await User.findOne({
+      where: { email: emailNormalizado },
+      attributes: AUTH_SAFE_USER_ATTRIBUTES,
+    });
     const cedulaExistente = await User.findOne({
       where: {
         cedula,
         ...(usuario ? { id: { [Op.ne]: usuario.id } } : {}),
       },
+      attributes: ['id', 'cedula'],
     });
 
     if (cedulaExistente) {
@@ -350,6 +410,8 @@ const completarRegistroConGoogle = async (req, res) => {
         emailVerificado: true,
         emailVerificationToken: null,
         emailVerificationExpires: null,
+      }, {
+        fields: AUTH_CREATE_FIELDS,
       });
     }
 
@@ -372,33 +434,37 @@ const completarRegistroConGoogle = async (req, res) => {
 // Login usuario
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
+    const emailNormalizado = normalizarEmail(email);
 
-    console.log('🔐 Login - Email:', email);
+    console.log('🔐 Login - Email:', emailNormalizado);
 
-    if (!email || !password) {
+    if (!emailNormalizado || !password) {
       console.warn('⚠️ Login - Faltan email o contraseña');
       return res.status(400).json({ mensaje: 'Email y contraseña requeridos' });
     }
 
-    const usuario = await User.findOne({ where: { email } });
+    const usuario = await User.findOne({
+      where: { email: emailNormalizado },
+      attributes: AUTH_SAFE_USER_ATTRIBUTES,
+    });
     if (!usuario) {
-      console.warn('⚠️ Login - Usuario no encontrado:', email);
+      console.warn('⚠️ Login - Usuario no encontrado:', emailNormalizado);
       return res.status(401).json({ mensaje: 'Credenciales inválidas' });
     }
 
     if (!usuario.emailVerificado && usuario.rol !== 'admin') {
-      console.warn('⚠️ Login - Email no verificado:', email);
+      console.warn('⚠️ Login - Email no verificado:', emailNormalizado);
       return res.status(403).json({ mensaje: 'Verifica tu correo antes de iniciar sesión' });
     }
 
     const esValida = await usuario.comparePassword(password);
     if (!esValida) {
-      console.warn('⚠️ Login - Contraseña incorrecta para:', email);
+      console.warn('⚠️ Login - Contraseña incorrecta para:', emailNormalizado);
       return res.status(401).json({ mensaje: 'Credenciales inválidas' });
     }
 
-    console.log('✅ Login exitoso:', email);
+    console.log('✅ Login exitoso:', emailNormalizado);
 
     const token = emitirTokenSesion(usuario);
 
@@ -409,18 +475,23 @@ const login = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error en login:', error.message);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      mensaje: 'Error interno al iniciar sesión',
+      error: error.message,
+    });
   }
 };
 
 // Actualizar perfil del usuario autenticado
 const updatePerfil = async (req, res) => {
   try {
-    const usuario = await User.findByPk(req.usuario.id);
+    const usuario = await User.findByPk(req.usuario.id, {
+      attributes: AUTH_SAFE_USER_ATTRIBUTES,
+    });
     if (!usuario) {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     }
-    const { nombre, apellido, email } = req.body;
+    const { nombre, apellido, email } = req.body || {};
     if (nombre) usuario.nombre = nombre;
     if (apellido) usuario.apellido = apellido;
     if (email) usuario.email = normalizarEmail(email);
@@ -437,7 +508,7 @@ const updatePerfil = async (req, res) => {
 // Verificar email
 const verifyEmail = async (req, res) => {
   try {
-    const token = req.query.token || req.body.token;
+    const token = req.query?.token || req.body?.token;
 
     if (!token) {
       return res.status(400).json({ mensaje: 'Token de verificación requerido' });
@@ -448,6 +519,7 @@ const verifyEmail = async (req, res) => {
         emailVerificationToken: token,
         emailVerificationExpires: { [Op.gt]: new Date() },
       },
+      attributes: AUTH_SAFE_USER_ATTRIBUTES,
     });
 
     if (!usuario) {
@@ -469,13 +541,17 @@ const verifyEmail = async (req, res) => {
 // Reenviar verificación
 const resendVerification = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email } = req.body || {};
+    const emailNormalizado = normalizarEmail(email);
 
-    if (!email) {
+    if (!emailNormalizado) {
       return res.status(400).json({ mensaje: 'Email requerido' });
     }
 
-    const usuario = await User.findOne({ where: { email } });
+    const usuario = await User.findOne({
+      where: { email: emailNormalizado },
+      attributes: AUTH_SAFE_USER_ATTRIBUTES,
+    });
 
     if (!usuario) {
       return res.json({ mensaje: 'Si el email existe, se enviará un enlace de verificación' });
@@ -504,7 +580,7 @@ const resendVerification = async (req, res) => {
 const getPerfil = async (req, res) => {
   try {
     const usuario = await User.findByPk(req.usuario.id, {
-      attributes: { exclude: ['password'] },
+      attributes: AUTH_SAFE_USER_ATTRIBUTES.filter((attr) => attr !== 'password'),
     });
     if (!usuario) {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' });
