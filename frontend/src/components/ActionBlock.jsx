@@ -31,7 +31,7 @@ export default function ActionBlock({
   return (
     <article
       className={`
-        relative flex flex-col gap-3 rounded-2xl border border-white/10 p-5
+        relative flex flex-col gap-3 rounded-2xl border border-white/10 p-4 sm:p-5 min-h-[250px]
         bg-gradient-to-br from-[#1e2535] to-[#111827]
         shadow-lg transition-transform duration-200
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5 hover:shadow-indigo-500/10'}
@@ -42,7 +42,7 @@ export default function ActionBlock({
       {/* ── Badge ── */}
       {badge && (
         <span
-          className={`absolute top-3 right-3 text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-full text-white ${badgeColor}`}
+          className={`absolute top-2 right-2 text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-full text-white ${badgeColor}`}
         >
           {badge}
         </span>
@@ -50,7 +50,7 @@ export default function ActionBlock({
 
       {/* ── Icon ── */}
       <div
-        className={`w-12 h-12 flex items-center justify-center rounded-xl text-2xl text-white shadow-md ${accentColor}`}
+        className={`w-14 h-14 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl text-[28px] sm:text-2xl text-white shadow-md ${accentColor}`}
         aria-hidden="true"
       >
         {icon}
@@ -58,12 +58,12 @@ export default function ActionBlock({
 
       {/* ── Text ── */}
       <div className="flex flex-col gap-1 flex-1">
-        <h3 className="text-xs font-bold tracking-widest uppercase text-slate-400">
+        <h3 className="text-[11px] font-bold tracking-widest uppercase text-slate-300 leading-tight pr-10">
           {title}
         </h3>
-        <p className="text-sm text-slate-200 leading-relaxed">{description}</p>
+        <p className="text-sm text-slate-100 leading-relaxed">{description}</p>
         {metric && (
-          <div className="mt-1 text-xs text-slate-400 font-mono">{metric}</div>
+          <div className="mt-1 text-[11px] text-slate-300 font-mono break-words">{metric}</div>
         )}
       </div>
 
@@ -72,7 +72,7 @@ export default function ActionBlock({
         disabled={disabled}
         onClick={onClick}
         className={`
-          mt-auto w-full py-2.5 rounded-xl text-sm font-semibold tracking-wide
+          mt-auto w-full py-3 rounded-xl text-sm font-semibold tracking-wide
           transition-colors duration-150 focus:outline-none focus-visible:ring-2
           focus-visible:ring-indigo-400 focus-visible:ring-offset-1
           focus-visible:ring-offset-[#111827]
