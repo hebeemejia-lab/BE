@@ -1,6 +1,15 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+const ADMIN_SAFE_USER_ATTRIBUTES = [
+  'id',
+  'nombre',
+  'apellido',
+  'email',
+  'emailVerificado',
+  'rol',
+];
+
 const verificarAdmin = async (req, res, next) => {
   try {
     // Verificar que existe el token
@@ -16,7 +25,9 @@ const verificarAdmin = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Buscar el usuario
-    const usuario = await User.findByPk(decoded.id);
+    const usuario = await User.findByPk(decoded.id, {
+      attributes: ADMIN_SAFE_USER_ATTRIBUTES,
+    });
     
     if (!usuario) {
       return res.status(401).json({ 
@@ -37,6 +48,13 @@ const verificarAdmin = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Error en verificación admin:', error);
+
+    if (error?.name && String(error.name).includes('Sequelize')) {
+      return res.status(500).json({
+        error: 'Error de base de datos al validar permisos de administrador.',
+      });
+    }
+
     return res.status(401).json({ 
       error: 'Token inválido o expirado.' 
     });
