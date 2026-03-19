@@ -110,50 +110,88 @@ const emitirGoogleRegistrationToken = (googleData) => jwt.sign(
   { expiresIn: GOOGLE_REGISTRATION_TOKEN_TTL },
 );
 
+const GOOGLE_TOKENINFO_ENDPOINTS = [
+  'https://oauth2.googleapis.com/tokeninfo',
+  'https://www.googleapis.com/oauth2/v3/tokeninfo',
+];
+
+const GOOGLE_VALIDATION_NETWORK_ERROR_CODES = new Set([
+  'ECONNABORTED',
+  'ECONNRESET',
+  'ENOTFOUND',
+  'ETIMEDOUT',
+  'EAI_AGAIN',
+]);
+
 const verificarGoogleIdToken = async (idToken) => {
   const token = String(idToken || '').trim();
   if (!token) {
     throw new Error('Credencial de Google requerida');
   }
 
-  try {
-    // Decodificar el JWT sin verificar firma
-    // (Google ya validó el token en el navegador)
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      throw new Error('Formato de token inválido');
-    }
+  const configuredClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
+  let lastError = null;
+  let hadNetworkFailure = false;
 
-    // Decodificar payload JWT en base64url
-    const base64Payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const paddedPayload = base64Payload.padEnd(Math.ceil(base64Payload.length / 4) * 4, '=');
-    const payload = JSON.parse(Buffer.from(paddedPayload, 'base64').toString('utf8'));
-    
-    if (!payload) {
-      throw new Error('No se pudo decodificar el token');
-    }
+  for (const endpoint of GOOGLE_TOKENINFO_ENDPOINTS) {
+    try {
+      const response = await axios.get(endpoint, {
+        params: { id_token: token },
+        timeout: 7000,
+      });
 
-    // Validaciones básicas
-    if (!payload.email) {
-      throw new Error('El token no contiene email');
-    }
+      const googleData = response.data || {};
+      const emailVerificado = googleData.email_verified === true || googleData.email_verified === 'true';
+      const issuer = String(googleData.iss || '').trim();
 
-    const emailVerificado = payload.email_verified === true || payload.email_verified === 'true';
-    if (!emailVerificado) {
-      throw new Error('La cuenta de Google no tiene un email verificado');
-    }
+      if (!googleData.email) {
+        throw new Error('El token de Google no contiene email');
+      }
 
-    const configuredClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
-    if (configuredClientId && payload.aud !== configuredClientId) {
-      throw new Error('El token no pertenece a este cliente');
-    }
+      if (!emailVerificado) {
+        throw new Error('La cuenta de Google no tiene un email verificado');
+      }
 
-    console.log('✅ Google token decodificado exitosamente:', payload.email);
-    return payload;
-  } catch (error) {
-    console.error('❌ Error decodificando Google token:', error.message);
-    throw error;
+      if (configuredClientId && String(googleData.aud || '').trim() !== configuredClientId) {
+        throw new Error('El token de Google no pertenece a este cliente');
+      }
+
+      if (issuer && issuer !== 'accounts.google.com' && issuer !== 'https://accounts.google.com') {
+        throw new Error('Emisor de token de Google inválido');
+      }
+
+      const exp = Number(googleData.exp);
+      if (Number.isFinite(exp) && exp * 1000 < Date.now()) {
+        throw new Error('El token de Google expiró');
+      }
+
+      return {
+        ...googleData,
+        email: normalizarEmail(googleData.email),
+      };
+    } catch (error) {
+      lastError = error;
+      const status = error?.response?.status;
+      const code = String(error?.code || '').toUpperCase();
+      const isNetworkError = GOOGLE_VALIDATION_NETWORK_ERROR_CODES.has(code);
+
+      if (isNetworkError) {
+        hadNetworkFailure = true;
+      }
+
+      // Si el token es inválido para un endpoint, intentar el siguiente
+      // y devolver el último error al final.
+      console.warn(`⚠️ Falló validación con ${endpoint}:`, error.message, status ? `(status ${status})` : '');
+    }
   }
+
+  if (hadNetworkFailure && !lastError?.response) {
+    const networkError = new Error('No se pudo contactar a Google para validar la cuenta');
+    networkError.code = 'GOOGLE_VALIDATION_UNAVAILABLE';
+    throw networkError;
+  }
+
+  throw lastError || new Error('No se pudo validar la cuenta de Google');
 };
 
 // Registrar usuario
@@ -322,6 +360,14 @@ const loginConGoogle = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error en login con Google:', error.message);
+
+    if (error.code === 'GOOGLE_VALIDATION_UNAVAILABLE') {
+      return res.status(503).json({
+        mensaje: 'Google Sign-In temporalmente no disponible. Intenta nuevamente en unos minutos.',
+        error: error.message,
+      });
+    }
+
     return res.status(400).json({
       mensaje: 'No se pudo validar la cuenta de Google',
       error: error.message,
