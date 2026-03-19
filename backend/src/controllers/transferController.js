@@ -3,17 +3,19 @@ const TransferenciaBancaria = require('../models/TransferenciaBancaria');
 const User = require('../models/User');
 const stripeService = require('../services/stripeService');
 
+const TRANSFER_SAFE_ATTRS = ['id', 'nombre', 'apellido', 'email', 'cedula', 'saldo', 'rol'];
+
 // Realizar transferencia
 const realizarTransferencia = async (req, res) => {
   try {
-    const { cedula_destinatario, monto, concepto } = req.body;
+    const { cedula_destinatario, wallet_id, monto, concepto } = req.body;
     const usuarioId = req.usuario.id;
 
-    if (!cedula_destinatario || !monto || monto <= 0) {
+    if ((!cedula_destinatario && !wallet_id) || !monto || monto <= 0) {
       return res.status(400).json({ mensaje: 'Datos de transferencia inválidos' });
     }
 
-    const usuario = await User.findByPk(usuarioId);
+    const usuario = await User.findByPk(usuarioId, { attributes: TRANSFER_SAFE_ATTRS });
     if (!usuario) {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     }
@@ -22,7 +24,22 @@ const realizarTransferencia = async (req, res) => {
       return res.status(400).json({ mensaje: 'Saldo insuficiente' });
     }
 
-    const destinatario = await User.findOne({ where: { cedula: cedula_destinatario } });
+    let destinatario;
+    if (wallet_id) {
+      // wallet_id format: BE-000001 → parse numeric ID
+      const cleanId = String(wallet_id).toUpperCase().replace(/^BE-0*/i, '');
+      const idNum = cleanId ? parseInt(cleanId, 10) : NaN;
+      if (!Number.isFinite(idNum) || idNum < 1) {
+        return res.status(400).json({ mensaje: 'ID de wallet inválido. Formato: BE-XXXXXX' });
+      }
+      destinatario = await User.findByPk(idNum, { attributes: TRANSFER_SAFE_ATTRS });
+    } else {
+      destinatario = await User.findOne({
+        where: { cedula: cedula_destinatario },
+        attributes: TRANSFER_SAFE_ATTRS,
+      });
+    }
+
     if (!destinatario) {
       return res.status(404).json({ mensaje: 'Usuario destinatario no encontrado' });
     }

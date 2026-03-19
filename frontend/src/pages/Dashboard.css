@@ -173,7 +173,7 @@
 /* ── HERO / DESKTOP SPLIT ─────────────────────────────────────── */
 .db-hero {
   position: relative;
-  overflow: hidden;
+  overflow: clip;
   gap: 16px;
   background:
     radial-gradient(circle at top right, rgba(96, 165, 250, 0.18), transparent 34%),
@@ -329,11 +329,19 @@
   font-size: 13px;
   font-weight: 700;
   color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .db-crypto-helper {
   font-size: 11px;
   color: rgba(226, 232, 240, 0.58);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .db-hero-metrics {
@@ -803,6 +811,125 @@
   padding: 16px 0;
 }
 
+.db-logout-text {
+  display: none; /* hidden on mobile, shown at 640px+ */
+}
+
+/* ── MOBILE LOGOUT BUTTON ──────────────────────────────────────── */
+.db-mobile-actions {
+  padding: 8px 14px 4px;
+}
+.db-mobile-logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+  color: #fca5a5;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.db-mobile-logout-btn:hover,
+.db-mobile-logout-btn:focus-visible {
+  background: rgba(239, 68, 68, 0.18);
+  outline: 2px solid rgba(248, 113, 113, 0.5);
+  outline-offset: 2px;
+}
+
+/* ── CRYPTO MARKET LIST ────────────────────────────────────────── */
+.db-cml-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.db-cml-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: #f1f5f9;
+  width: 100%;
+  transition: background 0.15s, border-color 0.15s;
+}
+.db-cml-item:hover,
+.db-cml-item:focus-visible {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(96, 165, 250, 0.25);
+}
+.db-cml-item:focus-visible { outline: 2px solid #a7d8ff; outline-offset: 2px; }
+.db-cml-icon {
+  font-size: 20px;
+  font-weight: 800;
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.db-cml-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.db-cml-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.db-cml-symbol {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(241, 245, 249, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.db-cml-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.db-cml-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+.db-cml-chg {
+  font-size: 11px;
+  font-weight: 700;
+}
+.db-cml-buy {
+  flex-shrink: 0;
+  padding: 5px 11px;
+  border-radius: 20px;
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  margin-left: 2px;
+}
+
 /* ── SIDEBAR (oculto en móvil) ─────────────────────────────────── */
 .db-sidebar { display: none; }
 
@@ -845,6 +972,8 @@
   .db-fav-grid   { grid-template-columns: repeat(4, 1fr); }
   .db-section-title { font-size: 16px; }
   .db-card-amount   { font-size: 22px; }
+  .db-logout-text   { display: inline; }
+  .db-cml-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 }
 
 @media (min-width: 1024px) {
@@ -1148,20 +1277,30 @@
     display: grid;
     grid-template-columns: minmax(0, 1.42fr) minmax(280px, 0.76fr);
     grid-template-areas:
-      'quick     quick'
-      'transfers favorites'
-      'transfers market'
-      'loans     investments';
+      'quick       quick'
+      'crypto-mkt  crypto-mkt'
+      'transfers   favorites'
+      'transfers   market'
+      'loans       investments';
     gap: 16px;
     align-items: start;
   }
 
   .db-section--quick       { grid-area: quick; }
+  .db-section--crypto-mkt  { grid-area: crypto-mkt; }
   .db-section--favorites   { grid-area: favorites; }
   .db-section--market      { grid-area: market; }
   .db-section--transfers   { grid-area: transfers; }
   .db-section--loans       { grid-area: loans; }
   .db-section--investments { grid-area: investments; }
+
+  .db-mobile-actions { display: none; }
+
+  .db-cml-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
 
   .db-section--transfers,
   .db-section--loans {
