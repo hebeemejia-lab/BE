@@ -11,6 +11,11 @@ const getConfig = () => ({
   mode: process.env.ALPACA_MODE || 'live',
 });
 
+const hasTradingCredentials = () => {
+  const config = getConfig();
+  return Boolean(config.apiKey && config.secretKey);
+};
+
 // Headers de autenticación
 const getHeaders = () => {
   const config = getConfig();
@@ -50,6 +55,21 @@ const getBrokerHeaders = () => {
 const TERMINAL_ORDER_STATUSES = new Set(['filled', 'canceled', 'expired', 'rejected', 'suspended', 'stopped', 'done_for_day']);
 
 const CRYPTO_QUOTE_ASSETS = ['USD', 'USDT', 'USDC', 'BTC', 'ETH'];
+const YAHOO_CHART_URL = 'https://query1.finance.yahoo.com/v8/finance/chart';
+const COINGECKO_URL = 'https://api.coingecko.com/api/v3';
+const CRYPTO_ID_MAP = {
+  BTC: 'bitcoin',
+  ETH: 'ethereum',
+  SOL: 'solana',
+  DOGE: 'dogecoin',
+  ADA: 'cardano',
+  BNB: 'binancecoin',
+  XRP: 'ripple',
+  LTC: 'litecoin',
+  AVAX: 'avalanche-2',
+  MATIC: 'matic-network',
+  SHIB: 'shiba-inu',
+};
 
 const normalizeSymbol = (symbol) => String(symbol || '').trim().toUpperCase();
 
@@ -69,6 +89,204 @@ const normalizeCryptoSymbol = (symbol) => {
   }
 
   return `${normalized.slice(0, -quoteAsset.length)}/${quoteAsset}`;
+};
+
+const getCryptoBase = (symbol) => {
+  const normalized = normalizeCryptoSymbol(symbol);
+  if (!normalized) {
+    return '';
+  }
+
+  if (normalized.includes('/')) {
+    return normalized.split('/')[0];
+  }
+
+  return normalized;
+};
+
+const getCoinGeckoId = (symbol) => {
+  const base = getCryptoBase(symbol);
+  return CRYPTO_ID_MAP[base] || null;
+};
+
+const formatTimestamp = (value) => {
+  if (!value) {
+    return new Date().toISOString();
+  }
+
+  if (typeof value === 'number') {
+    return new Date(value * 1000).toISOString();
+  }
+
+  return value;
+};
+
+const buildDailyRangeFromLimit = (limit) => {
+  const safeLimit = Number.isFinite(Number(limit)) ? Number(limit) : 2;
+  if (safeLimit <= 5) return '5d';
+  if (safeLimit <= 30) return '1mo';
+  if (safeLimit <= 90) return '3mo';
+  if (safeLimit <= 180) return '6mo';
+  return '1y';
+};
+
+const obtenerCotizacionYahoo = async (symbol) => {
+  const normalizedSymbol = normalizeSymbol(symbol);
+  const response = await axios.get(`${YAHOO_CHART_URL}/${encodeURIComponent(normalizedSymbol)}`, {
+    params: {
+      interval: '1d',
+      range: '5d',
+    },
+  });
+
+  const result = response.data?.chart?.result?.[0];
+  if (!result) {
+    throw new Error(`Yahoo sin datos para ${normalizedSymbol}`);
+  }
+
+  const quoteSeries = result?.indicators?.quote?.[0] || {};
+  const closes = Array.isArray(quoteSeries.close) ? quoteSeries.close.filter(Number.isFinite) : [];
+  const lastClose = closes.length ? closes[closes.length - 1] : null;
+
+  const price = Number(result.meta?.regularMarketPrice || result.meta?.previousClose || lastClose || 0);
+  if (!Number.isFinite(price) || price <= 0) {
+    throw new Error(`Yahoo no devolvió precio valido para ${normalizedSymbol}`);
+  }
+
+  return formatQuote(normalizedSymbol, {
+    ap: price,
+    bp: price,
+    t: new Date().toISOString(),
+  }, 'us_equity');
+};
+
+const obtenerHistorialYahoo = async (symbol, limit = 100) => {
+  const normalizedSymbol = normalizeSymbol(symbol);
+  const range = buildDailyRangeFromLimit(limit);
+  const response = await axios.get(`${YAHOO_CHART_URL}/${encodeURIComponent(normalizedSymbol)}`, {
+    params: {
+      interval: '1d',
+      range,
+    },
+  });
+
+  const result = response.data?.chart?.result?.[0];
+  if (!result) {
+    throw new Error(`Yahoo sin historial para ${normalizedSymbol}`);
+  }
+
+  const timestamps = result.timestamp || [];
+  const quote = result?.indicators?.quote?.[0] || {};
+  const opens = quote.open || [];
+  const highs = quote.high || [];
+  const lows = quote.low || [];
+  const closes = quote.close || [];
+  const volumes = quote.volume || [];
+
+  const bars = timestamps
+    .map((ts, index) => {
+      const close = Number(closes[index]);
+      if (!Number.isFinite(close)) {
+        return null;
+      }
+
+      const open = Number.isFinite(Number(opens[index])) ? Number(opens[index]) : close;
+      const high = Number.isFinite(Number(highs[index])) ? Number(highs[index]) : close;
+      const low = Number.isFinite(Number(lows[index])) ? Number(lows[index]) : close;
+      const volume = Number.isFinite(Number(volumes[index])) ? Number(volumes[index]) : 0;
+
+      return {
+        timestamp: formatTimestamp(ts),
+        open: parseFloat(open.toFixed(2)),
+        high: parseFloat(high.toFixed(2)),
+        low: parseFloat(low.toFixed(2)),
+        close: parseFloat(close.toFixed(2)),
+        volume,
+      };
+    })
+    .filter(Boolean);
+
+  if (!bars.length) {
+    throw new Error(`Yahoo no devolvió barras para ${normalizedSymbol}`);
+  }
+
+  return bars.slice(-Math.max(1, Number(limit) || 1));
+};
+
+const obtenerCotizacionCoinGecko = async (symbol) => {
+  const normalizedSymbol = normalizeCryptoSymbol(symbol);
+  const coinId = getCoinGeckoId(normalizedSymbol);
+  if (!coinId) {
+    throw new Error(`CoinGecko no soporta ${normalizedSymbol}`);
+  }
+
+  const response = await axios.get(`${COINGECKO_URL}/simple/price`, {
+    params: {
+      ids: coinId,
+      vs_currencies: 'usd',
+      include_24hr_change: true,
+      include_24hr_vol: true,
+    },
+  });
+
+  const data = response.data?.[coinId];
+  const price = Number(data?.usd);
+  if (!Number.isFinite(price) || price <= 0) {
+    throw new Error(`CoinGecko sin precio para ${normalizedSymbol}`);
+  }
+
+  return formatQuote(normalizedSymbol, {
+    ap: price,
+    bp: price,
+    t: new Date().toISOString(),
+  }, 'crypto');
+};
+
+const obtenerHistorialCoinGecko = async (symbol, limit = 100) => {
+  const normalizedSymbol = normalizeCryptoSymbol(symbol);
+  const coinId = getCoinGeckoId(normalizedSymbol);
+  if (!coinId) {
+    throw new Error(`CoinGecko no soporta ${normalizedSymbol}`);
+  }
+
+  const days = Math.max(2, Math.min(30, Number(limit) + 2 || 4));
+  const response = await axios.get(`${COINGECKO_URL}/coins/${encodeURIComponent(coinId)}/market_chart`, {
+    params: {
+      vs_currency: 'usd',
+      days,
+      interval: 'daily',
+    },
+  });
+
+  const prices = response.data?.prices || [];
+  const volumes = response.data?.total_volumes || [];
+
+  const bars = prices
+    .map((entry, index) => {
+      const [timestampMs, closeRaw] = entry || [];
+      const close = Number(closeRaw);
+      if (!Number.isFinite(close)) {
+        return null;
+      }
+
+      const volume = Number.isFinite(Number(volumes[index]?.[1])) ? Number(volumes[index][1]) : 0;
+
+      return {
+        timestamp: formatTimestamp(Math.floor(timestampMs / 1000)),
+        open: parseFloat(close.toFixed(2)),
+        high: parseFloat(close.toFixed(2)),
+        low: parseFloat(close.toFixed(2)),
+        close: parseFloat(close.toFixed(2)),
+        volume,
+      };
+    })
+    .filter(Boolean);
+
+  if (!bars.length) {
+    throw new Error(`CoinGecko sin historial para ${normalizedSymbol}`);
+  }
+
+  return bars.slice(-Math.max(1, Number(limit) || 1));
 };
 
 const isCryptoSymbol = (symbol) => normalizeCryptoSymbol(symbol).includes('/');
@@ -254,7 +472,12 @@ const obtenerCotizacionCrypto = async (symbol) => {
     console.log(`✅ ${normalizedSymbol}: $${Number(quote.ap || quote.bp || 0).toFixed(2)}`);
     return formatQuote(normalizedSymbol, quote, 'crypto');
   } catch (error) {
-    throw new Error(`No se pudo obtener precio de ${normalizedSymbol}: ${error.message}`);
+    console.warn(`⚠️ Fallback CoinGecko para ${normalizedSymbol}: ${error.message}`);
+    try {
+      return await obtenerCotizacionCoinGecko(normalizedSymbol);
+    } catch (fallbackError) {
+      throw new Error(`No se pudo obtener precio de ${normalizedSymbol}: ${fallbackError.message}`);
+    }
   }
 };
 
@@ -266,6 +489,11 @@ const obtenerCotizacion = async (symbol) => {
   if (isCryptoSymbol(normalizedSymbol)) {
     console.log(`📊 Obteniendo cotización crypto de ${normalizedSymbol}...`);
     return obtenerCotizacionCrypto(normalizedSymbol);
+  }
+
+  if (!hasTradingCredentials()) {
+    console.warn(`⚠️ Alpaca sin credenciales, usando Yahoo para ${normalizedSymbol}`);
+    return obtenerCotizacionYahoo(normalizedSymbol);
   }
   
   try {
@@ -288,7 +516,11 @@ const obtenerCotizacion = async (symbol) => {
       const fallback = await obtenerUltimoCierre(normalizedSymbol);
       return fallback;
     } catch (fallbackError) {
-      throw new Error(`No se pudo obtener precio de ${normalizedSymbol}: ${error.message}`);
+      try {
+        return await obtenerCotizacionYahoo(normalizedSymbol);
+      } catch (yahooError) {
+        throw new Error(`No se pudo obtener precio de ${normalizedSymbol}: ${yahooError.message}`);
+      }
     }
   }
 };
@@ -296,6 +528,10 @@ const obtenerCotizacion = async (symbol) => {
 // Obtener último precio de cierre
 const obtenerUltimoCierre = async (symbol) => {
   const config = getConfig();
+
+  if (!hasTradingCredentials()) {
+    return obtenerCotizacionYahoo(symbol);
+  }
   
   try {
     const response = await axios.get(
@@ -319,7 +555,12 @@ const obtenerUltimoCierre = async (symbol) => {
       timestamp: bar.t,
     };
   } catch (error) {
-    throw new Error(`Error obteniendo último cierre de ${symbol}: ${error.message}`);
+    console.warn(`⚠️ Fallback Yahoo en ultimo cierre de ${symbol}: ${error.message}`);
+    try {
+      return await obtenerCotizacionYahoo(symbol);
+    } catch (fallbackError) {
+      throw new Error(`Error obteniendo último cierre de ${symbol}: ${fallbackError.message}`);
+    }
   }
 };
 
@@ -624,9 +865,14 @@ const obtenerHistorial = async (symbol, timeframe = '1Day', limit = 100) => {
         volume: bar.v,
       }));
     } catch (error) {
-      console.error(`❌ Error obteniendo historial de ${normalizedSymbol}:`, error.message);
-      throw error;
+      console.warn(`⚠️ Fallback CoinGecko en historial de ${normalizedSymbol}:`, error.message);
+      return obtenerHistorialCoinGecko(normalizedSymbol, limit);
     }
+  }
+
+  if (!hasTradingCredentials()) {
+    console.warn(`⚠️ Alpaca sin credenciales, usando Yahoo historial para ${normalizedSymbol}`);
+    return obtenerHistorialYahoo(normalizedSymbol, limit);
   }
   
   try {
@@ -651,8 +897,8 @@ const obtenerHistorial = async (symbol, timeframe = '1Day', limit = 100) => {
       volume: bar.v,
     }));
   } catch (error) {
-    console.error(`❌ Error obteniendo historial de ${normalizedSymbol}:`, error.message);
-    throw error;
+    console.warn(`⚠️ Fallback Yahoo en historial de ${normalizedSymbol}:`, error.message);
+    return obtenerHistorialYahoo(normalizedSymbol, limit);
   }
 };
 

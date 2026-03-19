@@ -2,6 +2,12 @@ const Inversion = require('../models/Inversion');
 const User = require('../models/User');
 const { sequelize } = require('../config/database');
 const alpacaService = require('../services/alpacaService');
+const USER_SAFE_ATTRS = ['id', 'saldo', 'email', 'nombre', 'apellido'];
+
+const findUserSafeByPk = (usuarioId, extraAttrs = []) => {
+  const attributes = Array.from(new Set([...USER_SAFE_ATTRS, ...extraAttrs]));
+  return User.findByPk(usuarioId, { attributes });
+};
 
 // Comprar activo
 const comprarAccion = async (req, res) => {
@@ -31,7 +37,7 @@ const comprarAccion = async (req, res) => {
     }
 
     // Obtener usuario
-    const usuario = await User.findByPk(usuarioId);
+    const usuario = await findUserSafeByPk(usuarioId);
     if (!usuario) {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     }
@@ -205,7 +211,7 @@ const venderAccion = async (req, res) => {
     await inversion.save();
 
     // Agregar al saldo BE (dinero real)
-    const usuario = await User.findByPk(usuarioId);
+    const usuario = await findUserSafeByPk(usuarioId);
     usuario.saldo = parseFloat((parseFloat(usuario.saldo) + ingresoTotal).toFixed(2));
     await usuario.save();
 
@@ -254,7 +260,12 @@ const listarPosicionesAbiertas = async (req, res) => {
 
     // Obtener precios actuales
     const symbols = [...new Set(posiciones.map(p => p.symbol))];
-    const cotizaciones = await alpacaService.obtenerCotizaciones(symbols);
+    let cotizaciones = {};
+    try {
+      cotizaciones = await alpacaService.obtenerCotizaciones(symbols);
+    } catch (quoteError) {
+      console.warn('⚠️ No se pudieron enriquecer cotizaciones de posiciones. Se usará precio de compra.', quoteError.message);
+    }
 
     // Calcular valores actuales
     const posicionesConValor = posiciones.map(pos => {
@@ -299,7 +310,10 @@ const listarPosicionesAbiertas = async (req, res) => {
 const obtenerPortfolio = async (req, res) => {
   try {
     const usuarioId = req.usuario.id;
-    const usuario = await User.findByPk(usuarioId);
+    const usuario = await findUserSafeByPk(usuarioId);
+    if (!usuario) {
+      return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+    }
 
     // Posiciones abiertas
     const posicionesAbiertas = await Inversion.findAll({
@@ -316,9 +330,14 @@ const obtenerPortfolio = async (req, res) => {
 
     // Obtener precios actuales para posiciones abiertas
     const symbols = [...new Set(posicionesAbiertas.map(p => p.symbol))];
-    const cotizaciones = symbols.length > 0 
-      ? await alpacaService.obtenerCotizaciones(symbols)
-      : {};
+    let cotizaciones = {};
+    if (symbols.length > 0) {
+      try {
+        cotizaciones = await alpacaService.obtenerCotizaciones(symbols);
+      } catch (quoteError) {
+        console.warn('⚠️ No se pudieron obtener cotizaciones del portfolio. Se usará precio de compra.', quoteError.message);
+      }
+    }
 
     // Calcular valores
     const posicionesConValor = posicionesAbiertas.map(pos => {
