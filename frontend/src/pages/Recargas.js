@@ -15,7 +15,54 @@ export default function Deposita() {
   const [codigoDeposito, setCodigoDeposito] = useState('');
   const [backendStatus, setBackendStatus] = useState('checking');
   const paypalButtonRef = useRef(null);
-  const depositoIdRef = useRef(null);
+  const recargaIdRef = useRef(null);
+
+  const iniciarCheckoutPayPal = useCallback(async () => {
+    try {
+      setError('');
+      setSuccess('');
+      setLoading(true);
+
+      const montoNum = parseFloat(monto);
+      if (!monto || isNaN(montoNum) || !isFinite(montoNum) || montoNum <= 0) {
+        setError('Debes ingresar un monto válido');
+        return;
+      }
+      if (montoNum < 1) {
+        setError('El monto mínimo es $1 USD');
+        return;
+      }
+      if (montoNum > 10000) {
+        setError('El monto máximo por transacción es $10,000 USD');
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Debes estar autenticado para depositar');
+        return;
+      }
+
+      const response = await axios.post(
+        `${API_URL}/recargas/crear-paypal`,
+        { monto: montoNum },
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+      );
+
+      const checkoutUrl = response?.data?.checkoutUrl;
+      if (!checkoutUrl) {
+        setError('PayPal no devolvió URL de pago. Intenta de nuevo.');
+        return;
+      }
+
+      setSuccess('🔄 Redirigiendo a PayPal...');
+      window.location.assign(checkoutUrl);
+    } catch (err) {
+      setError(`Error al iniciar pago: ${err.response?.data?.error || err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [monto]);
   // --- FUNCIONES AUXILIARES ---
   const renderButtons = useCallback(() => {
     if (!window.paypal || !paypalButtonRef.current) return;
@@ -52,13 +99,13 @@ export default function Deposita() {
             throw new Error('No autenticado');
           }
           const response = await axios.post(
-            `${API_URL}/depositos/crear-paypal`,
+            `${API_URL}/recargas/crear-paypal`,
             { monto: montoNum },
             { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
           );
           const orderId = response.data.orderId;
-          depositoIdRef.current = response.data.depositoId;
-          if (!orderId || !depositoIdRef.current) {
+          recargaIdRef.current = response.data.recargaId;
+          if (!orderId || !recargaIdRef.current) {
             setError('No se pudo iniciar el pago. Intenta de nuevo.');
             throw new Error('Orden inválida');
           }
@@ -79,8 +126,8 @@ export default function Deposita() {
             ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
             : { 'Content-Type': 'application/json' };
           const response = await axios.post(
-            `${API_URL}/depositos/paypal/capturar`,
-            { depositoId: depositoIdRef.current, paypalOrderId: data.orderID },
+            `${API_URL}/recargas/paypal/capturar`,
+            { recargaId: recargaIdRef.current, token: data.orderID },
             { headers }
           );
           setSuccess(`✅ ¡Pago completado! Saldo actualizado: $${response.data.nuevoSaldo || 'N/A'}`);
@@ -121,6 +168,8 @@ export default function Deposita() {
     verificarRetornoPayPal();
   }, []);
   useEffect(() => {
+    if (!PAYPAL_CLIENT_ID) return;
+
     if (window.paypal) {
       renderButtons();
       return;
@@ -141,14 +190,14 @@ export default function Deposita() {
     const params = new URLSearchParams(window.location.search);
     const success = params.get('success');
     const cancelled = params.get('error');
-    const depositoId = params.get('depositoId'); // ID de depósito en BD
+    const recargaId = params.get('recargaId'); // ID de recarga en BD
 
     if (cancelled === 'cancelled') {
       setError('Pago cancelado por el usuario.');
       return;
     }
 
-    if (success === 'true' && depositoId) {
+    if (success === 'true' && recargaId) {
       try {
         setLoading(true);
         const authToken = localStorage.getItem('token');
@@ -158,8 +207,8 @@ export default function Deposita() {
         }
 
         const response = await axios.post(
-          `${API_URL}/depositos/paypal/capturar`,
-          { depositoId: depositoId },
+          `${API_URL}/recargas/paypal/capturar`,
+          { recargaId: recargaId },
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -188,7 +237,7 @@ export default function Deposita() {
 
   const verificarBackend = async () => {
     try {
-      const response = await axios.get(`${API_URL}/depositos/test`);
+      const response = await axios.get(`${API_URL}/recargas/test`);
       console.log('✅ Backend response:', response.data);
       setBackendStatus('ok');
     } catch (err) {
@@ -212,7 +261,7 @@ export default function Deposita() {
 
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${API_URL}/depositos/canjear-codigo`,
+        `${API_URL}/recargas/canjear-codigo`,
         { codigo: codigoDeposito.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -326,6 +375,23 @@ export default function Deposita() {
               </div>
 
               {/* Botón de PayPal (JS SDK) */}
+              <button
+                type="button"
+                className="submit-button"
+                disabled={loading}
+                onClick={iniciarCheckoutPayPal}
+                style={{ width: '100%', marginBottom: '16px' }}
+              >
+                {loading ? 'Procesando...' : 'Continuar a PayPal (checkout seguro)'}
+              </button>
+
+              {!PAYPAL_CLIENT_ID && (
+                <div className="alert alert-warning" style={{ marginBottom: '16px' }}>
+                  El SDK de PayPal no está configurado en frontend. Usa el botón de checkout seguro para completar el pago.
+                </div>
+              )}
+
+              {/* Botón de PayPal (JS SDK opcional) */}
               <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px'}}>
                 <div className="paypal-buttons" aria-disabled={loading} style={{flex: 1}}>
                   {loading && (
@@ -334,7 +400,7 @@ export default function Deposita() {
                       <p>Procesando pago...</p>
                     </div>
                   )}
-                  <div ref={paypalButtonRef} />
+                  {PAYPAL_CLIENT_ID ? <div ref={paypalButtonRef} /> : null}
                 </div>
               </div>
 

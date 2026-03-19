@@ -115,6 +115,14 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
+                <TradingDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard-clasico"
+            element={
+              <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
             }
