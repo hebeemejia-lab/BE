@@ -403,7 +403,7 @@ export default function TradingDashboard() {
             </span>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1">
             {DASHBOARD_OPTIONS.map((option) => {
               const active = activePanel === option.id;
 
@@ -413,7 +413,8 @@ export default function TradingDashboard() {
                   type="button"
                   onClick={() => setActivePanel(option.id)}
                   className={`
-                    shrink-0 rounded-xl px-3 py-2 text-xs font-semibold border transition-colors
+                    dashboard-option-chip shrink-0 rounded-lg px-2.5 sm:px-3 py-1.5 sm:py-2
+                    text-[10px] sm:text-xs leading-none font-semibold border transition-colors whitespace-nowrap
                     ${
                       active
                         ? 'bg-indigo-600 border-indigo-400 text-white'
@@ -421,7 +422,7 @@ export default function TradingDashboard() {
                     }
                   `}
                 >
-                  <span className="mr-1" aria-hidden="true">{option.icon}</span>
+                  <span className="opt-icon mr-1" aria-hidden="true">{option.icon}</span>
                   {option.label}
                 </button>
               );
