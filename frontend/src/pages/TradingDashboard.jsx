@@ -445,7 +445,7 @@ export default function TradingDashboard() {
                   type="button"
                   onClick={() => setActivePanel(option.id)}
                   className={`
-                    dashboard-option-chip shrink-0 rounded-lg px-2.5 sm:px-3 py-1.5 sm:py-2
+                    dashboard-option-chip shrink-0 rounded-lg px-2 sm:px-2.5 py-1 sm:py-1.5
                     text-[10px] sm:text-xs leading-none font-semibold border transition-colors whitespace-nowrap
                     ${
                       active
