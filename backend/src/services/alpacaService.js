@@ -11,6 +11,10 @@ const getConfig = () => ({
   mode: process.env.ALPACA_MODE || 'live',
 });
 
+const getMarketDataProvider = () => String(
+  process.env.MARKET_DATA_PROVIDER || 'public',
+).trim().toLowerCase();
+
 const hasTradingCredentials = () => {
   const config = getConfig();
   return Boolean(config.apiKey && config.secretKey);
@@ -155,6 +159,14 @@ const buildPublicRequestConfig = (config = {}) => ({
 const isAlpacaAuthError = (error) => [401, 403].includes(error?.response?.status);
 
 const alpacaMarketDataAllowed = () => Date.now() >= alpacaMarketDataBlockedUntil;
+
+const isAlpacaMarketDataPreferred = () => getMarketDataProvider() === 'alpaca';
+
+const shouldUseAlpacaMarketData = () => (
+  isAlpacaMarketDataPreferred()
+  && hasTradingCredentials()
+  && alpacaMarketDataAllowed()
+);
 
 const blockAlpacaMarketData = (error) => {
   if (!isAlpacaAuthError(error)) {
@@ -528,7 +540,7 @@ const obtenerActivoPorSymbol = async (symbol) => {
 const obtenerCotizacionCrypto = async (symbol) => {
   const normalizedSymbol = normalizeCryptoSymbol(symbol);
 
-  if (!hasTradingCredentials() || !alpacaMarketDataAllowed()) {
+  if (!shouldUseAlpacaMarketData()) {
     return obtenerCotizacionCoinGecko(normalizedSymbol);
   }
 
@@ -576,8 +588,10 @@ const obtenerCotizacion = async (symbol) => {
       return setCachedValue(quoteCache, quoteCacheKey, cryptoQuote, QUOTE_CACHE_TTL_MS);
     }
 
-    if (!hasTradingCredentials() || !alpacaMarketDataAllowed()) {
-      console.warn(`⚠️ Alpaca sin credenciales, usando Yahoo para ${normalizedSymbol}`);
+    if (!shouldUseAlpacaMarketData()) {
+      if (isAlpacaMarketDataPreferred() && !hasTradingCredentials()) {
+        console.warn(`⚠️ Alpaca sin credenciales, usando Yahoo para ${normalizedSymbol}`);
+      }
       try {
         const yahooQuote = await obtenerCotizacionYahoo(normalizedSymbol);
         return setCachedValue(quoteCache, quoteCacheKey, yahooQuote, QUOTE_CACHE_TTL_MS);
@@ -643,7 +657,7 @@ const obtenerCotizacion = async (symbol) => {
 
 // Obtener último precio de cierre
 const obtenerUltimoCierre = async (symbol) => {
-  if (!hasTradingCredentials() || !alpacaMarketDataAllowed()) {
+  if (!shouldUseAlpacaMarketData()) {
     return obtenerCotizacionYahoo(symbol);
   }
   
@@ -976,7 +990,7 @@ const obtenerHistorial = async (symbol, timeframe = '1Day', limit = 100) => {
   try {
     if (isCryptoSymbol(normalizedSymbol)) {
       try {
-        if (!hasTradingCredentials() || !alpacaMarketDataAllowed()) {
+        if (!shouldUseAlpacaMarketData()) {
           const coinGeckoHistory = await obtenerHistorialCoinGecko(normalizedSymbol, limit);
           return setCachedValue(historyCache, historyCacheKey, coinGeckoHistory, HISTORY_CACHE_TTL_MS);
         }
@@ -1018,8 +1032,10 @@ const obtenerHistorial = async (symbol, timeframe = '1Day', limit = 100) => {
       }
     }
 
-    if (!hasTradingCredentials() || !alpacaMarketDataAllowed()) {
-      console.warn(`⚠️ Alpaca sin credenciales, usando Yahoo historial para ${normalizedSymbol}`);
+    if (!shouldUseAlpacaMarketData()) {
+      if (isAlpacaMarketDataPreferred() && !hasTradingCredentials()) {
+        console.warn(`⚠️ Alpaca sin credenciales, usando Yahoo historial para ${normalizedSymbol}`);
+      }
       try {
         const yahooHistory = await obtenerHistorialYahoo(normalizedSymbol, limit);
         return setCachedValue(historyCache, historyCacheKey, yahooHistory, HISTORY_CACHE_TTL_MS);
