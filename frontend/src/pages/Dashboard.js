@@ -11,7 +11,8 @@ const TEKERS = [
   { id: 'retirar',    label: 'Retirar',    icon: '🏧', route: '/retiros',                    color: '#047857' },
   { id: 'prestamos',  label: 'Préstamos',  icon: '🏦', route: '/prestamos',                  color: '#b45309' },
   { id: 'invertir',   label: 'Invertir',   icon: '📈', route: '/mi-inversion',               color: '#0e7490' },
-  { id: 'grupo',      label: 'Mi Grupo',   icon: '👥', route: '/tu-grupo',                   color: '#be185d' },
+  { id: 'trading',    label: 'Trading',    icon: '💹', route: '/trading',                     color: '#059669' },
+  { id: 'grupo',          label: 'Mi Grupo',   icon: '👥', route: '/tu-grupo',                   color: '#be185d' },
   { id: 'gastos',     label: 'Gastos',     icon: '📊', route: '/gastos-personales',          color: '#ca8a04' },
   { id: 'cursos',     label: 'Cursos',     icon: '🎓', route: '/cursos',                     color: '#4338ca' },
 ];

@@ -33,6 +33,7 @@ import EconomiaEmergente from './pages/EconomiaEmergente';
 import BeneficiosAhorro from './pages/BeneficiosAhorro';
 import Certificado from './pages/Certificado';
 import CryptoDetail from './pages/CryptoDetail';
+import TradingPanel from './pages/TradingPanel';
 
 // Estilos
 import './styles/global.css';
@@ -50,6 +51,7 @@ const getTitleForPath = (pathname) => {
   if (pathname.startsWith('/transferencias')) return 'BE - Transferencias';
   if (pathname.startsWith('/crypto')) return 'BE - Crypto';
   if (pathname.startsWith('/mi-inversion')) return 'BE - Inversion';
+  if (pathname.startsWith('/trading')) return 'BE - Trading';
   if (pathname.startsWith('/gastos-personales')) return 'BE - Gastos Personales';
   if (pathname.startsWith('/recargas')) return 'BE - Recargas';
   if (pathname.startsWith('/retiros')) return 'BE - Retiros';
@@ -106,6 +108,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MiInversionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/trading"
+            element={
+              <ProtectedRoute>
+                <TradingPanel />
               </ProtectedRoute>
             }
           />
