@@ -52,7 +52,7 @@ export default function Deposita() {
             throw new Error('No autenticado');
           }
           const response = await axios.post(
-            `${API_URL}/depositos/crear-paypal`,
+            `${API_URL}/recargas/crear-paypal`,
             { monto: montoNum },
             { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
           );
@@ -79,7 +79,7 @@ export default function Deposita() {
             ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
             : { 'Content-Type': 'application/json' };
           const response = await axios.post(
-            `${API_URL}/depositos/paypal/capturar`,
+            `${API_URL}/recargas/paypal/capturar`,
             { depositoId: depositoIdRef.current, paypalOrderId: data.orderID },
             { headers }
           );
@@ -158,7 +158,7 @@ export default function Deposita() {
         }
 
         const response = await axios.post(
-          `${API_URL}/depositos/paypal/capturar`,
+            `${API_URL}/recargas/paypal/capturar`,
           { depositoId: depositoId },
           {
             headers: {
@@ -188,7 +188,7 @@ export default function Deposita() {
 
   const verificarBackend = async () => {
     try {
-      const response = await axios.get(`${API_URL}/depositos/test`);
+      const response = await axios.get(`${API_URL}/recargas/debug`);
       console.log('✅ Backend response:', response.data);
       setBackendStatus('ok');
     } catch (err) {
@@ -212,7 +212,7 @@ export default function Deposita() {
 
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${API_URL}/depositos/canjear-codigo`,
+        `${API_URL}/recargas/canjear-codigo`,
         { codigo: codigoDeposito.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
