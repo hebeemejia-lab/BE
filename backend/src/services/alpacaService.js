@@ -486,42 +486,54 @@ const obtenerCotizacion = async (symbol) => {
   const normalizedSymbol = normalizeCryptoSymbol(symbol);
   const config = getConfig();
 
-  if (isCryptoSymbol(normalizedSymbol)) {
-    console.log(`📊 Obteniendo cotización crypto de ${normalizedSymbol}...`);
-    return obtenerCotizacionCrypto(normalizedSymbol);
-  }
-
-  if (!hasTradingCredentials()) {
-    console.warn(`⚠️ Alpaca sin credenciales, usando Yahoo para ${normalizedSymbol}`);
-    return obtenerCotizacionYahoo(normalizedSymbol);
-  }
-  
   try {
-    console.log(`📊 Obteniendo cotización de ${normalizedSymbol}...`);
-    
-    const response = await axios.get(
-      `${config.baseUrl}/v2/stocks/${normalizedSymbol}/quotes/latest`,
-      { headers: getHeaders() }
-    );
+    if (isCryptoSymbol(normalizedSymbol)) {
+      console.log(`📊 Obteniendo cotización crypto de ${normalizedSymbol}...`);
+      return await obtenerCotizacionCrypto(normalizedSymbol);
+    }
 
-    const quote = response.data.quote;
-    console.log(`✅ ${normalizedSymbol}: $${Number(quote.ap || quote.bp || 0).toFixed(2)}`);
-
-    return formatQuote(normalizedSymbol, quote, 'us_equity');
-  } catch (error) {
-    console.error(`❌ Error obteniendo cotización de ${normalizedSymbol}:`, error.message);
-    
-    // Fallback a última cotización de cierre
-    try {
-      const fallback = await obtenerUltimoCierre(normalizedSymbol);
-      return fallback;
-    } catch (fallbackError) {
+    if (!hasTradingCredentials()) {
+      console.warn(`⚠️ Alpaca sin credenciales, usando Yahoo para ${normalizedSymbol}`);
       try {
         return await obtenerCotizacionYahoo(normalizedSymbol);
       } catch (yahooError) {
-        throw new Error(`No se pudo obtener precio de ${normalizedSymbol}: ${yahooError.message}`);
+        console.error(`⚠️ Yahoo también falló para ${normalizedSymbol}, retornando default`);
+        return formatQuote(normalizedSymbol, { ap: 0, bp: 0, t: new Date().toISOString() }, 'us_equity');
       }
     }
+    
+    try {
+      console.log(`📊 Obteniendo cotización Alpaca de ${normalizedSymbol}...`);
+      
+      const response = await axios.get(
+        `${config.baseUrl}/v2/stocks/${normalizedSymbol}/quotes/latest`,
+        { headers: getHeaders() }
+      );
+
+      const quote = response.data.quote;
+      console.log(`✅ ${normalizedSymbol}: $${Number(quote.ap || quote.bp || 0).toFixed(2)}`);
+
+      return formatQuote(normalizedSymbol, quote, 'us_equity');
+    } catch (error) {
+      console.error(`❌ Error Alpaca obteniendo ${normalizedSymbol}:`, error.message);
+      
+      // Fallback a última cotización de cierre
+      try {
+        const fallback = await obtenerUltimoCierre(normalizedSymbol);
+        return fallback;
+      } catch (fallbackError) {
+        try {
+          console.warn(`⚠️ Ultra-fallback Yahoo para ${normalizedSymbol}`);
+          return await obtenerCotizacionYahoo(normalizedSymbol);
+        } catch (yahooError) {
+          console.error(`⚠️ Todos los fallbacks fallaron para ${normalizedSymbol}, retornando default`);
+          return formatQuote(normalizedSymbol, { ap: 0, bp: 0, t: new Date().toISOString() }, 'us_equity');
+        }
+      }
+    }
+  } catch (allError) {
+    console.error(`🔴 Error CRÍTICO en obtenerCotizacion(${normalizedSymbol}):`, allError.message);
+    return formatQuote(normalizedSymbol, { ap: 0, bp: 0, t: new Date().toISOString() }, 'us_equity');
   }
 };
 
@@ -568,15 +580,21 @@ const obtenerUltimoCierre = async (symbol) => {
 const obtenerCotizaciones = async (symbols) => {
   try {
     const promesas = symbols.map(symbol => obtenerCotizacion(symbol));
-    const cotizaciones = await Promise.all(promesas);
+    const resultados = await Promise.allSettled(promesas);
     
-    return cotizaciones.reduce((acc, cot) => {
-      acc[cot.symbol] = cot;
+    const cotizaciones = resultados.reduce((acc, resultado) => {
+      if (resultado.status === 'fulfilled' && resultado.value) {
+        acc[resultado.value.symbol] = resultado.value;
+      }
       return acc;
     }, {});
+    
+    // Si ninguna cotización se obtuvo, retornar objeto vacío (no lanzar error)
+    console.log(`✅ Obtenidas ${Object.keys(cotizaciones).length}/${symbols.length} cotizaciones`);
+    return cotizaciones;
   } catch (error) {
-    console.error('❌ Error obteniendo cotizaciones múltiples:', error.message);
-    throw error;
+    console.error('❌ Error en obtenerCotizaciones:', error.message);
+    return {}; // Return empty object instead of throwing
   }
 };
 
@@ -839,24 +857,67 @@ const obtenerHistorial = async (symbol, timeframe = '1Day', limit = 100) => {
   const normalizedSymbol = normalizeCryptoSymbol(symbol);
   const config = getConfig();
 
-  if (isCryptoSymbol(normalizedSymbol)) {
+  try {
+    if (isCryptoSymbol(normalizedSymbol)) {
+      try {
+        const response = await axios.get(
+          `${getDataUrl()}/v1beta3/crypto/us/bars`,
+          {
+            headers: getHeaders(),
+            params: {
+              symbols: normalizedSymbol,
+              timeframe,
+              limit,
+              sort: 'asc',
+            },
+          },
+        );
+
+        const bars = response.data?.bars?.[normalizedSymbol] || [];
+
+        return bars.map((bar) => ({
+          timestamp: bar.t,
+          open: parseFloat(bar.o.toFixed(2)),
+          high: parseFloat(bar.h.toFixed(2)),
+          low: parseFloat(bar.l.toFixed(2)),
+          close: parseFloat(bar.c.toFixed(2)),
+          volume: bar.v,
+        }));
+      } catch (error) {
+        console.warn(`⚠️ Alpaca crypto falló, usando CoinGecko para ${normalizedSymbol}:`, error.message);
+        try {
+          return await obtenerHistorialCoinGecko(normalizedSymbol, limit);
+        } catch (coinError) {
+          console.error(`⚠️ CoinGecko también falló para ${normalizedSymbol}, retornando vacío`);
+          return [];
+        }
+      }
+    }
+
+    if (!hasTradingCredentials()) {
+      console.warn(`⚠️ Alpaca sin credenciales, usando Yahoo historial para ${normalizedSymbol}`);
+      try {
+        return await obtenerHistorialYahoo(normalizedSymbol, limit);
+      } catch (yahooError) {
+        console.error(`⚠️ Yahoo falló para ${normalizedSymbol}, retornando vacío`);
+        return [];
+      }
+    }
+    
     try {
       const response = await axios.get(
-        `${getDataUrl()}/v1beta3/crypto/us/bars`,
+        `${config.baseUrl}/v2/stocks/${normalizedSymbol}/bars`,
         {
           headers: getHeaders(),
           params: {
-            symbols: normalizedSymbol,
             timeframe,
             limit,
-            sort: 'asc',
+            feed: 'iex',
           },
-        },
+        }
       );
 
-      const bars = response.data?.bars?.[normalizedSymbol] || [];
-
-      return bars.map((bar) => ({
+      return response.data.bars.map(bar => ({
         timestamp: bar.t,
         open: parseFloat(bar.o.toFixed(2)),
         high: parseFloat(bar.h.toFixed(2)),
@@ -865,40 +926,17 @@ const obtenerHistorial = async (symbol, timeframe = '1Day', limit = 100) => {
         volume: bar.v,
       }));
     } catch (error) {
-      console.warn(`⚠️ Fallback CoinGecko en historial de ${normalizedSymbol}:`, error.message);
-      return obtenerHistorialCoinGecko(normalizedSymbol, limit);
-    }
-  }
-
-  if (!hasTradingCredentials()) {
-    console.warn(`⚠️ Alpaca sin credenciales, usando Yahoo historial para ${normalizedSymbol}`);
-    return obtenerHistorialYahoo(normalizedSymbol, limit);
-  }
-  
-  try {
-    const response = await axios.get(
-      `${config.baseUrl}/v2/stocks/${normalizedSymbol}/bars`,
-      {
-        headers: getHeaders(),
-        params: {
-          timeframe,
-          limit,
-          feed: 'iex',
-        },
+      console.warn(`⚠️ Alpaca stock fallback a Yahoo para ${normalizedSymbol}:`, error.message);
+      try {
+        return await obtenerHistorialYahoo(normalizedSymbol, limit);
+      } catch (yahooError) {
+        console.error(`⚠️ Yahoo también falló para ${normalizedSymbol}, retornando vacío`);
+        return [];
       }
-    );
-
-    return response.data.bars.map(bar => ({
-      timestamp: bar.t,
-      open: parseFloat(bar.o.toFixed(2)),
-      high: parseFloat(bar.h.toFixed(2)),
-      low: parseFloat(bar.l.toFixed(2)),
-      close: parseFloat(bar.c.toFixed(2)),
-      volume: bar.v,
-    }));
-  } catch (error) {
-    console.warn(`⚠️ Fallback Yahoo en historial de ${normalizedSymbol}:`, error.message);
-    return obtenerHistorialYahoo(normalizedSymbol, limit);
+    }
+  } catch (allError) {
+    console.error(`🔴 Error CRÍTICO en obtenerHistorial(${normalizedSymbol}):`, allError.message);
+    return [];
   }
 };
 
