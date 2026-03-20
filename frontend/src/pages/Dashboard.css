@@ -956,6 +956,69 @@
   gap: 10px;
 }
 
+@media (max-width: 520px) {
+  .db-main {
+    padding: 14px 12px 0;
+    gap: 16px;
+  }
+
+  .db-section {
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .db-hero {
+    gap: 14px;
+  }
+
+  .db-crypto-bar {
+    gap: 8px;
+  }
+
+  .db-crypto-action {
+    min-height: 58px;
+    padding: 10px 10px;
+    gap: 8px;
+    border-radius: 12px;
+  }
+
+  .db-crypto-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+
+  .db-crypto-label {
+    font-size: 12px;
+  }
+
+  .db-crypto-helper {
+    font-size: 10px;
+  }
+
+  .db-carousel {
+    gap: 8px;
+    padding-bottom: 4px;
+  }
+
+  .db-teker {
+    flex-basis: 72px;
+    border-radius: 12px;
+    padding: 10px 6px;
+    gap: 6px;
+  }
+
+  .db-teker-icon {
+    font-size: 22px;
+  }
+
+  .db-teker-label {
+    font-size: 10px;
+    line-height: 1.15;
+  }
+}
+
 /* ── BALANCE CARD ──────────────────────────────────────────────── */
 .db-card--balance {
   background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 60%, #1e3a8a 100%);
