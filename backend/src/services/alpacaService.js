@@ -57,6 +57,17 @@ const TERMINAL_ORDER_STATUSES = new Set(['filled', 'canceled', 'expired', 'rejec
 const CRYPTO_QUOTE_ASSETS = ['USD', 'USDT', 'USDC', 'BTC', 'ETH'];
 const YAHOO_CHART_URL = 'https://query1.finance.yahoo.com/v8/finance/chart';
 const COINGECKO_URL = 'https://api.coingecko.com/api/v3';
+const REQUEST_TIMEOUT_MS = 8000;
+const QUOTE_CACHE_TTL_MS = 30 * 1000;
+const HISTORY_CACHE_TTL_MS = 10 * 60 * 1000;
+const ALPACA_MARKETDATA_COOLDOWN_MS = 10 * 60 * 1000;
+const PUBLIC_REQUEST_HEADERS = {
+  Accept: 'application/json, text/plain, */*',
+  'User-Agent': 'BancoExclusivo/1.0 (+https://www.bancoexclusivo.lat)',
+};
+const quoteCache = new Map();
+const historyCache = new Map();
+let alpacaMarketDataBlockedUntil = 0;
 const CRYPTO_ID_MAP = {
   BTC: 'bitcoin',
   ETH: 'ethereum',
@@ -109,6 +120,50 @@ const getCoinGeckoId = (symbol) => {
   return CRYPTO_ID_MAP[base] || null;
 };
 
+const getCachedValue = (cache, key) => {
+  const entry = cache.get(key);
+  if (!entry) {
+    return null;
+  }
+
+  if (entry.expiresAt <= Date.now()) {
+    cache.delete(key);
+    return null;
+  }
+
+  return entry.value;
+};
+
+const setCachedValue = (cache, key, value, ttlMs) => {
+  cache.set(key, {
+    value,
+    expiresAt: Date.now() + ttlMs,
+  });
+
+  return value;
+};
+
+const buildPublicRequestConfig = (config = {}) => ({
+  timeout: REQUEST_TIMEOUT_MS,
+  ...config,
+  headers: {
+    ...PUBLIC_REQUEST_HEADERS,
+    ...(config.headers || {}),
+  },
+});
+
+const isAlpacaAuthError = (error) => [401, 403].includes(error?.response?.status);
+
+const alpacaMarketDataAllowed = () => Date.now() >= alpacaMarketDataBlockedUntil;
+
+const blockAlpacaMarketData = (error) => {
+  if (!isAlpacaAuthError(error)) {
+    return;
+  }
+
+  alpacaMarketDataBlockedUntil = Date.now() + ALPACA_MARKETDATA_COOLDOWN_MS;
+};
+
 const formatTimestamp = (value) => {
   if (!value) {
     return new Date().toISOString();
@@ -132,12 +187,15 @@ const buildDailyRangeFromLimit = (limit) => {
 
 const obtenerCotizacionYahoo = async (symbol) => {
   const normalizedSymbol = normalizeSymbol(symbol);
-  const response = await axios.get(`${YAHOO_CHART_URL}/${encodeURIComponent(normalizedSymbol)}`, {
-    params: {
-      interval: '1d',
-      range: '5d',
-    },
-  });
+  const response = await axios.get(
+    `${YAHOO_CHART_URL}/${encodeURIComponent(normalizedSymbol)}`,
+    buildPublicRequestConfig({
+      params: {
+        interval: '1d',
+        range: '5d',
+      },
+    }),
+  );
 
   const result = response.data?.chart?.result?.[0];
   if (!result) {
@@ -163,12 +221,15 @@ const obtenerCotizacionYahoo = async (symbol) => {
 const obtenerHistorialYahoo = async (symbol, limit = 100) => {
   const normalizedSymbol = normalizeSymbol(symbol);
   const range = buildDailyRangeFromLimit(limit);
-  const response = await axios.get(`${YAHOO_CHART_URL}/${encodeURIComponent(normalizedSymbol)}`, {
-    params: {
-      interval: '1d',
-      range,
-    },
-  });
+  const response = await axios.get(
+    `${YAHOO_CHART_URL}/${encodeURIComponent(normalizedSymbol)}`,
+    buildPublicRequestConfig({
+      params: {
+        interval: '1d',
+        range,
+      },
+    }),
+  );
 
   const result = response.data?.chart?.result?.[0];
   if (!result) {
@@ -220,14 +281,17 @@ const obtenerCotizacionCoinGecko = async (symbol) => {
     throw new Error(`CoinGecko no soporta ${normalizedSymbol}`);
   }
 
-  const response = await axios.get(`${COINGECKO_URL}/simple/price`, {
-    params: {
-      ids: coinId,
-      vs_currencies: 'usd',
-      include_24hr_change: true,
-      include_24hr_vol: true,
-    },
-  });
+  const response = await axios.get(
+    `${COINGECKO_URL}/simple/price`,
+    buildPublicRequestConfig({
+      params: {
+        ids: coinId,
+        vs_currencies: 'usd',
+        include_24hr_change: true,
+        include_24hr_vol: true,
+      },
+    }),
+  );
 
   const data = response.data?.[coinId];
   const price = Number(data?.usd);
@@ -250,13 +314,16 @@ const obtenerHistorialCoinGecko = async (symbol, limit = 100) => {
   }
 
   const days = Math.max(2, Math.min(30, Number(limit) + 2 || 4));
-  const response = await axios.get(`${COINGECKO_URL}/coins/${encodeURIComponent(coinId)}/market_chart`, {
-    params: {
-      vs_currency: 'usd',
-      days,
-      interval: 'daily',
-    },
-  });
+  const response = await axios.get(
+    `${COINGECKO_URL}/coins/${encodeURIComponent(coinId)}/market_chart`,
+    buildPublicRequestConfig({
+      params: {
+        vs_currency: 'usd',
+        days,
+        interval: 'daily',
+      },
+    }),
+  );
 
   const prices = response.data?.prices || [];
   const volumes = response.data?.total_volumes || [];
@@ -344,6 +411,12 @@ const formatQuote = (symbol, quote, assetClass) => {
     assetClass,
   };
 };
+
+const buildDefaultQuote = (symbol, assetClass = 'us_equity') => formatQuote(
+  normalizeCryptoSymbol(symbol),
+  { ap: 0, bp: 0, t: new Date().toISOString() },
+  assetClass,
+);
 
 const formatOrder = (order) => ({
   id: order?.id,
@@ -455,6 +528,10 @@ const obtenerActivoPorSymbol = async (symbol) => {
 const obtenerCotizacionCrypto = async (symbol) => {
   const normalizedSymbol = normalizeCryptoSymbol(symbol);
 
+  if (!hasTradingCredentials() || !alpacaMarketDataAllowed()) {
+    return obtenerCotizacionCoinGecko(normalizedSymbol);
+  }
+
   try {
     const response = await axios.get(
       `${getDataUrl()}/v1beta3/crypto/us/latest/quotes`,
@@ -472,7 +549,8 @@ const obtenerCotizacionCrypto = async (symbol) => {
     console.log(`✅ ${normalizedSymbol}: $${Number(quote.ap || quote.bp || 0).toFixed(2)}`);
     return formatQuote(normalizedSymbol, quote, 'crypto');
   } catch (error) {
-    console.warn(`⚠️ Fallback CoinGecko para ${normalizedSymbol}: ${error.message}`);
+    blockAlpacaMarketData(error);
+    console.warn(`⚠️ Alpaca crypto falló, usando CoinGecko para ${normalizedSymbol}: ${error.message}`);
     try {
       return await obtenerCotizacionCoinGecko(normalizedSymbol);
     } catch (fallbackError) {
@@ -484,21 +562,28 @@ const obtenerCotizacionCrypto = async (symbol) => {
 // Obtener cotización actual de una acción
 const obtenerCotizacion = async (symbol) => {
   const normalizedSymbol = normalizeCryptoSymbol(symbol);
-  const config = getConfig();
+  const quoteCacheKey = normalizedSymbol;
+  const cachedQuote = getCachedValue(quoteCache, quoteCacheKey);
+
+  if (cachedQuote) {
+    return cachedQuote;
+  }
 
   try {
     if (isCryptoSymbol(normalizedSymbol)) {
       console.log(`📊 Obteniendo cotización crypto de ${normalizedSymbol}...`);
-      return await obtenerCotizacionCrypto(normalizedSymbol);
+      const cryptoQuote = await obtenerCotizacionCrypto(normalizedSymbol);
+      return setCachedValue(quoteCache, quoteCacheKey, cryptoQuote, QUOTE_CACHE_TTL_MS);
     }
 
-    if (!hasTradingCredentials()) {
+    if (!hasTradingCredentials() || !alpacaMarketDataAllowed()) {
       console.warn(`⚠️ Alpaca sin credenciales, usando Yahoo para ${normalizedSymbol}`);
       try {
-        return await obtenerCotizacionYahoo(normalizedSymbol);
+        const yahooQuote = await obtenerCotizacionYahoo(normalizedSymbol);
+        return setCachedValue(quoteCache, quoteCacheKey, yahooQuote, QUOTE_CACHE_TTL_MS);
       } catch (yahooError) {
         console.error(`⚠️ Yahoo también falló para ${normalizedSymbol}, retornando default`);
-        return formatQuote(normalizedSymbol, { ap: 0, bp: 0, t: new Date().toISOString() }, 'us_equity');
+        return setCachedValue(quoteCache, quoteCacheKey, buildDefaultQuote(normalizedSymbol, 'us_equity'), 5000);
       }
     }
     
@@ -506,55 +591,80 @@ const obtenerCotizacion = async (symbol) => {
       console.log(`📊 Obteniendo cotización Alpaca de ${normalizedSymbol}...`);
       
       const response = await axios.get(
-        `${config.baseUrl}/v2/stocks/${normalizedSymbol}/quotes/latest`,
-        { headers: getHeaders() }
+        `${getDataUrl()}/v2/stocks/quotes/latest`,
+        {
+          headers: getHeaders(),
+          params: {
+            symbols: normalizedSymbol,
+            feed: 'iex',
+          },
+          timeout: REQUEST_TIMEOUT_MS,
+        },
       );
 
-      const quote = response.data.quote;
+      const quote = response.data?.quotes?.[normalizedSymbol];
+      if (!quote) {
+        throw new Error(`Alpaca sin quote para ${normalizedSymbol}`);
+      }
+
       console.log(`✅ ${normalizedSymbol}: $${Number(quote.ap || quote.bp || 0).toFixed(2)}`);
 
-      return formatQuote(normalizedSymbol, quote, 'us_equity');
+      return setCachedValue(
+        quoteCache,
+        quoteCacheKey,
+        formatQuote(normalizedSymbol, quote, 'us_equity'),
+        QUOTE_CACHE_TTL_MS,
+      );
     } catch (error) {
+      blockAlpacaMarketData(error);
       console.error(`❌ Error Alpaca obteniendo ${normalizedSymbol}:`, error.message);
       
       // Fallback a última cotización de cierre
       try {
         const fallback = await obtenerUltimoCierre(normalizedSymbol);
-        return fallback;
+        return setCachedValue(quoteCache, quoteCacheKey, fallback, QUOTE_CACHE_TTL_MS);
       } catch (fallbackError) {
         try {
           console.warn(`⚠️ Ultra-fallback Yahoo para ${normalizedSymbol}`);
-          return await obtenerCotizacionYahoo(normalizedSymbol);
+          const yahooQuote = await obtenerCotizacionYahoo(normalizedSymbol);
+          return setCachedValue(quoteCache, quoteCacheKey, yahooQuote, QUOTE_CACHE_TTL_MS);
         } catch (yahooError) {
           console.error(`⚠️ Todos los fallbacks fallaron para ${normalizedSymbol}, retornando default`);
-          return formatQuote(normalizedSymbol, { ap: 0, bp: 0, t: new Date().toISOString() }, 'us_equity');
+          return setCachedValue(quoteCache, quoteCacheKey, buildDefaultQuote(normalizedSymbol, 'us_equity'), 5000);
         }
       }
     }
   } catch (allError) {
     console.error(`🔴 Error CRÍTICO en obtenerCotizacion(${normalizedSymbol}):`, allError.message);
-    return formatQuote(normalizedSymbol, { ap: 0, bp: 0, t: new Date().toISOString() }, 'us_equity');
+    const assetClass = isCryptoSymbol(normalizedSymbol) ? 'crypto' : 'us_equity';
+    return setCachedValue(quoteCache, quoteCacheKey, buildDefaultQuote(normalizedSymbol, assetClass), 5000);
   }
 };
 
 // Obtener último precio de cierre
 const obtenerUltimoCierre = async (symbol) => {
-  const config = getConfig();
-
-  if (!hasTradingCredentials()) {
+  if (!hasTradingCredentials() || !alpacaMarketDataAllowed()) {
     return obtenerCotizacionYahoo(symbol);
   }
   
   try {
     const response = await axios.get(
-      `${config.baseUrl}/v2/stocks/${symbol}/bars/latest`,
+      `${getDataUrl()}/v2/stocks/bars/latest`,
       {
         headers: getHeaders(),
-        params: { feed: 'iex' },
-      }
+        params: {
+          symbols: symbol,
+          feed: 'iex',
+        },
+        timeout: REQUEST_TIMEOUT_MS,
+      },
     );
 
-    const bar = response.data.bar;
+    const bar = response.data?.bars?.[symbol];
+    if (!bar) {
+      throw new Error(`Alpaca sin barra latest para ${symbol}`);
+    }
+
     const precio = bar.c; // closing price
 
     console.log(`📈 ${symbol} (cierre): $${precio.toFixed(2)}`);
@@ -567,6 +677,7 @@ const obtenerUltimoCierre = async (symbol) => {
       timestamp: bar.t,
     };
   } catch (error) {
+    blockAlpacaMarketData(error);
     console.warn(`⚠️ Fallback Yahoo en ultimo cierre de ${symbol}: ${error.message}`);
     try {
       return await obtenerCotizacionYahoo(symbol);
@@ -855,11 +966,21 @@ const obtenerEstadoCuenta = async () => {
 // Obtener historial de barras (gráficos)
 const obtenerHistorial = async (symbol, timeframe = '1Day', limit = 100) => {
   const normalizedSymbol = normalizeCryptoSymbol(symbol);
-  const config = getConfig();
+  const historyCacheKey = `${normalizedSymbol}:${timeframe}:${limit}`;
+  const cachedHistory = getCachedValue(historyCache, historyCacheKey);
+
+  if (cachedHistory) {
+    return cachedHistory;
+  }
 
   try {
     if (isCryptoSymbol(normalizedSymbol)) {
       try {
+        if (!hasTradingCredentials() || !alpacaMarketDataAllowed()) {
+          const coinGeckoHistory = await obtenerHistorialCoinGecko(normalizedSymbol, limit);
+          return setCachedValue(historyCache, historyCacheKey, coinGeckoHistory, HISTORY_CACHE_TTL_MS);
+        }
+
         const response = await axios.get(
           `${getDataUrl()}/v1beta3/crypto/us/bars`,
           {
@@ -870,73 +991,84 @@ const obtenerHistorial = async (symbol, timeframe = '1Day', limit = 100) => {
               limit,
               sort: 'asc',
             },
+            timeout: REQUEST_TIMEOUT_MS,
           },
         );
 
         const bars = response.data?.bars?.[normalizedSymbol] || [];
 
-        return bars.map((bar) => ({
+        return setCachedValue(historyCache, historyCacheKey, bars.map((bar) => ({
           timestamp: bar.t,
           open: parseFloat(bar.o.toFixed(2)),
           high: parseFloat(bar.h.toFixed(2)),
           low: parseFloat(bar.l.toFixed(2)),
           close: parseFloat(bar.c.toFixed(2)),
           volume: bar.v,
-        }));
+        })), HISTORY_CACHE_TTL_MS);
       } catch (error) {
+        blockAlpacaMarketData(error);
         console.warn(`⚠️ Alpaca crypto falló, usando CoinGecko para ${normalizedSymbol}:`, error.message);
         try {
-          return await obtenerHistorialCoinGecko(normalizedSymbol, limit);
+          const coinGeckoHistory = await obtenerHistorialCoinGecko(normalizedSymbol, limit);
+          return setCachedValue(historyCache, historyCacheKey, coinGeckoHistory, HISTORY_CACHE_TTL_MS);
         } catch (coinError) {
           console.error(`⚠️ CoinGecko también falló para ${normalizedSymbol}, retornando vacío`);
-          return [];
+          return setCachedValue(historyCache, historyCacheKey, [], 5000);
         }
       }
     }
 
-    if (!hasTradingCredentials()) {
+    if (!hasTradingCredentials() || !alpacaMarketDataAllowed()) {
       console.warn(`⚠️ Alpaca sin credenciales, usando Yahoo historial para ${normalizedSymbol}`);
       try {
-        return await obtenerHistorialYahoo(normalizedSymbol, limit);
+        const yahooHistory = await obtenerHistorialYahoo(normalizedSymbol, limit);
+        return setCachedValue(historyCache, historyCacheKey, yahooHistory, HISTORY_CACHE_TTL_MS);
       } catch (yahooError) {
         console.error(`⚠️ Yahoo falló para ${normalizedSymbol}, retornando vacío`);
-        return [];
+        return setCachedValue(historyCache, historyCacheKey, [], 5000);
       }
     }
     
     try {
       const response = await axios.get(
-        `${config.baseUrl}/v2/stocks/${normalizedSymbol}/bars`,
+        `${getDataUrl()}/v2/stocks/bars`,
         {
           headers: getHeaders(),
           params: {
+            symbols: normalizedSymbol,
             timeframe,
             limit,
             feed: 'iex',
+            sort: 'asc',
           },
-        }
+          timeout: REQUEST_TIMEOUT_MS,
+        },
       );
 
-      return response.data.bars.map(bar => ({
+      const bars = response.data?.bars?.[normalizedSymbol] || [];
+
+      return setCachedValue(historyCache, historyCacheKey, bars.map(bar => ({
         timestamp: bar.t,
         open: parseFloat(bar.o.toFixed(2)),
         high: parseFloat(bar.h.toFixed(2)),
         low: parseFloat(bar.l.toFixed(2)),
         close: parseFloat(bar.c.toFixed(2)),
         volume: bar.v,
-      }));
+      })), HISTORY_CACHE_TTL_MS);
     } catch (error) {
+      blockAlpacaMarketData(error);
       console.warn(`⚠️ Alpaca stock fallback a Yahoo para ${normalizedSymbol}:`, error.message);
       try {
-        return await obtenerHistorialYahoo(normalizedSymbol, limit);
+        const yahooHistory = await obtenerHistorialYahoo(normalizedSymbol, limit);
+        return setCachedValue(historyCache, historyCacheKey, yahooHistory, HISTORY_CACHE_TTL_MS);
       } catch (yahooError) {
         console.error(`⚠️ Yahoo también falló para ${normalizedSymbol}, retornando vacío`);
-        return [];
+        return setCachedValue(historyCache, historyCacheKey, [], 5000);
       }
     }
   } catch (allError) {
     console.error(`🔴 Error CRÍTICO en obtenerHistorial(${normalizedSymbol}):`, allError.message);
-    return [];
+    return setCachedValue(historyCache, historyCacheKey, [], 5000);
   }
 };
 
