@@ -27,6 +27,7 @@ router.put('/usuarios/:id', adminController.actualizarUsuarioAdmin);
 router.delete('/usuarios/:id', adminController.eliminarUsuarioAdmin);
 
 // 💰 Préstamos
+router.get('/cuotas-vencidas', adminController.listarCuotasVencidas);
 router.get('/prestamos', adminController.listarPrestamos);
 router.get('/prestamos/:id', adminController.obtenerPrestamo);
 router.post('/prestamos', adminController.crearPrestamoAdmin);

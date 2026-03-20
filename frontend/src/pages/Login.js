@@ -26,15 +26,6 @@ function LoginContent() {
   const { executeRecaptcha } = useGoogleReCaptcha();
 
   useEffect(() => {
-    // Log reCAPTCHA status
-    if (!executeRecaptcha) {
-      console.warn('⚠️ executeRecaptcha not available yet');
-    } else {
-      console.log('✅ executeRecaptcha disponible');
-    }
-  }, [executeRecaptcha]);
-
-  useEffect(() => {
     let mounted = true;
 
     const cargarGoogleConfig = async () => {
@@ -87,11 +78,8 @@ function LoginContent() {
         try {
           recaptchaToken = await executeRecaptcha('login');
         } catch (recaptchaErr) {
-          console.warn('⚠️ reCAPTCHA execution failed:', recaptchaErr.message);
           // No fallar - continuar sin reCAPTCHA
         }
-      } else {
-        console.warn('⚠️ executeRecaptcha not available');
       }
       
       // Enviar login con token de reCAPTCHA (puede ser null)
