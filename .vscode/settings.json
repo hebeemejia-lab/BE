@@ -1,0 +1,5 @@
+{
+  "typescript.disableAutomaticTypeAcquisition": true,
+  "javascript.implicitProjectConfig.checkJs": false,
+  "typescript.preferences.includePackageJsonAutoImports": "off"
+}
