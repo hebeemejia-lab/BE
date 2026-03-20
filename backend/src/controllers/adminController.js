@@ -13,6 +13,22 @@ const emailService = require('../services/emailService');
 // Forzar que las relaciones se inicialicen
 require('../models');
 
+const formatearFechaCorta = (valor) => {
+  if (!valor) {
+    return null;
+  }
+
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) {
+    return null;
+  }
+
+  const anio = fecha.getFullYear();
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
+};
+
 // Dashboard: Estadísticas generales
 exports.obtenerDashboard = async (req, res) => {
   try {
@@ -394,6 +410,85 @@ exports.listarPrestamos = async (req, res) => {
     res.status(500).json({
       exito: false,
       mensaje: 'Error al listar préstamos',
+      error: error.message
+    });
+  }
+};
+
+exports.listarCuotasVencidas = async (req, res) => {
+  try {
+    const limiteSolicitado = parseInt(req.query.limit, 10);
+    const limite = Number.isFinite(limiteSolicitado)
+      ? Math.min(Math.max(limiteSolicitado, 1), 50)
+      : 20;
+
+    const cuotas = await CuotaPrestamo.findAll({
+      where: {
+        pagado: false,
+        fechaVencimiento: { [Op.lt]: new Date() }
+      },
+      order: [['fechaVencimiento', 'ASC']],
+      limit: limite,
+    });
+
+    if (cuotas.length === 0) {
+      return res.json({
+        exito: true,
+        total: 0,
+        cuotas: []
+      });
+    }
+
+    const prestamoIds = [...new Set(cuotas.map((cuota) => cuota.prestamoId))];
+    const prestamos = await Loan.findAll({
+      where: { id: { [Op.in]: prestamoIds } }
+    });
+
+    const usuarioIds = [...new Set(prestamos.map((prestamo) => prestamo.usuarioId))];
+    const usuarios = usuarioIds.length > 0
+      ? await User.findAll({
+          where: { id: { [Op.in]: usuarioIds } },
+          attributes: ['id', 'nombre', 'apellido', 'email']
+        })
+      : [];
+
+    const prestamosMap = new Map(prestamos.map((prestamo) => [prestamo.id, prestamo]));
+    const usuariosMap = new Map(usuarios.map((usuario) => [usuario.id, usuario]));
+    const ahora = Date.now();
+
+    const cuotasFormateadas = cuotas.map((cuota) => {
+      const prestamo = prestamosMap.get(cuota.prestamoId);
+      const usuario = prestamo ? usuariosMap.get(prestamo.usuarioId) : null;
+      const fechaVencimiento = cuota.fechaVencimiento ? new Date(cuota.fechaVencimiento) : null;
+      const diasVencida = fechaVencimiento
+        ? Math.max(0, Math.floor((ahora - fechaVencimiento.getTime()) / (1000 * 60 * 60 * 24)))
+        : 0;
+      const clienteNombre = [usuario?.nombre, usuario?.apellido].filter(Boolean).join(' ').trim()
+        || usuario?.email
+        || 'Cliente';
+
+      return {
+        id: cuota.id,
+        prestamoId: cuota.prestamoId,
+        numeroCuota: cuota.numeroCuota,
+        monto: parseFloat(cuota.montoCuota || 0),
+        fechaVencimiento: formatearFechaCorta(cuota.fechaVencimiento),
+        diasVencida,
+        clienteNombre,
+        clienteEmail: usuario?.email || null,
+      };
+    });
+
+    res.json({
+      exito: true,
+      total: cuotasFormateadas.length,
+      cuotas: cuotasFormateadas,
+    });
+  } catch (error) {
+    console.error('❌ Error listando cuotas vencidas:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al obtener cuotas vencidas',
       error: error.message
     });
   }

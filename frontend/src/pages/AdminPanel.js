@@ -51,23 +51,20 @@ const AdminPanel = () => {
   const [vistaActual, setVistaActual] = useState('dashboard');
   const [cuotasVencidas, setCuotasVencidas] = useState([]);
   const [mostrarNotificaciones, setMostrarNotificaciones] = useState(false);
-    // Script para obtener cuotas vencidas (placeholder, debe ajustarse a la API real)
-    const cargarCuotasVencidas = useCallback(async () => {
-      try {
-        // Suponiendo endpoint /admin/cuotas-vencidas
-        const response = await api.get('/admin/cuotas-vencidas');
-        setCuotasVencidas(response.data.cuotas || []);
-      } catch (error) {
-        setCuotasVencidas([]);
-      }
-    }, []);
+  const cargarCuotasVencidas = useCallback(async () => {
+    try {
+      const response = await api.get('/admin/cuotas-vencidas', { params: { limit: 25 } });
+      setCuotasVencidas(response.data.cuotas || []);
+    } catch (error) {
+      setCuotasVencidas([]);
+    }
+  }, []);
 
-    useEffect(() => {
-      cargarCuotasVencidas();
-      // Opcional: refrescar cada 5 minutos
-      const interval = setInterval(cargarCuotasVencidas, 5 * 60 * 1000);
-      return () => clearInterval(interval);
-    }, [cargarCuotasVencidas]);
+  useEffect(() => {
+    cargarCuotasVencidas();
+    const interval = setInterval(cargarCuotasVencidas, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [cargarCuotasVencidas]);
   const [dashboard, setDashboard] = useState(null);
   const [prestamos, setPrestamos] = useState([]);
   const [usuariosAdmin, setUsuariosAdmin] = useState([]);
@@ -299,7 +296,7 @@ const AdminPanel = () => {
       await cargarPrestamos();
     } catch (error) {
       console.error('Error creando préstamo:', error);
-      alert('Error al crear préstamo');
+      alert(error.response?.data?.mensaje || error.response?.data?.error || 'Error al crear préstamo');
     } finally {
       setCargando(false);
     }
