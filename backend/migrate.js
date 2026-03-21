@@ -32,6 +32,19 @@ async function migrar() {
     }
     console.log('✅ ENUM values verificados');
 
+    // Columnas nuevas que pueden no existir en producción — agregar explícitamente
+    const columnMigrations = [
+      `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "saldoEnTransitoAlpaca" DECIMAL(15,2) DEFAULT 0`,
+      `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "alpacaAccountId" VARCHAR(255)`,
+      `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "alpacaFunded" BOOLEAN DEFAULT false`,
+    ];
+    for (const sql of columnMigrations) {
+      try {
+        await sequelize.query(sql);
+      } catch (_) { /* SQLite ignora IF NOT EXISTS — seguro */ }
+    }
+    console.log('✅ Columnas críticas verificadas');
+
     // Sincronizar TODOS los modelos con alter: true para agregar columnas nuevas
     await sequelize.sync({ alter: true });
     console.log('✅ Tablas sincronizadas (alter: columnas y tablas nuevas agregadas)');
