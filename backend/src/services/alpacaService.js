@@ -189,6 +189,20 @@ const formatBrokerTransfer = (transfer) => ({
   updatedAt: transfer?.updated_at,
 });
 
+const formatBrokerPosition = (position) => ({
+  assetId: position?.asset_id,
+  symbol: normalizeCryptoSymbol(position?.symbol),
+  qty: Number(position?.qty || 0),
+  side: position?.side,
+  avgEntryPrice: position?.avg_entry_price ? Number(position.avg_entry_price) : null,
+  currentPrice: position?.current_price ? Number(position.current_price) : null,
+  market_value: position?.market_value ? Number(position.market_value) : 0,
+  unrealized_pl: position?.unrealized_pl ? Number(position.unrealized_pl) : 0,
+  unrealized_plpc: position?.unrealized_plpc ? Number(position.unrealized_plpc) : 0,
+  exchange: position?.exchange,
+  source: 'alpaca',
+});
+
 const obtenerActivos = async (assetClass) => {
   const config = getConfig();
   const response = await axios.get(
@@ -454,6 +468,30 @@ const obtenerTransferenciaAchBroker = async ({ accountId, transferId }) => {
     );
 
     return formatBrokerTransfer(response.data);
+
+    const listarPosicionesCuentaBroker = async (accountId) => {
+      if (!accountId) {
+        return [];
+      }
+
+      const config = ensureBrokerConfig();
+
+      try {
+        const response = await axios.get(
+          `${config.baseUrl}/v1/trading/accounts/${encodeURIComponent(accountId)}/positions`,
+          { headers: getBrokerHeaders() },
+        );
+
+        const positions = Array.isArray(response.data) ? response.data : [];
+        return positions.map(formatBrokerPosition);
+      } catch (error) {
+        if (error.response?.status === 404) {
+          return [];
+        }
+
+        throw error;
+      }
+    };
   } catch (error) {
     if (error.response?.status !== 404) {
       throw error;
@@ -683,6 +721,7 @@ module.exports = {
   crearOrdenMercado,
   crearTransferenciaAchBroker,
   confirmarOrdenMercado,
+  listarPosicionesCuentaBroker,
   listarTransferenciasAchBroker,
   normalizeFundingStatus,
   obtenerTransferenciaAchBroker,
