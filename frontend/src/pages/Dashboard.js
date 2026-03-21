@@ -148,7 +148,7 @@ export default function Dashboard() {
           depositoAPI.obtenerResumenPayPal(),
         ]);
         setTransferencias(transResponse.data.slice(0, 5));
-        setPrestamos(prestResponse.data.slice(0, 5));
+        setPrestamos(Array.isArray(prestResponse.data) ? prestResponse.data : []);
         setPaypalTotal(Number(paypalResponse.data?.totalPayPal || 0));
       } catch (error) {
         console.error('Error cargando datos:', error);
@@ -187,13 +187,17 @@ export default function Dashboard() {
   }, [usuario]);
 
   const prestamosActivos = prestamos.filter((p) => {
+    if (typeof p.activoVisual === 'boolean') {
+      return p.activoVisual;
+    }
+
     const e = (p.estado || '').toLowerCase();
     return e && e !== 'pagado' && e !== 'completado' && e !== 'rechazado';
   });
 
   const saldoPrestamos = prestamosActivos.reduce((s, p) => {
-    const monto = Number(p.montoAprobado ?? p.montoSolicitado ?? 0);
-    return s + (Number.isFinite(monto) ? monto : 0);
+    const monto = Number(p.montoPendiente ?? p.montoAprobado ?? p.montoSolicitado ?? 0);
+    return s + (Number.isFinite(monto) ? Math.max(0, monto) : 0);
   }, 0);
 
   const transferenciasEnviadas  = transferencias.filter(t => t.remitente?._id === usuario?._id);
