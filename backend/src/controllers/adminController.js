@@ -497,24 +497,18 @@ exports.listarCuotasVencidas = async (req, res) => {
 // Crear préstamo desde admin (con cuotas)
 exports.crearPrestamoAdmin = async (req, res) => {
   try {
-    const { usuarioEmail, usuarioId, monto, plazo, tasaInteres, fechaPrimerVencimiento, sandbox } = req.body;
+    const { usuarioEmail, usuarioId, monto, plazo, tasaInteres, fechaPrimerVencimiento, sandbox, usarDeudaActual } = req.body;
 
-    if ((!usuarioEmail && !usuarioId) || !monto || !plazo) {
+    if ((!usuarioEmail && !usuarioId) || !plazo || (!usarDeudaActual && !monto)) {
       return res.status(400).json({
         exito: false,
-        mensaje: 'Faltan datos obligatorios (usuario, monto, plazo)'
+        mensaje: 'Faltan datos obligatorios (usuario, plazo y monto si no es plan de pago)'
       });
     }
-
-    const montoNumero = parseFloat(monto);
     const plazoNumero = parseInt(plazo, 10);
     const tasaNumero = tasaInteres !== undefined && tasaInteres !== null && tasaInteres !== ''
       ? parseFloat(tasaInteres)
       : 5;
-
-    if (!Number.isFinite(montoNumero) || montoNumero <= 0) {
-      return res.status(400).json({ exito: false, mensaje: 'Monto inválido' });
-    }
 
     if (!Number.isFinite(plazoNumero) || plazoNumero <= 0) {
       return res.status(400).json({ exito: false, mensaje: 'Plazo inválido' });
@@ -528,6 +522,21 @@ exports.crearPrestamoAdmin = async (req, res) => {
       return res.status(404).json({ exito: false, mensaje: 'Usuario no encontrado' });
     }
 
+    const saldoActualUsuario = parseFloat(usuario.saldo || 0);
+    const deudaActualUsuario = saldoActualUsuario < 0 ? Math.abs(saldoActualUsuario) : 0;
+    const montoNumero = usarDeudaActual ? deudaActualUsuario : parseFloat(monto);
+
+    if (usarDeudaActual && deudaActualUsuario <= 0) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'El usuario no tiene deuda pendiente para convertir en plan de pago'
+      });
+    }
+
+    if (!Number.isFinite(montoNumero) || montoNumero <= 0) {
+      return res.status(400).json({ exito: false, mensaje: 'Monto inválido' });
+    }
+
     const prestamo = await Loan.create({
       usuarioId: usuario.id,
       montoSolicitado: montoNumero,
@@ -539,7 +548,7 @@ exports.crearPrestamoAdmin = async (req, res) => {
       cuentaBancaria: process.env.BANCO_CUENTA,
       emailAprobacion: process.env.ADMIN_EMAIL,
       fechaAprobacion: new Date(),
-      numeroReferencia: `${sandbox ? 'SANDBOX' : 'PREST-ADMIN'}-${Date.now().toString().slice(-8)}`
+      numeroReferencia: `${sandbox ? 'SANDBOX' : (usarDeudaActual ? 'PLAN-PAGO' : 'PREST-ADMIN')}-${Date.now().toString().slice(-8)}`
     });
 
     const tasaMensual = tasaNumero > 0 ? (tasaNumero / 12 / 100) : 0;
@@ -570,16 +579,22 @@ exports.crearPrestamoAdmin = async (req, res) => {
       cuotas.push(cuota);
     }
 
-    if (!sandbox) {
+    if (!sandbox && usarDeudaActual) {
+      usuario.saldo = 0;
+      await usuario.save();
+    } else if (!sandbox) {
       usuario.saldo = parseFloat(usuario.saldo || 0) + montoNumero;
       await usuario.save();
     }
 
     res.json({
       exito: true,
-      mensaje: '✅ Préstamo creado con cuotas',
+      mensaje: usarDeudaActual
+        ? '✅ Plan de pago creado a partir de la deuda actual del usuario'
+        : '✅ Préstamo creado con cuotas',
       prestamo: prestamo.toJSON(),
       sandbox: !!sandbox,
+      usarDeudaActual: !!usarDeudaActual,
       cuotas: cuotas.map(c => c.toJSON())
     });
   } catch (error) {
