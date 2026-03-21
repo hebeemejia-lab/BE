@@ -1791,7 +1791,33 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
   const usuarioSeleccionado = usuariosAdmin.find((u) => String(u.id) === String(nuevoPrestamo.usuarioId));
   const saldoUsuarioSeleccionado = Number(usuarioSeleccionado?.saldo || 0);
   const deudaActualUsuario = saldoUsuarioSeleccionado < 0 ? Math.abs(saldoUsuarioSeleccionado) : 0;
-  const planPagoDisponible = deudaActualUsuario > 0;
+  const deudaPrestamosUsuario = prestamos.reduce((acumulado, prestamo) => {
+    if (String(prestamo.usuarioId) !== String(nuevoPrestamo.usuarioId)) {
+      return acumulado;
+    }
+
+    if (String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO')) {
+      return acumulado;
+    }
+
+    const estado = String(prestamo.estado || '').toLowerCase();
+    if (estado === 'completado' || estado === 'rechazado') {
+      return acumulado;
+    }
+
+    const cuotas = Array.isArray(prestamo.cuotas) ? prestamo.cuotas : [];
+    const deudaCuotas = cuotas
+      .filter((cuota) => !cuota.pagado)
+      .reduce((total, cuota) => total + parseFloat(cuota.monto || 0), 0);
+
+    if (deudaCuotas > 0) {
+      return acumulado + deudaCuotas;
+    }
+
+    return acumulado + parseFloat(prestamo.montoAprobado || prestamo.montoSolicitado || 0);
+  }, 0);
+  const deudaTotalPlanPago = deudaActualUsuario + deudaPrestamosUsuario;
+  const planPagoDisponible = deudaTotalPlanPago > 0;
 
   const handleCrearPrestamo = async (e) => {
     e.preventDefault();
@@ -1892,7 +1918,7 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
               onChange={(e) => setNuevoPrestamo({
                 ...nuevoPrestamo,
                 usarDeudaActual: e.target.checked,
-                monto: e.target.checked ? String(deudaActualUsuario.toFixed(2)) : nuevoPrestamo.monto,
+                monto: e.target.checked ? String(deudaTotalPlanPago.toFixed(2)) : nuevoPrestamo.monto,
               })}
             />
             <span>
@@ -1900,8 +1926,8 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
               {usuarioSeleccionado && (
                 <small>
                   {planPagoDisponible
-                    ? ` Deuda detectada: $${deudaActualUsuario.toFixed(2)}`
-                    : ' El usuario no tiene saldo pendiente negativo'}
+                    ? ` Total consolidado: $${deudaTotalPlanPago.toFixed(2)}`
+                    : ' El usuario no tiene deuda consolidable'}
                 </small>
               )}
             </span>
@@ -1910,7 +1936,7 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
             type="number"
             step="0.01"
             placeholder={nuevoPrestamo.usarDeudaActual ? 'Monto tomado de la deuda actual' : 'Monto'}
-            value={nuevoPrestamo.usarDeudaActual ? deudaActualUsuario.toFixed(2) : nuevoPrestamo.monto}
+            value={nuevoPrestamo.usarDeudaActual ? deudaTotalPlanPago.toFixed(2) : nuevoPrestamo.monto}
             onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, monto: e.target.value })}
             required={!nuevoPrestamo.usarDeudaActual}
             disabled={nuevoPrestamo.usarDeudaActual}
@@ -1940,9 +1966,16 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
           </button>
         </form>
         {nuevoPrestamo.usarDeudaActual && planPagoDisponible && (
-          <p className="prestamo-plan-help">
-            Este plan tomará el saldo negativo del usuario, lo convertirá en préstamo aprobado y dejará el saldo en 0.
-          </p>
+          <div className="prestamo-plan-help">
+            <p>
+              Este plan consolidará saldo negativo y saldo de préstamos pendiente en un solo préstamo aprobado.
+            </p>
+            <div className="prestamo-plan-breakdown">
+              <span>Saldo negativo actual: ${deudaActualUsuario.toFixed(2)}</span>
+              <span>Saldo de préstamos: ${deudaPrestamosUsuario.toFixed(2)}</span>
+              <strong>Total del plan: ${deudaTotalPlanPago.toFixed(2)}</strong>
+            </div>
+          </div>
         )}
       </div>
       
@@ -1978,6 +2011,7 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
   const [referencia, setReferencia] = useState('');
   const [notas, setNotas] = useState('');
   const esPlanDePago = String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO');
+  const checkoutPlan = prestamo.planPagoCheckout;
 
   const handlePagar = (cuotaId) => {
     onRegistrarPago(cuotaId, metodoPago, referencia, notas);
@@ -2052,6 +2086,31 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
               🧾 Factura 88mm
             </button>
           </div>
+          {esPlanDePago && checkoutPlan && (
+            <div className="plan-checkout-box">
+              <h4>Checkout del plan de pago</h4>
+              <div className={`plan-checkout-row ${checkoutPlan.saldoNegativoSaldado ? 'saldado' : ''}`}>
+                <span>Saldo disponible en negativo</span>
+                <span>
+                  {checkoutPlan.saldoNegativoSaldado
+                    ? 'Deuda saldada'
+                    : `Restante: $${checkoutPlan.saldoNegativoRestante.toFixed(2)}`}
+                </span>
+              </div>
+              <div className={`plan-checkout-row ${checkoutPlan.saldoPrestamoSaldado ? 'saldado' : ''}`}>
+                <span>Saldo de préstamos pendiente</span>
+                <span>
+                  {checkoutPlan.saldoPrestamoSaldado
+                    ? 'Deuda saldada'
+                    : `Restante: $${checkoutPlan.saldoPrestamoRestante.toFixed(2)}`}
+                </span>
+              </div>
+              <div className="plan-checkout-total">
+                <span>Total pendiente del plan</span>
+                <strong>${checkoutPlan.deudaTotalRestante.toFixed(2)}</strong>
+              </div>
+            </div>
+          )}
           <h4>Cuotas:</h4>
           <div className="cuotas-lista">
             {prestamo.cuotas.map(cuota => (

@@ -29,6 +29,43 @@ const formatearFechaCorta = (valor) => {
   return `${anio}-${mes}-${dia}`;
 };
 
+const toNumberOrZero = (value) => {
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const construirCheckoutPlanPago = (prestamo, cuotas = []) => {
+  const esPlanDePago = String(prestamo?.numeroReferencia || '').startsWith('PLAN-PAGO');
+  if (!esPlanDePago) {
+    return null;
+  }
+
+  const deudaSaldoNegativoInicial = toNumberOrZero(prestamo.deudaSaldoNegativoInicial);
+  const deudaPrestamosInicial = toNumberOrZero(prestamo.deudaPrestamosInicial);
+  const deudaTotalInicial = deudaSaldoNegativoInicial + deudaPrestamosInicial;
+
+  const totalPagado = cuotas
+    .filter((cuota) => Boolean(cuota.pagado))
+    .reduce((sum, cuota) => sum + toNumberOrZero(cuota.montoCuota ?? cuota.monto), 0);
+
+  const pagoAplicable = Math.min(totalPagado, deudaTotalInicial);
+  const saldoNegativoRestante = Math.max(0, deudaSaldoNegativoInicial - pagoAplicable);
+  const remanenteTrasSaldo = Math.max(0, pagoAplicable - deudaSaldoNegativoInicial);
+  const saldoPrestamoRestante = Math.max(0, deudaPrestamosInicial - remanenteTrasSaldo);
+
+  return {
+    deudaSaldoNegativoInicial: parseFloat(deudaSaldoNegativoInicial.toFixed(2)),
+    deudaPrestamosInicial: parseFloat(deudaPrestamosInicial.toFixed(2)),
+    deudaTotalInicial: parseFloat(deudaTotalInicial.toFixed(2)),
+    totalPagado: parseFloat(totalPagado.toFixed(2)),
+    saldoNegativoRestante: parseFloat(saldoNegativoRestante.toFixed(2)),
+    saldoPrestamoRestante: parseFloat(saldoPrestamoRestante.toFixed(2)),
+    deudaTotalRestante: parseFloat((saldoNegativoRestante + saldoPrestamoRestante).toFixed(2)),
+    saldoNegativoSaldado: saldoNegativoRestante <= 0,
+    saldoPrestamoSaldado: saldoPrestamoRestante <= 0,
+  };
+};
+
 // Dashboard: Estadísticas generales
 exports.obtenerDashboard = async (req, res) => {
   try {
@@ -391,6 +428,7 @@ exports.listarPrestamos = async (req, res) => {
             fechaVencimiento: c.fechaVencimiento,
             fechaPago: c.fechaPago
           })),
+          planPagoCheckout: construirCheckoutPlanPago(prestamo, cuotas),
           totalCuotas,
           cuotasPagadas,
           cuotasPendientes: totalCuotas - cuotasPagadas,
@@ -524,9 +562,50 @@ exports.crearPrestamoAdmin = async (req, res) => {
 
     const saldoActualUsuario = parseFloat(usuario.saldo || 0);
     const deudaActualUsuario = saldoActualUsuario < 0 ? Math.abs(saldoActualUsuario) : 0;
-    const montoNumero = usarDeudaActual ? deudaActualUsuario : parseFloat(monto);
+    let deudaPrestamosPendiente = 0;
+    let prestamosAConsolidar = [];
 
-    if (usarDeudaActual && deudaActualUsuario <= 0) {
+    if (usarDeudaActual) {
+      prestamosAConsolidar = await Loan.findAll({
+        where: {
+          usuarioId: usuario.id,
+          estado: { [Op.ne]: 'completado' },
+        },
+      });
+
+      prestamosAConsolidar = prestamosAConsolidar.filter(
+        (prestamo) => !String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO'),
+      );
+
+      if (prestamosAConsolidar.length > 0) {
+        const cuotasPrestamos = await CuotaPrestamo.findAll({
+          where: {
+            prestamoId: { [Op.in]: prestamosAConsolidar.map((prestamo) => prestamo.id) },
+            pagado: false,
+          },
+        });
+
+        const cuotasPorPrestamo = new Map();
+        cuotasPrestamos.forEach((cuota) => {
+          const totalActual = cuotasPorPrestamo.get(cuota.prestamoId) || 0;
+          cuotasPorPrestamo.set(cuota.prestamoId, totalActual + parseFloat(cuota.montoCuota || 0));
+        });
+
+        deudaPrestamosPendiente = prestamosAConsolidar.reduce((acumulado, prestamo) => {
+          const deudaCuotas = cuotasPorPrestamo.get(prestamo.id);
+          const deudaPrestamo = deudaCuotas != null
+            ? deudaCuotas
+            : parseFloat(prestamo.montoAprobado || prestamo.montoSolicitado || 0);
+          return acumulado + deudaPrestamo;
+        }, 0);
+      }
+    }
+
+    const montoNumero = usarDeudaActual
+      ? deudaActualUsuario + deudaPrestamosPendiente
+      : parseFloat(monto);
+
+    if (usarDeudaActual && montoNumero <= 0) {
       return res.status(400).json({
         exito: false,
         mensaje: 'El usuario no tiene deuda pendiente para convertir en plan de pago'
@@ -541,6 +620,8 @@ exports.crearPrestamoAdmin = async (req, res) => {
       usuarioId: usuario.id,
       montoSolicitado: montoNumero,
       montoAprobado: montoNumero,
+      deudaSaldoNegativoInicial: usarDeudaActual ? deudaActualUsuario : 0,
+      deudaPrestamosInicial: usarDeudaActual ? deudaPrestamosPendiente : 0,
       tasaInteres: tasaNumero,
       plazo: plazoNumero,
       estado: 'aprobado',
@@ -582,6 +663,30 @@ exports.crearPrestamoAdmin = async (req, res) => {
     if (!sandbox && usarDeudaActual) {
       usuario.saldo = 0;
       await usuario.save();
+
+      if (prestamosAConsolidar.length > 0) {
+        const idsPrestamos = prestamosAConsolidar.map((prestamo) => prestamo.id);
+
+        await Loan.update(
+          { estado: 'completado' },
+          { where: { id: { [Op.in]: idsPrestamos } } },
+        );
+
+        await CuotaPrestamo.update(
+          {
+            pagado: true,
+            fechaPago: new Date(),
+            metodoPago: 'Consolidación',
+            notas: `Consolidado en plan de pago ${prestamo.numeroReferencia}`,
+          },
+          {
+            where: {
+              prestamoId: { [Op.in]: idsPrestamos },
+              pagado: false,
+            },
+          },
+        );
+      }
     } else if (!sandbox) {
       usuario.saldo = parseFloat(usuario.saldo || 0) + montoNumero;
       await usuario.save();
@@ -595,6 +700,9 @@ exports.crearPrestamoAdmin = async (req, res) => {
       prestamo: prestamo.toJSON(),
       sandbox: !!sandbox,
       usarDeudaActual: !!usarDeudaActual,
+      deudaActualUsuario: parseFloat(deudaActualUsuario.toFixed(2)),
+      deudaPrestamosPendiente: parseFloat(deudaPrestamosPendiente.toFixed(2)),
+      deudaConsolidadaTotal: parseFloat(montoNumero.toFixed(2)),
       cuotas: cuotas.map(c => c.toJSON())
     });
   } catch (error) {
@@ -636,7 +744,8 @@ exports.obtenerPrestamo = async (req, res) => {
       prestamo: {
         ...prestamo.toJSON(),
         User: usuario ? usuario.toJSON() : null,
-        cuotas
+        cuotas,
+        planPagoCheckout: construirCheckoutPlanPago(prestamo, cuotas),
       }
     });
   } catch (error) {
@@ -678,6 +787,28 @@ exports.registrarPagoCuota = async (req, res) => {
       });
     }
 
+    const prestamo = await Loan.findByPk(cuota.prestamoId);
+    const esPlanDePago = Boolean(prestamo && String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO'));
+    let abonoSaldo = 0;
+    let nuevoSaldoUsuario = null;
+
+    if (esPlanDePago && prestamo) {
+      const usuario = await User.findByPk(prestamo.usuarioId);
+      if (usuario) {
+        const saldoActual = parseFloat(usuario.saldo || 0);
+        const montoCuota = parseFloat(cuota.montoCuota || 0);
+
+        if (saldoActual < 0 && montoCuota > 0) {
+          // Cada pago de cuota reduce la deuda reflejada en saldo disponible hasta llegar a 0.
+          abonoSaldo = Math.min(Math.abs(saldoActual), montoCuota);
+          usuario.saldo = parseFloat((saldoActual + abonoSaldo).toFixed(2));
+          await usuario.save();
+        }
+
+        nuevoSaldoUsuario = parseFloat(usuario.saldo || 0);
+      }
+    }
+
     // Actualizar cuota
     cuota.pagado = true;
     cuota.fechaPago = new Date();
@@ -698,7 +829,6 @@ exports.registrarPagoCuota = async (req, res) => {
 
     if (todasPagadas) {
       // Actualizar estado del préstamo a "completado" (valor válido del ENUM)
-      const prestamo = await Loan.findByPk(cuota.prestamoId);
       if (prestamo) {
         prestamo.estado = 'completado';
         await prestamo.save();
@@ -710,7 +840,10 @@ exports.registrarPagoCuota = async (req, res) => {
       exito: true,
       mensaje: '✅ Pago registrado exitosamente',
       cuota,
-      prestamoCompletado: todasPagadas
+      prestamoCompletado: todasPagadas,
+      esPlanDePago,
+      abonoSaldo,
+      nuevoSaldoUsuario,
     });
   } catch (error) {
     console.error('❌ Error registrando pago:', error);
