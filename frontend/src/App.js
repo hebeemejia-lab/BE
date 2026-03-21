@@ -88,8 +88,11 @@ function App() {
       <TitleManager />
       <CurrencyProvider>
         <AuthProvider>
-          <Navbar onAbrirChatbot={() => setChatbotAbierto(true)} />
-          <Routes>
+          <div className="app-shell">
+            <Navbar onAbrirChatbot={() => setChatbotAbierto(true)} />
+            <div className="app-content">
+              <div className="app-routes">
+                <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -226,27 +229,31 @@ function App() {
           />
           
           <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
+                </Routes>
+              </div>
 
-        {/* Chatbot FAQ */}
-        <ChatBotFAQ 
-          isOpen={chatbotAbierto} 
-          onClose={() => setChatbotAbierto(false)} 
-        />
+              <Footer />
+            </div>
 
-        {/* Botón flotante para abrir el chatbot */}
-        {!chatbotAbierto && (
-          <button
-            className="chatbot-fab"
-            onClick={() => setChatbotAbierto(true)}
-            title="¿Necesitas ayuda?"
-          >
-            💬
-          </button>
-        )}
+            {/* Chatbot FAQ */}
+            <ChatBotFAQ 
+              isOpen={chatbotAbierto} 
+              onClose={() => setChatbotAbierto(false)} 
+            />
 
-        <Footer />
-      </AuthProvider>
+            {/* Botón flotante para abrir el chatbot */}
+            {!chatbotAbierto && (
+              <button
+                className="chatbot-fab"
+                onClick={() => setChatbotAbierto(true)}
+                title="¿Necesitas ayuda?"
+              >
+                💬
+              </button>
+            )}
+          </div>
+
+        </AuthProvider>
       </CurrencyProvider>
     </Router>
   );
