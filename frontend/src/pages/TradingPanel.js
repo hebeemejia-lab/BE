@@ -307,17 +307,31 @@ export default function TradingPanel() {
         {loadingPos ? (
           <p style={{ color: '#6b7280', fontSize: '0.85rem' }}>Cargando posiciones…</p>
         ) : posiciones.length === 0 ? (
-          <p style={{ color: '#6b7280', fontSize: '0.85rem' }}>No tienes posiciones abiertas en Alpaca.</p>
+          <p style={{ color: '#6b7280', fontSize: '0.85rem' }}>No tienes posiciones abiertas registradas.</p>
         ) : (
           posiciones.map((pos, i) => {
             const qty     = parseFloat(pos.qty || pos.quantity || 0);
             const pnl     = parseFloat(pos.unrealized_pl || pos.ganancia_no_realizada || 0);
             const val     = parseFloat(pos.market_value || pos.valor_mercado || 0);
             const pnlPct  = parseFloat(pos.unrealized_plpc || pos.pnl_pct || 0) * 100;
+            const source  = String(pos.source || 'be').toLowerCase();
+            const isAlpaca = source === 'alpaca';
             return (
               <div key={pos.symbol || i} style={S.posRow}>
                 <div>
-                  <span style={S.posSymbol}>{pos.symbol}</span>
+                  <div style={S.posSymbolRow}>
+                    <span style={S.posSymbol}>{pos.symbol}</span>
+                    <span
+                      style={{
+                        ...S.posSource,
+                        background: isAlpaca ? 'rgba(14,165,233,0.14)' : 'rgba(16,185,129,0.14)',
+                        color: isAlpaca ? '#7dd3fc' : '#6ee7b7',
+                        borderColor: isAlpaca ? 'rgba(14,165,233,0.28)' : 'rgba(16,185,129,0.28)',
+                      }}
+                    >
+                      {isAlpaca ? 'Alpaca' : 'BE'}
+                    </span>
+                  </div>
                   <span style={S.posQty}>{qty.toFixed(6)} unidades</span>
                 </div>
                 <div style={{ textAlign: 'right' }}>
@@ -534,7 +548,21 @@ const S = {
     padding: '12px 0',
     borderBottom: '1px solid rgba(255,255,255,0.05)',
   },
+  posSymbolRow: { display: 'flex', alignItems: 'center', gap: 8 },
   posSymbol: { display: 'block', fontWeight: 700, color: '#f1f5f9', fontSize: '0.95rem' },
+  posSource: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 50,
+    padding: '2px 8px',
+    borderRadius: 999,
+    border: '1px solid transparent',
+    fontSize: '0.65rem',
+    fontWeight: 700,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+  },
   posQty:    { display: 'block', fontSize: '0.74rem', color: '#6b7280', marginTop: 2 },
   posVal:    { display: 'block', fontWeight: 700, fontSize: '0.95rem' },
   posPnl:    { display: 'block', fontSize: '0.76rem', marginTop: 2 },

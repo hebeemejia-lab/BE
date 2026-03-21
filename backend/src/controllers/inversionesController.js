@@ -256,6 +256,9 @@ const venderAccion = async (req, res) => {
 const listarPosicionesAbiertas = async (req, res) => {
   try {
     const usuarioId = req.usuario.id;
+    const usuario = await User.findByPk(usuarioId, {
+      attributes: ['id', 'alpacaAccountId'],
+    });
 
     const posiciones = await Inversion.findAll({
       where: {
@@ -264,6 +267,22 @@ const listarPosicionesAbiertas = async (req, res) => {
       },
       order: [['fechaCompra', 'DESC']],
     });
+
+    if (posiciones.length === 0 && usuario?.alpacaAccountId) {
+      const posicionesBroker = await alpacaService.listarPosicionesCuentaBroker(usuario.alpacaAccountId);
+      const valorTotalBroker = posicionesBroker.reduce((sum, pos) => sum + parseFloat(pos.market_value || 0), 0);
+      const gananciaTotalBroker = posicionesBroker.reduce((sum, pos) => sum + parseFloat(pos.unrealized_pl || 0), 0);
+
+      return res.json({
+        posiciones: posicionesBroker,
+        resumen: {
+          totalPosiciones: posicionesBroker.length,
+          valorTotal: parseFloat(valorTotalBroker.toFixed(2)),
+          gananciaTotal: parseFloat(gananciaTotalBroker.toFixed(2)),
+        },
+        source: 'alpaca',
+      });
+    }
 
     // Obtener precios actuales
     const symbols = [...new Set(posiciones.map(p => p.symbol))];
@@ -288,6 +307,7 @@ const listarPosicionesAbiertas = async (req, res) => {
         gananciaNoRealizada,
         porcentajeGanancia: porcentaje,
         fechaCompra: pos.fechaCompra,
+        source: 'be',
       };
     });
 
@@ -301,6 +321,7 @@ const listarPosicionesAbiertas = async (req, res) => {
         valorTotal: parseFloat(valorTotal.toFixed(2)),
         gananciaTotal: parseFloat(gananciaTotal.toFixed(2)),
       },
+      source: 'local',
     });
   } catch (error) {
     console.error('❌ Error listando posiciones:', error.message);
