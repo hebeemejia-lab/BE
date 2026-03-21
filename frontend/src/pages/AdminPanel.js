@@ -2097,14 +2097,16 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
                     : `Restante: $${checkoutPlan.saldoNegativoRestante.toFixed(2)}`}
                 </span>
               </div>
-              <div className={`plan-checkout-row ${checkoutPlan.saldoPrestamoSaldado ? 'saldado' : ''}`}>
-                <span>Saldo de préstamos pendiente</span>
-                <span>
-                  {checkoutPlan.saldoPrestamoSaldado
-                    ? 'Deuda saldada'
-                    : `Restante: $${checkoutPlan.saldoPrestamoRestante.toFixed(2)}`}
-                </span>
-              </div>
+              {Number(checkoutPlan.deudaPrestamosInicial || 0) > 0 && (
+                <div className={`plan-checkout-row ${checkoutPlan.saldoPrestamoSaldado ? 'saldado' : ''}`}>
+                  <span>Saldo de préstamos pendiente</span>
+                  <span>
+                    {checkoutPlan.saldoPrestamoSaldado
+                      ? 'Deuda saldada'
+                      : `Restante: $${checkoutPlan.saldoPrestamoRestante.toFixed(2)}`}
+                  </span>
+                </div>
+              )}
               <div className="plan-checkout-total">
                 <span>Total pendiente del plan</span>
                 <strong>${checkoutPlan.deudaTotalRestante.toFixed(2)}</strong>
