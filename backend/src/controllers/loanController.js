@@ -1,6 +1,14 @@
 const Loan = require('../models/Loan');
 const User = require('../models/User');
+const CuotaPrestamo = require('../models/CuotaPrestamo');
 const emailService = require('../services/emailService');
+
+const toNumberOrZero = (value) => {
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const roundMoney = (value) => parseFloat(toNumberOrZero(value).toFixed(2));
 
 // Solicitar préstamo
 const solicitarPrestamo = async (req, res) => {
@@ -52,12 +60,76 @@ const obtenerMisPrestamos = async (req, res) => {
   try {
     const usuarioId = req.usuario.id;
 
+    const usuario = await User.findByPk(usuarioId, { attributes: ['id', 'saldo'] });
+    const saldoUsuario = roundMoney(usuario?.saldo || 0);
+
     const prestamos = await Loan.findAll({
       where: { usuarioId },
+      include: [{
+        model: CuotaPrestamo,
+        as: 'cuotasPrestamo',
+        required: false,
+      }],
       order: [['createdAt', 'DESC']],
     });
 
-    res.json(prestamos);
+    const prestamosNormalizados = await Promise.all(prestamos.map(async (prestamo) => {
+      const esPlanPago = String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO');
+      const estado = String(prestamo.estado || '').toLowerCase();
+      const cuotas = Array.isArray(prestamo.cuotasPrestamo) ? prestamo.cuotasPrestamo : [];
+
+      const montoPendienteCuotas = cuotas
+        .filter((cuota) => !cuota.pagado)
+        .reduce((sum, cuota) => sum + toNumberOrZero(cuota.montoCuota), 0);
+
+      let montoPendiente = cuotas.length > 0
+        ? roundMoney(montoPendienteCuotas)
+        : roundMoney(prestamo.montoAprobado ?? prestamo.montoSolicitado ?? 0);
+
+      if (estado === 'completado' || estado === 'pagado' || estado === 'rechazado') {
+        montoPendiente = 0;
+      }
+
+      // Cierra planes viejos que quedaron activos aunque el saldo negativo ya fue saldado.
+      if (esPlanPago && saldoUsuario >= 0 && estado !== 'completado' && estado !== 'pagado') {
+        await Loan.update(
+          { estado: 'completado' },
+          { where: { id: prestamo.id } },
+        );
+
+        await CuotaPrestamo.update(
+          {
+            pagado: true,
+            fechaPago: new Date(),
+            metodoPago: 'Ajuste',
+            notas: 'Cierre automático en consulta: saldo del usuario en 0',
+          },
+          {
+            where: {
+              prestamoId: prestamo.id,
+              pagado: false,
+            },
+          },
+        );
+
+        montoPendiente = 0;
+        prestamo.estado = 'completado';
+      }
+
+      const estadoFinal = String(prestamo.estado || '').toLowerCase();
+      const activoVisual = estadoFinal !== 'completado'
+        && estadoFinal !== 'pagado'
+        && estadoFinal !== 'rechazado'
+        && montoPendiente > 0;
+
+      return {
+        ...prestamo.toJSON(),
+        montoPendiente,
+        activoVisual,
+      };
+    }));
+
+    res.json(prestamosNormalizados);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
