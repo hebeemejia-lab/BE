@@ -3,16 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import { inversionesAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 
-const QUICK_SYMBOLS = [
-  { label: 'BTC',  symbol: 'BTC/USD',  icon: '₿', assetClass: 'crypto', color: '#f7931a' },
-  { label: 'ETH',  symbol: 'ETH/USD',  icon: 'Ξ', assetClass: 'crypto', color: '#627eea' },
-  { label: 'SOL',  symbol: 'SOL/USD',  icon: '◎', assetClass: 'crypto', color: '#9945ff' },
-  { label: 'DOGE', symbol: 'DOGE/USD', icon: 'Ð', assetClass: 'crypto', color: '#c2a633' },
-  { label: 'SPY',  symbol: 'SPY',      icon: '📊', assetClass: 'stock',  color: '#10b981' },
-  { label: 'AAPL', symbol: 'AAPL',     icon: '🍎', assetClass: 'stock',  color: '#6b7280' },
-  { label: 'MSFT', symbol: 'MSFT',     icon: 'Ⓜ', assetClass: 'stock',  color: '#0ea5e9' },
-  { label: 'NVDA', symbol: 'NVDA',     icon: '⚡', assetClass: 'stock',  color: '#76b900' },
-];
+const CATALOG = {
+  crypto: [
+    { label: 'Bitcoin',   symbol: 'BTC/USD',  icon: '₿',  assetClass: 'crypto', color: '#f7931a', desc: 'BTC' },
+    { label: 'Ethereum',  symbol: 'ETH/USD',  icon: 'Ξ',  assetClass: 'crypto', color: '#627eea', desc: 'ETH' },
+    { label: 'Solana',    symbol: 'SOL/USD',  icon: '◎',  assetClass: 'crypto', color: '#9945ff', desc: 'SOL' },
+    { label: 'Dogecoin',  symbol: 'DOGE/USD', icon: 'Ð',  assetClass: 'crypto', color: '#c2a633', desc: 'DOGE' },
+    { label: 'XRP',       symbol: 'XRP/USD',  icon: '✕',  assetClass: 'crypto', color: '#346aa9', desc: 'XRP' },
+    { label: 'Litecoin',  symbol: 'LTC/USD',  icon: 'Ł',  assetClass: 'crypto', color: '#a0a0a0', desc: 'LTC' },
+    { label: 'Chainlink', symbol: 'LINK/USD', icon: '⬡',  assetClass: 'crypto', color: '#2a5ada', desc: 'LINK' },
+    { label: 'Avalanche', symbol: 'AVAX/USD', icon: '▲',  assetClass: 'crypto', color: '#e84142', desc: 'AVAX' },
+  ],
+  stocks: [
+    { label: 'Apple',     symbol: 'AAPL',  icon: '🍎', assetClass: 'stock', color: '#6b7280', desc: 'NASDAQ' },
+    { label: 'Microsoft', symbol: 'MSFT',  icon: 'Ⓜ',  assetClass: 'stock', color: '#0ea5e9', desc: 'NASDAQ' },
+    { label: 'NVIDIA',    symbol: 'NVDA',  icon: '⚡', assetClass: 'stock', color: '#76b900', desc: 'NASDAQ' },
+    { label: 'Tesla',     symbol: 'TSLA',  icon: '🚗', assetClass: 'stock', color: '#e82127', desc: 'NASDAQ' },
+    { label: 'Amazon',    symbol: 'AMZN',  icon: '📦', assetClass: 'stock', color: '#ff9900', desc: 'NASDAQ' },
+    { label: 'Google',    symbol: 'GOOGL', icon: 'G',  assetClass: 'stock', color: '#4285f4', desc: 'NASDAQ' },
+    { label: 'Meta',      symbol: 'META',  icon: '∞',  assetClass: 'stock', color: '#0866ff', desc: 'NASDAQ' },
+    { label: 'S&P 500',   symbol: 'SPY',   icon: '📊', assetClass: 'stock', color: '#10b981', desc: 'ETF' },
+  ],
+};
+
+const ALL_ASSETS = [...CATALOG.crypto, ...CATALOG.stocks];
 
 const fmtPrice = (n) => {
   if (n == null || !Number.isFinite(n)) return '—';
@@ -25,21 +39,19 @@ export default function TradingPanel() {
   const { usuario } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [selected, setSelected]       = useState(QUICK_SYMBOLS[0]);
-  const [customSymbol, setCustomSymbol] = useState('');
-  const [quote, setQuote]             = useState(null);
+  const [tab, setTab]               = useState('crypto'); // 'crypto' | 'stocks'
+  const [selected, setSelected]     = useState(ALL_ASSETS[0]);
+  const [quote, setQuote]           = useState(null);
   const [loadingQuote, setLoadingQuote] = useState(false);
-  const [cantidad, setCantidad]       = useState('');
-  const [modoUsd, setModoUsd]         = useState(true);
-  const [buying, setBuying]           = useState(false);
-  const [mensaje, setMensaje]         = useState(null);
-  const [posiciones, setPosiciones]   = useState([]);
-  const [loadingPos, setLoadingPos]   = useState(false);
+  const [cantidad, setCantidad]     = useState('');
+  const [modoUsd, setModoUsd]       = useState(true);
+  const [buying, setBuying]         = useState(false);
+  const [mensaje, setMensaje]       = useState(null);
+  const [posiciones, setPosiciones] = useState([]);
+  const [loadingPos, setLoadingPos] = useState(false);
 
-  const activeSymbol = customSymbol.trim().toUpperCase() || selected.symbol;
-  const activeClass  = customSymbol.trim()
-    ? (customSymbol.includes('/') ? 'crypto' : 'stock')
-    : selected.assetClass;
+  const activeSymbol = selected.symbol;
+  const activeClass  = selected.assetClass;
 
   const fetchQuote = useCallback(async (sym) => {
     setLoadingQuote(true);
@@ -78,20 +90,11 @@ export default function TradingPanel() {
   useEffect(() => { fetchQuote(activeSymbol); }, [selected]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { fetchPosiciones(); }, [fetchPosiciones]);
 
-  const handleSymbolSelect = (sym) => {
-    setSelected(sym);
-    setCustomSymbol('');
+  const handleAssetSelect = (asset) => {
+    setSelected(asset);
+    setTab(asset.assetClass === 'crypto' ? 'crypto' : 'stocks');
     setMensaje(null);
     setCantidad('');
-  };
-
-  const handleCustomSubmit = (e) => {
-    e.preventDefault();
-    const s = customSymbol.trim().toUpperCase();
-    if (!s) return;
-    setMensaje(null);
-    setCantidad('');
-    fetchQuote(s);
   };
 
   const unidades = (() => {
@@ -147,42 +150,46 @@ export default function TradingPanel() {
         </div>
       </div>
 
-      {/* ── Quick symbol pills ─────────────────────────────────────────── */}
-      <div style={S.pillsWrap}>
-        {QUICK_SYMBOLS.map((sym) => {
-          const isActive = !customSymbol && selected.symbol === sym.symbol;
+      {/* ── Category tabs ──────────────────────────────────────────────── */}
+      <div style={S.tabWrap}>
+        <button
+          type="button"
+          style={{ ...S.tabBtn, ...(tab === 'crypto' ? S.tabActive : {}) }}
+          onClick={() => setTab('crypto')}
+        >
+          Crypto
+        </button>
+        <button
+          type="button"
+          style={{ ...S.tabBtn, ...(tab === 'stocks' ? S.tabActive : {}) }}
+          onClick={() => setTab('stocks')}
+        >
+          Acciones
+        </button>
+      </div>
+
+      {/* ── Asset catalog grid ────────────────────────────────────────────── */}
+      <div style={S.catalogGrid}>
+        {CATALOG[tab].map((asset) => {
+          const isActive = selected.symbol === asset.symbol;
           return (
             <button
-              key={sym.symbol}
+              key={asset.symbol}
               type="button"
               style={{
-                ...S.pill,
-                background:  isActive ? sym.color : 'rgba(255,255,255,0.06)',
-                borderColor: isActive ? sym.color : 'rgba(255,255,255,0.12)',
-                color:       isActive ? '#fff'    : '#cbd5e1',
+                ...S.assetCard,
+                borderColor: isActive ? asset.color : 'rgba(255,255,255,0.1)',
+                background:  isActive ? `${asset.color}28` : 'rgba(255,255,255,0.04)',
               }}
-              onClick={() => handleSymbolSelect(sym)}
+              onClick={() => handleAssetSelect(asset)}
             >
-              <span style={{ fontSize: '1rem' }}>{sym.icon}</span>
-              <span>{sym.label}</span>
+              <span style={{ fontSize: '1.6rem', color: asset.color }}>{asset.icon}</span>
+              <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#f1f5f9' }}>{asset.label}</span>
+              <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>{asset.desc}</span>
             </button>
           );
         })}
       </div>
-
-      {/* ── Custom symbol search ───────────────────────────────────────── */}
-      <form style={S.searchWrap} onSubmit={handleCustomSubmit}>
-        <input
-          style={S.searchInput}
-          value={customSymbol}
-          onChange={(e) => setCustomSymbol(e.target.value.toUpperCase())}
-          placeholder="Buscar símbolo: TSLA, BNB/USD, AMZN…"
-          maxLength={12}
-          autoComplete="off"
-          autoCapitalize="characters"
-        />
-        <button type="submit" style={S.searchBtn}>Buscar</button>
-      </form>
 
       {/* ── Quote card ─────────────────────────────────────────────────── */}
       <div style={S.quoteCard}>
@@ -357,50 +364,46 @@ const S = {
     gap: 2,
     fontSize: '0.95rem',
   },
-  pillsWrap: {
+  tabWrap: {
     display: 'flex',
-    flexWrap: 'wrap',
     gap: 8,
     padding: '18px 20px 0',
   },
-  pill: {
+  tabBtn: {
+    flex: 1,
+    padding: '10px',
+    borderRadius: 10,
+    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'rgba(255,255,255,0.05)',
+    color: '#94a3b8',
+    cursor: 'pointer',
+    fontWeight: 600,
+    fontSize: '0.88rem',
+    transition: 'all 0.15s',
+  },
+  tabActive: {
+    background: '#1d4ed8',
+    borderColor: '#1d4ed8',
+    color: '#fff',
+  },
+  catalogGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: 10,
+    padding: '12px 20px 0',
+  },
+  assetCard: {
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
-    gap: 5,
-    border: '1px solid',
-    borderRadius: 20,
-    padding: '6px 14px',
-    fontSize: '0.82rem',
-    fontWeight: 700,
+    gap: 4,
+    padding: '14px 8px',
+    borderRadius: 14,
+    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'rgba(255,255,255,0.04)',
     cursor: 'pointer',
     transition: 'all 0.15s',
-    background: 'none',
-  },
-  searchWrap: {
-    display: 'flex',
-    gap: 8,
-    padding: '14px 20px 0',
-  },
-  searchInput: {
-    flex: 1,
-    background: 'rgba(255,255,255,0.06)',
-    border: '1px solid rgba(255,255,255,0.12)',
-    borderRadius: 10,
     color: '#f1f5f9',
-    padding: '10px 14px',
-    fontSize: '0.9rem',
-    outline: 'none',
-  },
-  searchBtn: {
-    background: '#1d4ed8',
-    border: 'none',
-    borderRadius: 10,
-    color: '#fff',
-    cursor: 'pointer',
-    padding: '10px 18px',
-    fontWeight: 700,
-    fontSize: '0.85rem',
-    flexShrink: 0,
   },
   quoteCard: {
     margin: '14px 20px 0',

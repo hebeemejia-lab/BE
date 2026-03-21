@@ -57,7 +57,7 @@ export default function Deposita() {
             { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
           );
           const orderId = response.data.orderId;
-          depositoIdRef.current = response.data.depositoId;
+          depositoIdRef.current = response.data.recargaId;
           if (!orderId || !depositoIdRef.current) {
             setError('No se pudo iniciar el pago. Intenta de nuevo.');
             throw new Error('Orden inválida');
@@ -80,7 +80,7 @@ export default function Deposita() {
             : { 'Content-Type': 'application/json' };
           const response = await axios.post(
             `${API_URL}/recargas/paypal/capturar`,
-            { depositoId: depositoIdRef.current, paypalOrderId: data.orderID },
+            { recargaId: depositoIdRef.current, paypalOrderId: data.orderID },
             { headers }
           );
           setSuccess(`✅ ¡Pago completado! Saldo actualizado: $${response.data.nuevoSaldo || 'N/A'}`);
@@ -141,14 +141,14 @@ export default function Deposita() {
     const params = new URLSearchParams(window.location.search);
     const success = params.get('success');
     const cancelled = params.get('error');
-    const depositoId = params.get('depositoId'); // ID de depósito en BD
+    const recargaId = params.get('recargaId'); // ID de recarga en BD
 
     if (cancelled === 'cancelled') {
       setError('Pago cancelado por el usuario.');
       return;
     }
 
-    if (success === 'true' && depositoId) {
+    if (success === 'true' && recargaId) {
       try {
         setLoading(true);
         const authToken = localStorage.getItem('token');
@@ -159,7 +159,7 @@ export default function Deposita() {
 
         const response = await axios.post(
             `${API_URL}/recargas/paypal/capturar`,
-          { depositoId: depositoId },
+          { recargaId: recargaId },
           {
             headers: {
               Authorization: `Bearer ${authToken}`,

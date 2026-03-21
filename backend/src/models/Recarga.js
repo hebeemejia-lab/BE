@@ -28,7 +28,7 @@ const Recarga = sequelize.define('Recarga', {
     defaultValue: 0,
   },
   metodo: {
-    type: DataTypes.ENUM('tarjeta', 'transferencia', 'codigo', 'paypal', 'rapyd', '2checkout'),
+    type: DataTypes.ENUM('tarjeta', 'transferencia', 'codigo', 'paypal', 'rapyd', '2checkout', 'googlepay'),
     defaultValue: 'tarjeta',
   },
   estado: {

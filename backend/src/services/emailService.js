@@ -268,6 +268,19 @@ const emailService = {
       return { enviado: false, error: error.message };
     }
   },
+  // Enviar confirmación de préstamo aprobado al usuario
+  enviarConfirmacionAprobacion: async (usuario, prestamo) => {
+    try {
+      console.log(`📧 Email enviado a ${usuario.email}`);
+      console.log(`   Tu préstamo ha sido aprobado`);
+      console.log(`   Monto: $${prestamo.montoAprobado}`);
+      console.log(`   Cuota mensual: $${prestamo.cuotaMensual}`);
+      return { enviado: true };
+    } catch (error) {
+      console.error('Error enviando email de aprobación:', error);
+      return { enviado: false, error: error.message };
+    }
+  },
   // Enviar rechazo de préstamo
   enviarRechazo: async (usuario, prestamo) => {
     try {
