@@ -468,30 +468,6 @@ const obtenerTransferenciaAchBroker = async ({ accountId, transferId }) => {
     );
 
     return formatBrokerTransfer(response.data);
-
-    const listarPosicionesCuentaBroker = async (accountId) => {
-      if (!accountId) {
-        return [];
-      }
-
-      const config = ensureBrokerConfig();
-
-      try {
-        const response = await axios.get(
-          `${config.baseUrl}/v1/trading/accounts/${encodeURIComponent(accountId)}/positions`,
-          { headers: getBrokerHeaders() },
-        );
-
-        const positions = Array.isArray(response.data) ? response.data : [];
-        return positions.map(formatBrokerPosition);
-      } catch (error) {
-        if (error.response?.status === 404) {
-          return [];
-        }
-
-        throw error;
-      }
-    };
   } catch (error) {
     if (error.response?.status !== 404) {
       throw error;
@@ -505,6 +481,30 @@ const obtenerTransferenciaAchBroker = async ({ accountId, transferId }) => {
     }
 
     return transfer;
+  }
+};
+
+const listarPosicionesCuentaBroker = async (accountId) => {
+  if (!accountId) {
+    return [];
+  }
+
+  const config = ensureBrokerConfig();
+
+  try {
+    const response = await axios.get(
+      `${config.baseUrl}/v1/trading/accounts/${encodeURIComponent(accountId)}/positions`,
+      { headers: getBrokerHeaders() },
+    );
+
+    const positions = Array.isArray(response.data) ? response.data : [];
+    return positions.map(formatBrokerPosition);
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return [];
+    }
+
+    throw error;
   }
 };
 
