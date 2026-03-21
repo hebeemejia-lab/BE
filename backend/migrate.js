@@ -38,6 +38,8 @@ async function migrar() {
       `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "saldoChain" DECIMAL(15,2) DEFAULT 0`,
       `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "alpacaAccountId" VARCHAR(255)`,
       `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "alpacaFunded" BOOLEAN DEFAULT false`,
+      `ALTER TABLE "Loans" ADD COLUMN IF NOT EXISTS "deudaSaldoNegativoInicial" DECIMAL(15,2) DEFAULT 0`,
+      `ALTER TABLE "Loans" ADD COLUMN IF NOT EXISTS "deudaPrestamosInicial" DECIMAL(15,2) DEFAULT 0`,
     ];
     for (const sql of columnMigrations) {
       try {

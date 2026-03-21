@@ -31,6 +31,14 @@ const Loan = sequelize.define('Loan', {
     type: DataTypes.DECIMAL(15, 2),
     defaultValue: null,
   },
+  deudaSaldoNegativoInicial: {
+    type: DataTypes.DECIMAL(15, 2),
+    defaultValue: 0,
+  },
+  deudaPrestamosInicial: {
+    type: DataTypes.DECIMAL(15, 2),
+    defaultValue: 0,
+  },
   motivoRechazo: {
     type: DataTypes.STRING,
     defaultValue: null,

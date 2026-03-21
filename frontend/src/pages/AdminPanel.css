@@ -522,6 +522,31 @@
   line-height: 1.5;
 }
 
+.prestamo-plan-help p {
+  margin: 0 0 8px;
+}
+
+.prestamo-plan-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.prestamo-plan-breakdown span,
+.prestamo-plan-breakdown strong {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #334155;
+  font-size: 12px;
+}
+
+.prestamo-plan-breakdown strong {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 .btn-crear {
   background: #b21d2b;
   color: white;
@@ -710,6 +735,65 @@
 .prestamo-detalles h4 {
   color: #2d3748;
   margin-bottom: 15px;
+}
+
+.plan-checkout-box {
+  background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.plan-checkout-box h4 {
+  margin: 0 0 10px 0;
+  color: #1e3a8a;
+}
+
+.plan-checkout-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed #cbd5e1;
+  color: #334155;
+  font-size: 14px;
+}
+
+.plan-checkout-row:last-of-type {
+  border-bottom: none;
+}
+
+.plan-checkout-row span:last-child {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.plan-checkout-row.saldado {
+  color: #64748b;
+}
+
+.plan-checkout-row.saldado span:first-child {
+  text-decoration: line-through;
+}
+
+.plan-checkout-row.saldado span:last-child {
+  color: #047857;
+}
+
+.plan-checkout-total {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #cbd5e1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #0f172a;
+}
+
+.plan-checkout-total strong {
+  font-size: 18px;
+  color: #1e3a8a;
 }
 
 .cuotas-lista {
