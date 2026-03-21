@@ -573,6 +573,7 @@ const capturarRecargaPayPal = async (req, res) => {
         mensaje: 'Pago PayPal ya había sido completado',
         recargaId: recarga.id,
         nuevoSaldo: usuario?.saldo,
+        nuevoSaldoChain: usuario?.saldoChain,
         yaCapturada: true,
       });
     }
@@ -689,15 +690,16 @@ const capturarRecargaPayPal = async (req, res) => {
 
     const usuario = await User.findByPk(recarga.usuarioId);
     if (usuario) {
-      usuario.saldo = parseFloat(usuario.saldo) + parseFloat(recarga.montoNeto);
+      usuario.saldoChain = parseFloat(usuario.saldoChain || 0) + parseFloat(recarga.montoNeto);
       await usuario.save();
-      console.log(`✅ Saldo actualizado. Usuario: ${usuario.id}, Nuevo saldo: ${usuario.saldo}`);
+      console.log(`✅ Saldo CHAIN actualizado. Usuario: ${usuario.id}, Nuevo saldoChain: ${usuario.saldoChain}`);
     }
 
     return res.json({
       mensaje: 'Pago PayPal completado exitosamente',
       recargaId: recarga.id,
       nuevoSaldo: usuario?.saldo,
+      nuevoSaldoChain: usuario?.saldoChain,
       paypalOrderId: recarga.paypalOrderId,
       captureId,
     });

@@ -39,7 +39,6 @@ export default function Footer() {
         <div className="footer-col">
           <h4>Contacto</h4>
           <a href="mailto:soporte@bancoexclusivo.com">soporte@bancoexclusivo.com</a>
-          <a href="mailto:admin@bancoexclusivo.lat">admin@bancoexclusivo.lat</a>
           <span className="footer-hours">Lun–Vie 9:00 – 18:00 (ET)</span>
         </div>
       </div>

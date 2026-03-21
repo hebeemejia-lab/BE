@@ -56,6 +56,10 @@ const User = sequelize.define('User', {
     type: DataTypes.DECIMAL(15, 2),
     defaultValue: 0,
   },
+  saldoChain: {
+    type: DataTypes.DECIMAL(15, 2),
+    defaultValue: 0,
+  },
   saldoEnTransitoAlpaca: {
     type: DataTypes.DECIMAL(15, 2),
     defaultValue: 0,

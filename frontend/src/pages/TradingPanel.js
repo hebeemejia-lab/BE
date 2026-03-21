@@ -49,6 +49,8 @@ export default function TradingPanel() {
   const [mensaje, setMensaje]       = useState(null);
   const [posiciones, setPosiciones] = useState([]);
   const [loadingPos, setLoadingPos] = useState(false);
+  const [saldoBe, setSaldoBe]       = useState(parseFloat(usuario?.saldo || 0));
+  const [saldoChain, setSaldoChain] = useState(parseFloat(usuario?.saldoChain || 0));
 
   const activeSymbol = selected.symbol;
   const activeClass  = selected.assetClass;
@@ -89,6 +91,10 @@ export default function TradingPanel() {
 
   useEffect(() => { fetchQuote(activeSymbol); }, [selected]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { fetchPosiciones(); }, [fetchPosiciones]);
+  useEffect(() => {
+    setSaldoBe(parseFloat(usuario?.saldo || 0));
+    setSaldoChain(parseFloat(usuario?.saldoChain || 0));
+  }, [usuario]);
 
   const handleAssetSelect = (asset) => {
     setSelected(asset);
@@ -122,6 +128,8 @@ export default function TradingPanel() {
         assetClass: activeClass,
       });
       setMensaje({ ok: true, text: res.data?.mensaje || '✅ Orden ejecutada correctamente' });
+      if (res.data?.nuevoSaldo != null) setSaldoBe(parseFloat(res.data.nuevoSaldo || 0));
+      if (res.data?.nuevoSaldoChain != null) setSaldoChain(parseFloat(res.data.nuevoSaldoChain || 0));
       setCantidad('');
       fetchPosiciones();
       fetchQuote(activeSymbol);
@@ -133,7 +141,7 @@ export default function TradingPanel() {
     }
   };
 
-  const saldo = parseFloat(usuario?.saldo || 0);
+  const saldoPrincipal = activeClass === 'crypto' ? saldoChain : saldoBe;
 
   return (
     <div style={S.page}>
@@ -145,8 +153,13 @@ export default function TradingPanel() {
           <p style={S.subtitle}>Órdenes de mercado en tiempo real · Alpaca Live</p>
         </div>
         <div style={S.balancePill}>
-          <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>Saldo BE</span>
-          <span style={{ fontWeight: 700 }}>${saldo.toFixed(2)}</span>
+          <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>
+            {activeClass === 'crypto' ? 'Saldo CHAIN' : 'Saldo BE'}
+          </span>
+          <span style={{ fontWeight: 700 }}>${saldoPrincipal.toFixed(2)}</span>
+          <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>
+            BE: ${saldoBe.toFixed(2)} · CHAIN: ${saldoChain.toFixed(2)}
+          </span>
         </div>
       </div>
 

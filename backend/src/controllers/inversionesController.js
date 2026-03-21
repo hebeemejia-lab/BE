@@ -49,18 +49,20 @@ const comprarAccion = async (req, res) => {
     const precioCompra = cotizacion.precioCompra || cotizacion.precio;
     const costoEstimado = parseFloat((precioCompra * cantidadNum).toFixed(2));
     const costoValidacion = parseFloat((costoEstimado * (activo.assetClass === 'crypto' ? 1.05 : 1.02)).toFixed(2));
+    const esCrypto = activo.assetClass === 'crypto';
 
     console.log(`💰 COMPRA REAL: ${cantidadNum} ${activo.symbol} @ $${precioCompra} = $${costoEstimado}`);
 
     // Validar saldo suficiente
-    const saldoDisponible = parseFloat(usuario.saldo);
+    const saldoDisponible = parseFloat(esCrypto ? (usuario.saldoChain || 0) : usuario.saldo);
     if (costoValidacion > saldoDisponible) {
       return res.status(400).json({
-        mensaje: 'Saldo insuficiente',
+        mensaje: esCrypto ? 'Saldo CHAIN insuficiente' : 'Saldo insuficiente',
         costoTotal: costoEstimado,
         costoValidacion,
         saldoDisponible,
         faltante: parseFloat((costoValidacion - saldoDisponible).toFixed(2)),
+        tipoSaldo: esCrypto ? 'saldoChain' : 'saldo',
       });
     }
 
@@ -117,7 +119,11 @@ const comprarAccion = async (req, res) => {
 
     let inversion;
     await sequelize.transaction(async (transaction) => {
-      usuario.saldo = parseFloat((saldoDisponible - costoTotal).toFixed(2));
+      if (esCrypto) {
+        usuario.saldoChain = parseFloat((saldoDisponible - costoTotal).toFixed(2));
+      } else {
+        usuario.saldo = parseFloat((saldoDisponible - costoTotal).toFixed(2));
+      }
       await usuario.save({ transaction });
 
       inversion = await Inversion.create({
@@ -132,7 +138,7 @@ const comprarAccion = async (req, res) => {
       }, { transaction });
     });
 
-    console.log(`✅ Compra REAL ejecutada - Nuevo saldo: $${usuario.saldo}`);
+    console.log(`✅ Compra REAL ejecutada - Nuevo saldo ${esCrypto ? 'CHAIN' : 'BE'}: $${esCrypto ? usuario.saldoChain : usuario.saldo}`);
 
     res.json({
       mensaje: `✅ COMPRA REAL EJECUTADA EN ALPACA: ${cantidadEjecutada} ${activo.symbol}`,
@@ -151,6 +157,7 @@ const comprarAccion = async (req, res) => {
         fechaCompra: inversion.fechaCompra,
       },
       nuevoSaldo: usuario.saldo,
+      nuevoSaldoChain: parseFloat(usuario.saldoChain || 0),
     });
   } catch (error) {
     console.error('❌ Error comprando activo:', error.message);
@@ -204,12 +211,17 @@ const venderAccion = async (req, res) => {
     inversion.fechaVenta = new Date();
     await inversion.save();
 
-    // Agregar al saldo BE (dinero real)
+    // Agregar ingreso segun tipo de activo: crypto -> saldoChain, acciones -> saldo
     const usuario = await User.findByPk(usuarioId);
-    usuario.saldo = parseFloat((parseFloat(usuario.saldo) + ingresoTotal).toFixed(2));
+    const esCrypto = String(inversion.symbol || '').includes('/');
+    if (esCrypto) {
+      usuario.saldoChain = parseFloat((parseFloat(usuario.saldoChain || 0) + ingresoTotal).toFixed(2));
+    } else {
+      usuario.saldo = parseFloat((parseFloat(usuario.saldo) + ingresoTotal).toFixed(2));
+    }
     await usuario.save();
 
-    console.log(`✅ Venta REAL ejecutada - Nuevo saldo: $${usuario.saldo}`);
+    console.log(`✅ Venta REAL ejecutada - Nuevo saldo ${esCrypto ? 'CHAIN' : 'BE'}: $${esCrypto ? usuario.saldoChain : usuario.saldo}`);
 
     res.json({
       mensaje: `✅ VENTA REAL EJECUTADA: ${inversion.cantidad} ${inversion.symbol}`,
@@ -229,6 +241,7 @@ const venderAccion = async (req, res) => {
         esGanancia: ganancia >= 0,
       },
       nuevoSaldo: usuario.saldo,
+      nuevoSaldoChain: parseFloat(usuario.saldoChain || 0),
     });
   } catch (error) {
     console.error('❌ Error vendiendo acción:', error.message);
@@ -341,6 +354,7 @@ const obtenerPortfolio = async (req, res) => {
 
     res.json({
       saldoDisponible: parseFloat(usuario.saldo),
+      saldoChainDisponible: parseFloat(usuario.saldoChain || 0),
       valorPortfolio: parseFloat(valorPortfolio.toFixed(2)),
       valorTotal: parseFloat((parseFloat(usuario.saldo) + valorPortfolio).toFixed(2)),
       posicionesAbiertas: posicionesConValor,

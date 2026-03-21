@@ -35,6 +35,7 @@ async function migrar() {
     // Columnas nuevas que pueden no existir en producción — agregar explícitamente
     const columnMigrations = [
       `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "saldoEnTransitoAlpaca" DECIMAL(15,2) DEFAULT 0`,
+      `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "saldoChain" DECIMAL(15,2) DEFAULT 0`,
       `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "alpacaAccountId" VARCHAR(255)`,
       `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "alpacaFunded" BOOLEAN DEFAULT false`,
     ];

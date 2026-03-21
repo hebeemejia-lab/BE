@@ -682,10 +682,10 @@ exports.registrarPagoCuota = async (req, res) => {
     const todasPagadas = todasCuotas.every(c => c.pagado);
 
     if (todasPagadas) {
-      // Actualizar estado del préstamo a "pagado"
+      // Actualizar estado del préstamo a "completado" (valor válido del ENUM)
       const prestamo = await Loan.findByPk(cuota.prestamoId);
       if (prestamo) {
-        prestamo.estado = 'pagado';
+        prestamo.estado = 'completado';
         await prestamo.save();
         console.log('✅ Préstamo marcado como pagado');
       }
