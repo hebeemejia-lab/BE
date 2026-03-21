@@ -481,6 +481,47 @@
   background: white;
 }
 
+.prestamo-plan-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  min-height: 44px;
+}
+
+.prestamo-plan-toggle.disabled {
+  opacity: 0.6;
+}
+
+.prestamo-plan-toggle input {
+  margin-top: 3px;
+}
+
+.prestamo-plan-toggle span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.prestamo-plan-toggle small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.prestamo-plan-help {
+  margin-top: 12px;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .btn-crear {
   background: #b21d2b;
   color: white;
@@ -565,6 +606,32 @@
   font-size: 14px;
   margin-left: 10px;
   font-weight: normal;
+}
+
+.prestamo-tipo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.prestamo-tipo.plan-pago {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+}
+
+.prestamo-tipo.prestamo-normal {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
 }
 
 .prestamo-info p {

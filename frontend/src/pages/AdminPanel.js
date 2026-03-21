@@ -1782,28 +1782,39 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
     monto: '',
     plazo: '',
     tasaInteres: '5',
-    fechaPrimerVencimiento: ''
+    fechaPrimerVencimiento: '',
+    usarDeudaActual: false,
   });
   const [creandoPrestamo, setCreandoPrestamo] = useState(false);
   const [busquedaId, setBusquedaId] = useState('');
   const [buscando, setBuscando] = useState(false);
+  const usuarioSeleccionado = usuariosAdmin.find((u) => String(u.id) === String(nuevoPrestamo.usuarioId));
+  const saldoUsuarioSeleccionado = Number(usuarioSeleccionado?.saldo || 0);
+  const deudaActualUsuario = saldoUsuarioSeleccionado < 0 ? Math.abs(saldoUsuarioSeleccionado) : 0;
+  const planPagoDisponible = deudaActualUsuario > 0;
 
   const handleCrearPrestamo = async (e) => {
     e.preventDefault();
+    if (nuevoPrestamo.usarDeudaActual && !planPagoDisponible) {
+      alert('El usuario seleccionado no tiene deuda pendiente para crear un plan de pago.');
+      return;
+    }
     setCreandoPrestamo(true);
     await onCrearPrestamo({
       usuarioId: nuevoPrestamo.usuarioId,
       monto: nuevoPrestamo.monto,
       plazo: nuevoPrestamo.plazo,
       tasaInteres: nuevoPrestamo.tasaInteres,
-      fechaPrimerVencimiento: nuevoPrestamo.fechaPrimerVencimiento || null
+      fechaPrimerVencimiento: nuevoPrestamo.fechaPrimerVencimiento || null,
+      usarDeudaActual: nuevoPrestamo.usarDeudaActual,
     });
     setNuevoPrestamo({
       usuarioId: '',
       monto: '',
       plazo: '',
       tasaInteres: '5',
-      fechaPrimerVencimiento: ''
+      fechaPrimerVencimiento: '',
+      usarDeudaActual: false,
     });
     setCreandoPrestamo(false);
   };
@@ -1859,7 +1870,11 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
         <form className="prestamo-form" onSubmit={handleCrearPrestamo}>
           <select
             value={nuevoPrestamo.usuarioId}
-            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, usuarioId: e.target.value })}
+            onChange={(e) => setNuevoPrestamo({
+              ...nuevoPrestamo,
+              usuarioId: e.target.value,
+              usarDeudaActual: false,
+            })}
             required
           >
             <option value="">Selecciona usuario</option>
@@ -1869,13 +1884,36 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
               </option>
             ))}
           </select>
+          <label className={`prestamo-plan-toggle ${!planPagoDisponible ? 'disabled' : ''}`}>
+            <input
+              type="checkbox"
+              checked={nuevoPrestamo.usarDeudaActual}
+              disabled={!planPagoDisponible}
+              onChange={(e) => setNuevoPrestamo({
+                ...nuevoPrestamo,
+                usarDeudaActual: e.target.checked,
+                monto: e.target.checked ? String(deudaActualUsuario.toFixed(2)) : nuevoPrestamo.monto,
+              })}
+            />
+            <span>
+              Crear plan de pago con deuda actual
+              {usuarioSeleccionado && (
+                <small>
+                  {planPagoDisponible
+                    ? ` Deuda detectada: $${deudaActualUsuario.toFixed(2)}`
+                    : ' El usuario no tiene saldo pendiente negativo'}
+                </small>
+              )}
+            </span>
+          </label>
           <input
             type="number"
             step="0.01"
-            placeholder="Monto"
-            value={nuevoPrestamo.monto}
+            placeholder={nuevoPrestamo.usarDeudaActual ? 'Monto tomado de la deuda actual' : 'Monto'}
+            value={nuevoPrestamo.usarDeudaActual ? deudaActualUsuario.toFixed(2) : nuevoPrestamo.monto}
             onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, monto: e.target.value })}
-            required
+            required={!nuevoPrestamo.usarDeudaActual}
+            disabled={nuevoPrestamo.usarDeudaActual}
           />
           <input
             type="number"
@@ -1898,9 +1936,14 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
             onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, fechaPrimerVencimiento: e.target.value })}
           />
           <button type="submit" className="btn-crear" disabled={creandoPrestamo}>
-            {creandoPrestamo ? 'Creando...' : '➕ Crear préstamo'}
+            {creandoPrestamo ? 'Creando...' : (nuevoPrestamo.usarDeudaActual ? '🧾 Crear plan de pago' : '➕ Crear préstamo')}
           </button>
         </form>
+        {nuevoPrestamo.usarDeudaActual && planPagoDisponible && (
+          <p className="prestamo-plan-help">
+            Este plan tomará el saldo negativo del usuario, lo convertirá en préstamo aprobado y dejará el saldo en 0.
+          </p>
+        )}
       </div>
       
       {prestamos.length === 0 ? (
@@ -1934,6 +1977,7 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [referencia, setReferencia] = useState('');
   const [notas, setNotas] = useState('');
+  const esPlanDePago = String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO');
 
   const handlePagar = (cuotaId) => {
     onRegistrarPago(cuotaId, metodoPago, referencia, notas);
@@ -1950,6 +1994,9 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
           <h3>
             {prestamo.User?.nombre} {prestamo.User?.apellido}
             <span className="prestamo-id">#{prestamo.id}</span>
+            <span className={`prestamo-tipo ${esPlanDePago ? 'plan-pago' : 'prestamo-normal'}`}>
+              {esPlanDePago ? 'Plan de pago' : 'Préstamo'}
+            </span>
           </h3>
           <p>{prestamo.User?.email || prestamo.User?.correo}</p>
         </div>
