@@ -91,6 +91,24 @@
   font-family: 'Space Grotesk', sans-serif;
   font-size: 13px;
   text-align: center;
+  padding-bottom: 20px;
+}
+
+.policy-chapter-title {
+  max-width: 900px;
+  margin: 32px auto 16px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #b21d2b;
+  padding-left: 26px;
+}
+
+.policy-section a {
+  color: #1d4ed8;
+  text-decoration: underline;
 }
 
 @media (max-width: 768px) {

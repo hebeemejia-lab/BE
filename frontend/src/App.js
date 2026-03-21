@@ -34,6 +34,7 @@ import BeneficiosAhorro from './pages/BeneficiosAhorro';
 import Certificado from './pages/Certificado';
 import CryptoDetail from './pages/CryptoDetail';
 import TradingPanel from './pages/TradingPanel';
+import Footer from './components/Footer';
 
 // Estilos
 import './styles/global.css';
@@ -243,6 +244,8 @@ function App() {
             💬
           </button>
         )}
+
+        <Footer />
       </AuthProvider>
       </CurrencyProvider>
     </Router>

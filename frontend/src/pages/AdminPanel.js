@@ -296,7 +296,8 @@ const AdminPanel = () => {
       await cargarPrestamos();
     } catch (error) {
       console.error('Error creando préstamo:', error);
-      alert(error.response?.data?.mensaje || error.response?.data?.error || 'Error al crear préstamo');
+      const detalle = error.response?.data?.error ? `\nDetalle: ${error.response.data.error}` : '';
+      alert((error.response?.data?.mensaje || 'Error al crear préstamo') + detalle);
     } finally {
       setCargando(false);
     }

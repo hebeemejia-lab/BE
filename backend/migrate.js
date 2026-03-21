@@ -1,5 +1,7 @@
-// Script de migración para agregar columna rol y crear usuario admin
+// Script de migración - sincroniza todos los modelos con la base de datos
 const { sequelize } = require('./src/config/database');
+// Cargar TODOS los modelos para que sequelize los registre antes de sync()
+require('./src/models');
 const User = require('./src/models/User');
 const bcrypt = require('bcryptjs');
 
@@ -11,15 +13,28 @@ async function migrar() {
     await sequelize.authenticate();
     console.log('✅ Conectado a la base de datos');
 
-    // Sincronizar modelos (ALTER TABLE para agregar columna rol)
-    const allowAlter = process.env.DB_SYNC_ALTER === 'true';
-    if (process.env.NODE_ENV === 'production' && !allowAlter) {
-      await sequelize.sync();
-      console.log('✅ Tablas sincronizadas (sin alter)');
-    } else {
-      await sequelize.sync({ alter: true });
-      console.log('✅ Tablas sincronizadas (columna rol agregada si no existía)');
+    // Agregar valores ENUM faltantes en PostgreSQL (sync({ alter: true }) no los agrega)
+    const enumMigrations = [
+      { type: '"enum_Recargas_metodo"', value: 'googlepay' },
+      { type: '"enum_Loans_estado"',    value: 'aprobado' },
+      { type: '"enum_Loans_estado"',    value: 'rechazado' },
+      { type: '"enum_Loans_estado"',    value: 'completado' },
+    ];
+    for (const { type, value } of enumMigrations) {
+      try {
+        await sequelize.query(`
+          DO $$ BEGIN
+            ALTER TYPE ${type} ADD VALUE IF NOT EXISTS '${value}';
+          EXCEPTION WHEN others THEN NULL;
+          END $$;
+        `);
+      } catch (_) { /* SQLite or type doesn't exist yet — safe to ignore */ }
     }
+    console.log('✅ ENUM values verificados');
+
+    // Sincronizar TODOS los modelos con alter: true para agregar columnas nuevas
+    await sequelize.sync({ alter: true });
+    console.log('✅ Tablas sincronizadas (alter: columnas y tablas nuevas agregadas)');
 
     // Verificar si existe el usuario admin
     let admin = await User.findOne({ 
