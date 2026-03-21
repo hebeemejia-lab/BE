@@ -188,12 +188,12 @@ export default function Dashboard() {
 
   const prestamosActivos = prestamos.filter((p) => {
     const e = (p.estado || '').toLowerCase();
-    return e && e !== 'pagado' && e !== 'rechazado';
+    return e && e !== 'pagado' && e !== 'completado' && e !== 'rechazado';
   });
 
   const saldoPrestamos = prestamosActivos.reduce((s, p) => {
-    const sn = Number(p.saldoNegativo ?? 0);
-    return s + (Number.isFinite(sn) ? sn : 0);
+    const monto = Number(p.montoAprobado ?? p.montoSolicitado ?? 0);
+    return s + (Number.isFinite(monto) ? monto : 0);
   }, 0);
 
   const transferenciasEnviadas  = transferencias.filter(t => t.remitente?._id === usuario?._id);
