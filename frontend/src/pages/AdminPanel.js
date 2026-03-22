@@ -275,7 +275,11 @@ const AdminPanel = () => {
       });
 
       alert(response.data.mensaje);
-      cargarPrestamos(); // Recargar lista
+      await Promise.all([
+        cargarPrestamos(),
+        cargarDashboard(),
+        api.get('/admin/usuarios').then((usuariosRes) => setUsuariosAdmin(usuariosRes.data.usuarios || [])),
+      ]);
     } catch (error) {
       console.error('❌ Error completo registrando pago:', error);
       console.error('❌ Respuesta del servidor:', error.response?.data);
