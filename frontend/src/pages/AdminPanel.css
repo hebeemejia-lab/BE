@@ -547,6 +547,63 @@
   color: #1d4ed8;
 }
 
+.prestamo-operacion-box {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prestamo-operacion-card {
+  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+}
+
+.prestamo-operacion-card h4 {
+  margin: 0 0 6px 0;
+  color: #0f172a;
+}
+
+.prestamo-operacion-card p {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.prestamo-operacion-card--loan {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.prestamo-operacion-card--plan {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.prestamo-plan-breakdown--full {
+  margin-top: 0;
+}
+
+.prestamo-sandbox-warning {
+  border: 1px solid #fcd34d;
+  background: #fffbeb;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.prestamo-sandbox-warning p {
+  margin: 0;
+  color: #92400e;
+  font-size: 13px;
+}
+
 .btn-crear {
   background: #b21d2b;
   color: white;

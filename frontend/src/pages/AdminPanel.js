@@ -1792,42 +1792,52 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
   const [creandoPrestamo, setCreandoPrestamo] = useState(false);
   const [busquedaId, setBusquedaId] = useState('');
   const [buscando, setBuscando] = useState(false);
+  const [resumenDeuda, setResumenDeuda] = useState(null);
+  const [cargandoResumen, setCargandoResumen] = useState(false);
+  const [depurandoSandbox, setDepurandoSandbox] = useState(false);
   const usuarioSeleccionado = usuariosAdmin.find((u) => String(u.id) === String(nuevoPrestamo.usuarioId));
-  const saldoUsuarioSeleccionado = Number(usuarioSeleccionado?.saldo || 0);
-  const deudaActualUsuario = saldoUsuarioSeleccionado < 0 ? Math.abs(saldoUsuarioSeleccionado) : 0;
-  const deudaPrestamosUsuario = prestamos.reduce((acumulado, prestamo) => {
-    if (String(prestamo.usuarioId) !== String(nuevoPrestamo.usuarioId)) {
-      return acumulado;
+  const deudaActualUsuario = Number(resumenDeuda?.deudaSaldoNegativo || 0);
+  const deudaPrestamosUsuario = Number(resumenDeuda?.deudaPrestamos || 0);
+  const deudaPlanesPagoUsuario = Number(resumenDeuda?.deudaPlanesPago || 0);
+  const deudaTotalPlanPago = Number(resumenDeuda?.deudaConsolidable || 0);
+  const planPagoDisponible = Boolean(resumenDeuda?.puedeCrearPlanPago);
+
+  useEffect(() => {
+    const cargarResumen = async () => {
+      if (!nuevoPrestamo.usuarioId) {
+        setResumenDeuda(null);
+        return;
+      }
+
+      try {
+        setCargandoResumen(true);
+        const response = await api.get(`/admin/usuarios/${nuevoPrestamo.usuarioId}/resumen-deuda`);
+        setResumenDeuda(response.data?.resumen || null);
+      } catch (error) {
+        console.error('Error cargando resumen de deuda:', error);
+        setResumenDeuda(null);
+      } finally {
+        setCargandoResumen(false);
+      }
+    };
+
+    cargarResumen();
+  }, [nuevoPrestamo.usuarioId, prestamos]);
+
+  const depurarSandboxUsuario = async () => {
+    if (!nuevoPrestamo.usuarioId) return;
+    try {
+      setDepurandoSandbox(true);
+      const response = await api.post(`/admin/usuarios/${nuevoPrestamo.usuarioId}/depurar-sandbox`);
+      alert(response.data?.mensaje || 'Préstamos sandbox depurados');
+      setResumenDeuda(response.data?.resumen || null);
+      await onRecargarPrestamos();
+    } catch (error) {
+      alert(error.response?.data?.mensaje || 'Error depurando préstamos sandbox');
+    } finally {
+      setDepurandoSandbox(false);
     }
-
-    if (String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO')) {
-      return acumulado;
-    }
-
-    const estado = String(prestamo.estado || '').toLowerCase();
-    if (estado === 'completado' || estado === 'rechazado') {
-      return acumulado;
-    }
-
-    const cuotas = Array.isArray(prestamo.cuotas) ? prestamo.cuotas : [];
-    const deudaCuotas = cuotas
-      .filter((cuota) => !cuota.pagado)
-      .reduce((total, cuota) => total + parseFloat(cuota.monto || 0), 0);
-
-    // Si hay cuotas registradas, la deuda real es solo lo pendiente de esas cuotas.
-    if (cuotas.length > 0) {
-      return acumulado + deudaCuotas;
-    }
-
-    // Fallback para préstamos sin estructura de cuotas: solo pendientes cuentan como deuda.
-    if (estado === 'pendiente') {
-      return acumulado + parseFloat(prestamo.montoAprobado || prestamo.montoSolicitado || 0);
-    }
-
-    return acumulado;
-  }, 0);
-  const deudaTotalPlanPago = deudaActualUsuario + deudaPrestamosUsuario;
-  const planPagoDisponible = deudaTotalPlanPago > 0;
+  };
 
   const handleCrearPrestamo = async (e) => {
     e.preventDefault();
@@ -1935,9 +1945,13 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
               Crear plan de pago con deuda actual
               {usuarioSeleccionado && (
                 <small>
-                  {planPagoDisponible
+                  {cargandoResumen
+                    ? ' Calculando deuda en vivo...'
+                    : planPagoDisponible
                     ? ` Total consolidado: $${deudaTotalPlanPago.toFixed(2)}`
-                    : ' El usuario no tiene deuda consolidable'}
+                    : (deudaPlanesPagoUsuario > 0
+                      ? ' Ya existe un plan de pago activo para este usuario'
+                      : ' El usuario no tiene deuda consolidable')}
                 </small>
               )}
             </span>
@@ -1985,6 +1999,40 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
               <span>Saldo de préstamos: ${deudaPrestamosUsuario.toFixed(2)}</span>
               <strong>Total del plan: ${deudaTotalPlanPago.toFixed(2)}</strong>
             </div>
+          </div>
+        )}
+        {usuarioSeleccionado && resumenDeuda && (
+          <div className="prestamo-operacion-box">
+            <div className="prestamo-operacion-card prestamo-operacion-card--loan">
+              <h4>Préstamo nuevo</h4>
+              <p>Agrega nueva deuda al usuario. Se usa cuando deseas emitir un préstamo adicional.</p>
+            </div>
+            <div className="prestamo-operacion-card prestamo-operacion-card--plan">
+              <h4>Plan de pago</h4>
+              <p>Consolida la deuda actual del usuario. No crea deuda nueva, toma el total ya existente.</p>
+            </div>
+            <div className="prestamo-plan-breakdown prestamo-plan-breakdown--full">
+              <span>Wallet: ${Number(resumenDeuda.saldoWallet || 0).toFixed(2)}</span>
+              <span>Saldo negativo: ${deudaActualUsuario.toFixed(2)}</span>
+              <span>Préstamos activos: ${deudaPrestamosUsuario.toFixed(2)}</span>
+              <span>Planes activos: ${deudaPlanesPagoUsuario.toFixed(2)}</span>
+              <strong>Deuda consolidable: ${deudaTotalPlanPago.toFixed(2)}</strong>
+            </div>
+            {Number(resumenDeuda.sandboxPrestamosSinCuotas || 0) > 0 && (
+              <div className="prestamo-sandbox-warning">
+                <p>
+                  Hay {resumenDeuda.sandboxPrestamosSinCuotas} préstamo(s) sandbox aprobado(s) sin cuotas que pueden inflar la deuda.
+                </p>
+                <button
+                  type="button"
+                  className="btn-secundario"
+                  onClick={depurarSandboxUsuario}
+                  disabled={depurandoSandbox}
+                >
+                  {depurandoSandbox ? 'Depurando...' : 'Depurar préstamos sandbox'}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
