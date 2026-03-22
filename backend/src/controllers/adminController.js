@@ -36,6 +36,67 @@ const toNumberOrZero = (value) => {
 
 const redondearDinero = (value) => parseFloat(toNumberOrZero(value).toFixed(2));
 
+const calcularSaldoPrestamoPendiente = (prestamo, cuotas = []) => {
+  const estado = String(prestamo?.estado || '').toLowerCase();
+  if (estado === 'completado' || estado === 'rechazado' || estado === 'pagado' || estado === 'cerrado') {
+    return 0;
+  }
+
+  if (Array.isArray(cuotas) && cuotas.length > 0) {
+    return redondearDinero(
+      cuotas
+        .filter((cuota) => !cuota.pagado)
+        .reduce((sum, cuota) => sum + toNumberOrZero(cuota.montoCuota), 0),
+    );
+  }
+
+  return redondearDinero(prestamo?.montoAprobado ?? prestamo?.montoSolicitado ?? 0);
+};
+
+const construirResumenDeudaUsuario = async (usuarioId) => {
+  const usuario = await User.findByPk(usuarioId, {
+    attributes: ['id', 'nombre', 'apellido', 'email', 'saldo'],
+  });
+
+  if (!usuario) {
+    return null;
+  }
+
+  const prestamosUsuario = await Loan.findAll({
+    where: {
+      usuarioId,
+      estado: { [Op.notIn]: ['completado', 'rechazado'] },
+    },
+    include: [{
+      model: CuotaPrestamo,
+      as: 'cuotasPrestamo',
+      required: false,
+    }],
+    order: [['createdAt', 'DESC']],
+  });
+
+  const saldoPrestamo = redondearDinero(
+    prestamosUsuario.reduce((sum, prestamo) => {
+      const pendiente = calcularSaldoPrestamoPendiente(prestamo, prestamo.cuotasPrestamo || []);
+      return sum + pendiente;
+    }, 0),
+  );
+
+  const saldoWallet = redondearDinero(usuario.saldo || 0);
+  const saldoDisponible = redondearDinero(saldoWallet - saldoPrestamo);
+
+  return {
+    usuarioId: usuario.id,
+    nombre: usuario.nombre,
+    apellido: usuario.apellido,
+    email: usuario.email,
+    saldoWallet,
+    saldoPrestamo,
+    saldoDisponible,
+    prestamosActivos: prestamosUsuario.length,
+  };
+};
+
 const construirCheckoutPlanPago = (prestamo, cuotas = [], saldoUsuarioActual = null) => {
   const esPlanDePago = String(prestamo?.numeroReferencia || '').startsWith('PLAN-PAGO');
   if (!esPlanDePago) {
@@ -923,6 +984,10 @@ exports.registrarPagoCuota = async (req, res) => {
       }
     }
 
+    const resumenUsuario = prestamo
+      ? await construirResumenDeudaUsuario(prestamo.usuarioId)
+      : null;
+
     res.json({
       exito: true,
       mensaje: '✅ Pago registrado exitosamente',
@@ -932,6 +997,7 @@ exports.registrarPagoCuota = async (req, res) => {
       abonoSaldo,
       nuevoSaldoUsuario,
       planAutoCerradoPorSaldo,
+      dashboardUsuario: resumenUsuario,
     });
   } catch (error) {
     console.error('❌ Error registrando pago:', error);
