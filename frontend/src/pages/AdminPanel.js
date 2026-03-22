@@ -1814,11 +1814,17 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
       .filter((cuota) => !cuota.pagado)
       .reduce((total, cuota) => total + parseFloat(cuota.monto || 0), 0);
 
-    if (deudaCuotas > 0) {
+    // Si hay cuotas registradas, la deuda real es solo lo pendiente de esas cuotas.
+    if (cuotas.length > 0) {
       return acumulado + deudaCuotas;
     }
 
-    return acumulado + parseFloat(prestamo.montoAprobado || prestamo.montoSolicitado || 0);
+    // Fallback para préstamos sin estructura de cuotas: solo pendientes cuentan como deuda.
+    if (estado === 'pendiente') {
+      return acumulado + parseFloat(prestamo.montoAprobado || prestamo.montoSolicitado || 0);
+    }
+
+    return acumulado;
   }, 0);
   const deudaTotalPlanPago = deudaActualUsuario + deudaPrestamosUsuario;
   const planPagoDisponible = deudaTotalPlanPago > 0;

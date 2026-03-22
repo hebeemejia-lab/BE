@@ -660,9 +660,12 @@ exports.crearPrestamoAdmin = async (req, res) => {
 
         deudaPrestamosPendiente = prestamosAConsolidar.reduce((acumulado, prestamo) => {
           const deudaCuotas = deudaPorPrestamo.get(prestamo.id);
+          const estadoPrestamo = String(prestamo.estado || '').toLowerCase();
           const deudaPrestamo = deudaCuotas != null
             ? deudaCuotas
-            : toNumberOrZero(prestamo.montoAprobado || prestamo.montoSolicitado);
+            : (estadoPrestamo === 'pendiente'
+              ? toNumberOrZero(prestamo.montoAprobado || prestamo.montoSolicitado)
+              : 0);
           return acumulado + deudaPrestamo;
         }, 0);
 
