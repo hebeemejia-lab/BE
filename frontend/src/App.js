@@ -34,6 +34,7 @@ import BeneficiosAhorro from './pages/BeneficiosAhorro';
 import Certificado from './pages/Certificado';
 import CryptoDetail from './pages/CryptoDetail';
 import TradingPanel from './pages/TradingPanel';
+import Foro from './pages/Foro';
 import Footer from './components/Footer';
 
 // Estilos
@@ -58,6 +59,7 @@ const getTitleForPath = (pathname) => {
   if (pathname.startsWith('/retiros')) return 'BE - Retiros';
   if (pathname.startsWith('/vincular-cuenta')) return 'BE - Vincular Cuenta';
   if (pathname.startsWith('/prestamos')) return 'BE - Prestamos';
+  if (pathname.startsWith('/foro')) return 'BE - Foro';
   if (pathname.startsWith('/perfil')) return 'BE - Perfil';
   if (pathname.startsWith('/admin')) return 'BE - Admin';
   if (pathname.startsWith('/politica-privacidad')) return 'BE - Politica de Privacidad';
@@ -200,6 +202,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Prestamos />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/foro"
+            element={
+              <ProtectedRoute>
+                <Foro />
               </ProtectedRoute>
             }
           />

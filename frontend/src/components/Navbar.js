@@ -104,6 +104,9 @@ const Navbar = () => {
                 <img src="/imagen/BE (15).png" alt="Préstamos" className="nav-icon" />
                 Préstamos
               </Link>
+              <Link to="/foro" className="nav-link" onClick={handleMenuClose}>
+                🗣️ Foro
+              </Link>
               {esAdminFull && (
                 <FloatingDropdown label="Desarrolladores">
                   <button

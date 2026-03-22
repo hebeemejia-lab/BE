@@ -24,6 +24,7 @@ const adminRetiroRoutes = require('./routes/adminRetiroRoutes');
 const inversionesRoutes = require('./routes/inversionesRoutes');
 const fundingAlpacaRoutes = require('./routes/fundingAlpacaRoutes');
 const expensesRoutes = require('./routes/expenses');
+const forumRoutes = require('./routes/forumRoutes');
 
 const app = express();
 
@@ -84,6 +85,7 @@ app.use('/admin', adminRoutes);
 app.use('/admin', adminRetiroRoutes);
 app.use('/inversiones', inversionesRoutes);
 app.use('/funding/alpaca', fundingAlpacaRoutes);
+app.use('/foro', forumRoutes);
 const fondoRiesgoRoutes = require('./routes/fondoRiesgoRoutes'); // Importar las rutas de fondoRiesgo
 app.use('/fondo-riesgo', fondoRiesgoRoutes); // Agregar fondoRiesgoRoutes a las rutas principales
 app.use('/', expensesRoutes); // Montar rutas de gastos personales
