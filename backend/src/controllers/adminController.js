@@ -75,15 +75,39 @@ const construirResumenDeudaUsuario = async (usuarioId) => {
     order: [['createdAt', 'DESC']],
   });
 
-  const saldoPrestamo = redondearDinero(
-    prestamosUsuario.reduce((sum, prestamo) => {
+  const prestamosNoPlan = prestamosUsuario.filter(
+    (prestamo) => !String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO'),
+  );
+  const planesPagoActivos = prestamosUsuario.filter(
+    (prestamo) => String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO'),
+  );
+
+  const deudaPrestamos = redondearDinero(
+    prestamosNoPlan.reduce((sum, prestamo) => {
       const pendiente = calcularSaldoPrestamoPendiente(prestamo, prestamo.cuotasPrestamo || []);
       return sum + pendiente;
     }, 0),
   );
 
+  const deudaPlanesPago = redondearDinero(
+    planesPagoActivos.reduce((sum, prestamo) => {
+      const pendiente = calcularSaldoPrestamoPendiente(prestamo, prestamo.cuotasPrestamo || []);
+      return sum + pendiente;
+    }, 0),
+  );
+
+  const sandboxPrestamosSinCuotas = prestamosNoPlan.filter((prestamo) => {
+    const referencia = String(prestamo.numeroReferencia || '');
+    const cuotas = Array.isArray(prestamo.cuotasPrestamo) ? prestamo.cuotasPrestamo : [];
+    return referencia.startsWith('SANDBOX-') && cuotas.length === 0 && String(prestamo.estado || '').toLowerCase() === 'aprobado';
+  });
+
   const saldoWallet = redondearDinero(usuario.saldo || 0);
+  const deudaSaldoNegativo = saldoWallet < 0 ? redondearDinero(Math.abs(saldoWallet)) : 0;
+  const saldoPrestamo = redondearDinero(deudaPrestamos + deudaPlanesPago);
   const saldoDisponible = redondearDinero(saldoWallet - saldoPrestamo);
+  const deudaConsolidable = redondearDinero(deudaSaldoNegativo + deudaPrestamos);
+  const deudaTotalActual = redondearDinero(deudaConsolidable + deudaPlanesPago);
 
   return {
     usuarioId: usuario.id,
@@ -91,10 +115,68 @@ const construirResumenDeudaUsuario = async (usuarioId) => {
     apellido: usuario.apellido,
     email: usuario.email,
     saldoWallet,
+    deudaSaldoNegativo,
+    deudaPrestamos,
+    deudaPlanesPago,
+    deudaConsolidable,
+    deudaTotalActual,
     saldoPrestamo,
     saldoDisponible,
-    prestamosActivos: prestamosUsuario.length,
+    prestamosActivos: prestamosNoPlan.length,
+    planesPagoActivos: planesPagoActivos.length,
+    puedeCrearPlanPago: deudaConsolidable > 0 && planesPagoActivos.length === 0,
+    sandboxPrestamosSinCuotas: sandboxPrestamosSinCuotas.length,
+    sandboxPrestamosSinCuotasIds: sandboxPrestamosSinCuotas.map((prestamo) => prestamo.id),
   };
+};
+
+exports.obtenerResumenDeudaUsuario = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const resumen = await construirResumenDeudaUsuario(id);
+
+    if (!resumen) {
+      return res.status(404).json({ exito: false, mensaje: 'Usuario no encontrado' });
+    }
+
+    res.json({ exito: true, resumen });
+  } catch (error) {
+    console.error('❌ Error obteniendo resumen de deuda del usuario:', error);
+    res.status(500).json({ exito: false, mensaje: 'Error al obtener resumen de deuda', error: error.message });
+  }
+};
+
+exports.depurarPrestamosSandboxUsuario = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const resumen = await construirResumenDeudaUsuario(id);
+
+    if (!resumen) {
+      return res.status(404).json({ exito: false, mensaje: 'Usuario no encontrado' });
+    }
+
+    const ids = resumen.sandboxPrestamosSinCuotasIds || [];
+    if (ids.length === 0) {
+      return res.json({ exito: true, mensaje: 'No hay préstamos sandbox sin cuotas para depurar', actualizados: 0, resumen });
+    }
+
+    const [actualizados] = await Loan.update(
+      { estado: 'completado' },
+      { where: { id: { [Op.in]: ids } } },
+    );
+
+    const resumenActualizado = await construirResumenDeudaUsuario(id);
+
+    res.json({
+      exito: true,
+      mensaje: 'Préstamos sandbox sin cuotas depurados correctamente',
+      actualizados,
+      resumen: resumenActualizado,
+    });
+  } catch (error) {
+    console.error('❌ Error depurando préstamos sandbox del usuario:', error);
+    res.status(500).json({ exito: false, mensaje: 'Error al depurar préstamos sandbox', error: error.message });
+  }
 };
 
 const construirCheckoutPlanPago = (prestamo, cuotas = [], saldoUsuarioActual = null) => {

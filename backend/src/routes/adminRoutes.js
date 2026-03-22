@@ -19,6 +19,8 @@ router.get('/estado-mercantil', verificarAdminFull, adminController.obtenerEstad
 
 // Estado de cuenta de usuario
 router.get('/usuarios/:id/estado-cuenta', adminController.obtenerEstadoCuentaUsuario);
+router.get('/usuarios/:id/resumen-deuda', adminController.obtenerResumenDeudaUsuario);
+router.post('/usuarios/:id/depurar-sandbox', adminController.depurarPrestamosSandboxUsuario);
 
 // 👥 Usuarios
 router.get('/usuarios', adminController.listarUsuarios);
