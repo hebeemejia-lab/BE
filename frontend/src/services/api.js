@@ -96,4 +96,12 @@ export const bankAccountAPI = {
   sincronizarFundingPendientes: () => API.post('/funding/alpaca/sincronizar-pendientes'),
 };
 
+// Foro
+export const forumAPI = {
+  listarTemas: () => API.get('/foro/temas'),
+  crearTema: (datos) => API.post('/foro/temas', datos),
+  obtenerTema: (temaId) => API.get(`/foro/temas/${temaId}`),
+  crearRespuesta: (temaId, datos) => API.post(`/foro/temas/${temaId}/respuestas`, datos),
+};
+
 export default API;

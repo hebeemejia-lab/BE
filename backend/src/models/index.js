@@ -8,6 +8,8 @@ const Inversion = require('./Inversion');
 const FundingTransfer = require('./FundingTransfer');
 const Transaction = require('./Transaction');
 const Budget = require('./Budget');
+const ForumTopic = require('./ForumTopic');
+const ForumReply = require('./ForumReply');
 
 // Usuario tiene muchos préstamos
 User.hasMany(Loan, {
@@ -101,6 +103,51 @@ Budget.belongsTo(User, {
   foreignKey: 'userId'
 });
 
+// Foro: usuario crea temas
+User.hasMany(ForumTopic, {
+  foreignKey: 'usuarioId',
+  as: 'temasForo',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+});
+
+ForumTopic.belongsTo(User, {
+  foreignKey: 'usuarioId',
+  as: 'autorTema',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+});
+
+// Foro: tema tiene respuestas
+ForumTopic.hasMany(ForumReply, {
+  foreignKey: 'temaId',
+  as: 'respuestas',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+});
+
+ForumReply.belongsTo(ForumTopic, {
+  foreignKey: 'temaId',
+  as: 'tema',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+});
+
+// Foro: usuario crea respuestas
+User.hasMany(ForumReply, {
+  foreignKey: 'usuarioId',
+  as: 'respuestasForo',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+});
+
+ForumReply.belongsTo(User, {
+  foreignKey: 'usuarioId',
+  as: 'autorRespuesta',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+});
+
 module.exports = {
   sequelize,
   User,
@@ -110,5 +157,7 @@ module.exports = {
   Inversion,
   FundingTransfer,
   Transaction,
-  Budget
+  Budget,
+  ForumTopic,
+  ForumReply
 };
