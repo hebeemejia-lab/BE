@@ -568,7 +568,48 @@ exports.crearPrestamoAdmin = async (req, res) => {
 
     const saldoActualUsuario = redondearDinero(usuario.saldo || 0);
     const deudaActualUsuario = saldoActualUsuario < 0 ? redondearDinero(Math.abs(saldoActualUsuario)) : 0;
-    const deudaPrestamosPendiente = 0;
+    let deudaPrestamosPendiente = 0;
+
+    let prestamosAConsolidar = [];
+    if (usarDeudaActual) {
+      prestamosAConsolidar = await Loan.findAll({
+        where: {
+          usuarioId: usuario.id,
+          estado: { [Op.notIn]: ['completado', 'rechazado'] },
+        },
+      });
+
+      prestamosAConsolidar = prestamosAConsolidar.filter(
+        (prestamo) => !String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO'),
+      );
+
+      if (prestamosAConsolidar.length > 0) {
+        const cuotasPrestamos = await CuotaPrestamo.findAll({
+          where: {
+            prestamoId: { [Op.in]: prestamosAConsolidar.map((prestamo) => prestamo.id) },
+            pagado: false,
+          },
+        });
+
+        const deudaPorPrestamo = new Map();
+        cuotasPrestamos.forEach((cuota) => {
+          const actual = deudaPorPrestamo.get(cuota.prestamoId) || 0;
+          deudaPorPrestamo.set(cuota.prestamoId, actual + toNumberOrZero(cuota.montoCuota));
+        });
+
+        deudaPrestamosPendiente = prestamosAConsolidar.reduce((acumulado, prestamo) => {
+          const deudaCuotas = deudaPorPrestamo.get(prestamo.id);
+          const deudaPrestamo = deudaCuotas != null
+            ? deudaCuotas
+            : toNumberOrZero(prestamo.montoAprobado || prestamo.montoSolicitado);
+          return acumulado + deudaPrestamo;
+        }, 0);
+
+        deudaPrestamosPendiente = redondearDinero(deudaPrestamosPendiente);
+      }
+    }
+
+    const deudaTotalConsolidada = redondearDinero(deudaActualUsuario + deudaPrestamosPendiente);
 
     if (usarDeudaActual) {
       const planesActivos = await Loan.findAll({
@@ -579,8 +620,8 @@ exports.crearPrestamoAdmin = async (req, res) => {
         },
       });
 
-      // Si el saldo ya está saldado, cerramos cualquier plan activo residual.
-      if (deudaActualUsuario <= 0 && planesActivos.length > 0) {
+      // Si ya no hay deuda total, cerramos cualquier plan activo residual.
+      if (deudaTotalConsolidada <= 0 && planesActivos.length > 0) {
         const idsPlanes = planesActivos.map((plan) => plan.id);
 
         await Loan.update(
@@ -605,7 +646,7 @@ exports.crearPrestamoAdmin = async (req, res) => {
       }
 
       // Si aún hay deuda, no permitir duplicar planes activos.
-      if (deudaActualUsuario > 0 && planesActivos.length > 0) {
+      if (deudaTotalConsolidada > 0 && planesActivos.length > 0) {
         return res.status(400).json({
           exito: false,
           mensaje: 'El usuario ya tiene un plan de pago activo. Debe completarlo antes de crear otro.'
@@ -614,7 +655,7 @@ exports.crearPrestamoAdmin = async (req, res) => {
     }
 
     const montoNumero = usarDeudaActual
-      ? deudaActualUsuario
+      ? deudaTotalConsolidada
       : parseFloat(monto);
 
     // Regla BanExclusivo: un plan de pago salda saldo negativo hasta 0, sin interés adicional.
@@ -636,7 +677,7 @@ exports.crearPrestamoAdmin = async (req, res) => {
       montoSolicitado: montoNumero,
       montoAprobado: montoNumero,
       deudaSaldoNegativoInicial: usarDeudaActual ? deudaActualUsuario : 0,
-      deudaPrestamosInicial: 0,
+      deudaPrestamosInicial: usarDeudaActual ? deudaPrestamosPendiente : 0,
       tasaInteres: tasaAplicable,
       plazo: plazoNumero,
       estado: 'aprobado',
@@ -675,6 +716,30 @@ exports.crearPrestamoAdmin = async (req, res) => {
       cuotas.push(cuota);
     }
 
+    if (!sandbox && usarDeudaActual && prestamosAConsolidar.length > 0) {
+      const idsPrestamos = prestamosAConsolidar.map((prestamo) => prestamo.id);
+
+      await Loan.update(
+        { estado: 'completado' },
+        { where: { id: { [Op.in]: idsPrestamos } } },
+      );
+
+      await CuotaPrestamo.update(
+        {
+          pagado: true,
+          fechaPago: new Date(),
+          metodoPago: 'Consolidación',
+          notas: `Consolidado en plan de pago ${prestamo.numeroReferencia}`,
+        },
+        {
+          where: {
+            prestamoId: { [Op.in]: idsPrestamos },
+            pagado: false,
+          },
+        },
+      );
+    }
+
     if (!sandbox && !usarDeudaActual) {
       usuario.saldo = parseFloat(usuario.saldo || 0) + montoNumero;
       await usuario.save();
@@ -689,7 +754,7 @@ exports.crearPrestamoAdmin = async (req, res) => {
       sandbox: !!sandbox,
       usarDeudaActual: !!usarDeudaActual,
       deudaActualUsuario: parseFloat(deudaActualUsuario.toFixed(2)),
-      deudaPrestamosPendiente: 0,
+      deudaPrestamosPendiente: parseFloat(deudaPrestamosPendiente.toFixed(2)),
       deudaConsolidadaTotal: parseFloat(montoNumero.toFixed(2)),
       cuotas: cuotas.map(c => c.toJSON())
     });
@@ -825,9 +890,10 @@ exports.registrarPagoCuota = async (req, res) => {
     if (esPlanDePago && prestamo) {
       const usuarioPlan = await User.findByPk(prestamo.usuarioId);
       const saldoPlan = usuarioPlan ? redondearDinero(usuarioPlan.saldo || 0) : null;
+      const checkoutPlan = construirCheckoutPlanPago(prestamo, todasCuotas, saldoPlan);
 
-      // Regla de negocio: plan de pago se considera saldado cuando saldo negativo llega a 0.
-      if (saldoPlan !== null && saldoPlan >= 0) {
+      // Regla de negocio: el plan se cierra cuando la deuda consolidada total llega a 0.
+      if (checkoutPlan && checkoutPlan.deudaTotalRestante <= 0) {
         await CuotaPrestamo.update(
           {
             pagado: true,
