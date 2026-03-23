@@ -82,20 +82,6 @@ const construirResumenDeudaUsuario = async (usuarioId) => {
     (prestamo) => String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO'),
   );
 
-  const deudaPrestamos = redondearDinero(
-    prestamosNoPlan.reduce((sum, prestamo) => {
-      const pendiente = calcularSaldoPrestamoPendiente(prestamo, prestamo.cuotasPrestamo || []);
-      return sum + pendiente;
-    }, 0),
-  );
-
-  const deudaPlanesPago = redondearDinero(
-    planesPagoActivos.reduce((sum, prestamo) => {
-      const pendiente = calcularSaldoPrestamoPendiente(prestamo, prestamo.cuotasPrestamo || []);
-      return sum + pendiente;
-    }, 0),
-  );
-
   const sandboxPrestamosSinCuotas = prestamosNoPlan.filter((prestamo) => {
     const referencia = String(prestamo.numeroReferencia || '');
     const cuotas = Array.isArray(prestamo.cuotasPrestamo) ? prestamo.cuotasPrestamo : [];
