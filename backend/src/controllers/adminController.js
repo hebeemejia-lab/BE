@@ -865,7 +865,9 @@ exports.crearPrestamoAdmin = async (req, res) => {
     }
 
     if (!sandbox && !usarDeudaActual) {
-      usuario.saldo = parseFloat(usuario.saldo || 0) + montoNumero;
+      // Préstamo nuevo: se acredita el monto al wallet Y se registra la deuda en saldoPrestamo
+      usuario.saldo = redondearDinero(parseFloat(usuario.saldo || 0) + montoNumero);
+      usuario.saldoPrestamo = redondearDinero(parseFloat(usuario.saldoPrestamo || 0) - montoNumero);
       await usuario.save();
     }
 
