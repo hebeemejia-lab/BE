@@ -1846,23 +1846,38 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
       return;
     }
     setCreandoPrestamo(true);
-    await onCrearPrestamo({
-      usuarioId: nuevoPrestamo.usuarioId,
-      monto: nuevoPrestamo.monto,
-      plazo: nuevoPrestamo.plazo,
-      tasaInteres: nuevoPrestamo.tasaInteres,
-      fechaPrimerVencimiento: nuevoPrestamo.fechaPrimerVencimiento || null,
-      usarDeudaActual: nuevoPrestamo.usarDeudaActual,
-    });
-    setNuevoPrestamo({
-      usuarioId: '',
-      monto: '',
-      plazo: '',
-      tasaInteres: '5',
-      fechaPrimerVencimiento: '',
-      usarDeudaActual: false,
-    });
-    setCreandoPrestamo(false);
+    try {
+      await onCrearPrestamo({
+        usuarioId: nuevoPrestamo.usuarioId,
+        monto: nuevoPrestamo.monto,
+        plazo: nuevoPrestamo.plazo,
+        tasaInteres: nuevoPrestamo.tasaInteres,
+        fechaPrimerVencimiento: nuevoPrestamo.fechaPrimerVencimiento || null,
+        usarDeudaActual: nuevoPrestamo.usarDeudaActual,
+      });
+      
+      // Recarga el resumen si es un plan de pago
+      if (nuevoPrestamo.usarDeudaActual) {
+        setTimeout(async () => {
+          try {
+            const response = await api.get(`/admin/usuarios/${nuevoPrestamo.usuarioId}/resumen-deuda`);
+            setResumenDeuda(response.data?.resumen || null);
+          } catch (error) {
+            console.error('Error recargando resumen:', error);
+          }
+        }, 500);
+      }
+    } finally {
+      setNuevoPrestamo({
+        usuarioId: '',
+        monto: '',
+        plazo: '',
+        tasaInteres: '5',
+        fechaPrimerVencimiento: '',
+        usarDeudaActual: false,
+      });
+      setCreandoPrestamo(false);
+    }
   };
 
   return (
@@ -1912,126 +1927,224 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
       </div>
 
       <div className="prestamo-crear">
-        <h3>Crear nuevo préstamo</h3>
-        <form className="prestamo-form" onSubmit={handleCrearPrestamo}>
-          <select
-            value={nuevoPrestamo.usuarioId}
-            onChange={(e) => setNuevoPrestamo({
+        <div className="prestamo-tabs">
+          <button
+            className={`prestamo-tab ${!nuevoPrestamo.usarDeudaActual ? 'activo' : ''}`}
+            onClick={() => setNuevoPrestamo({
               ...nuevoPrestamo,
-              usuarioId: e.target.value,
               usarDeudaActual: false,
+              monto: '',
             })}
-            required
           >
-            <option value="">Selecciona usuario</option>
-            {usuariosAdmin.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.nombre} {u.apellido} - {u.email}
-              </option>
-            ))}
-          </select>
-          <label className={`prestamo-plan-toggle ${!planPagoDisponible ? 'disabled' : ''}`}>
-            <input
-              type="checkbox"
-              checked={nuevoPrestamo.usarDeudaActual}
-              disabled={!planPagoDisponible}
-              onChange={(e) => setNuevoPrestamo({
-                ...nuevoPrestamo,
-                usarDeudaActual: e.target.checked,
-                monto: e.target.checked ? String(deudaTotalPlanPago.toFixed(2)) : nuevoPrestamo.monto,
-              })}
-            />
-            <span>
-              Crear plan de pago con deuda actual
-              {usuarioSeleccionado && (
-                <small>
-                  {cargandoResumen
-                    ? ' Calculando deuda en vivo...'
-                    : planPagoDisponible
-                    ? ` Total consolidado: $${deudaTotalPlanPago.toFixed(2)}`
-                    : (deudaPlanesPagoUsuario > 0
-                      ? ' Ya existe un plan de pago activo para este usuario'
-                      : ' El usuario no tiene deuda consolidable')}
-                </small>
-              )}
-            </span>
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            placeholder={nuevoPrestamo.usarDeudaActual ? 'Monto tomado de la deuda actual' : 'Monto'}
-            value={nuevoPrestamo.usarDeudaActual ? deudaTotalPlanPago.toFixed(2) : nuevoPrestamo.monto}
-            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, monto: e.target.value })}
-            required={!nuevoPrestamo.usarDeudaActual}
-            disabled={nuevoPrestamo.usarDeudaActual}
-          />
-          <input
-            type="number"
-            placeholder="Número de cuotas"
-            value={nuevoPrestamo.plazo}
-            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, plazo: e.target.value })}
-            required
-          />
-          <input
-            type="number"
-            step="0.01"
-            placeholder="Tasa (%)"
-            value={nuevoPrestamo.tasaInteres}
-            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, tasaInteres: e.target.value })}
-          />
-          <input
-            type="date"
-            placeholder="Primer vencimiento"
-            value={nuevoPrestamo.fechaPrimerVencimiento}
-            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, fechaPrimerVencimiento: e.target.value })}
-          />
-          <button type="submit" className="btn-crear" disabled={creandoPrestamo}>
-            {creandoPrestamo ? 'Creando...' : (nuevoPrestamo.usarDeudaActual ? '🧾 Crear plan de pago' : '➕ Crear préstamo')}
+            ➕ Crear Préstamo Nuevo
           </button>
-        </form>
-        {nuevoPrestamo.usarDeudaActual && planPagoDisponible && (
-          <div className="prestamo-plan-help">
-            <p>
-              Este plan consolidará saldo negativo y saldo de préstamos pendiente en un solo préstamo aprobado.
-            </p>
-            <div className="prestamo-plan-breakdown">
-              <span>Saldo negativo actual: ${deudaActualUsuario.toFixed(2)}</span>
-              <span>Saldo de préstamos: ${deudaPrestamosUsuario.toFixed(2)}</span>
-              <strong>Total del plan: ${deudaTotalPlanPago.toFixed(2)}</strong>
-            </div>
-          </div>
-        )}
-        {usuarioSeleccionado && resumenDeuda && (
-          <div className="prestamo-operacion-box">
-            <div className="prestamo-operacion-card prestamo-operacion-card--loan">
-              <h4>Préstamo nuevo</h4>
-              <p>Agrega nueva deuda al usuario. Se usa cuando deseas emitir un préstamo adicional.</p>
-            </div>
-            <div className="prestamo-operacion-card prestamo-operacion-card--plan">
-              <h4>Plan de pago</h4>
-              <p>Consolida la deuda actual del usuario. No crea deuda nueva, toma el total ya existente.</p>
-            </div>
-            <div className="prestamo-plan-breakdown prestamo-plan-breakdown--full">
-              <span>Wallet: ${Number(resumenDeuda.saldoWallet || 0).toFixed(2)}</span>
-              <span>Saldo negativo: ${deudaActualUsuario.toFixed(2)}</span>
-              <span>Préstamos activos: ${deudaPrestamosUsuario.toFixed(2)}</span>
-              <span>Planes activos: ${deudaPlanesPagoUsuario.toFixed(2)}</span>
-              <strong>Deuda consolidable: ${deudaTotalPlanPago.toFixed(2)}</strong>
-            </div>
-            {Number(resumenDeuda.sandboxPrestamosSinCuotas || 0) > 0 && (
-              <div className="prestamo-sandbox-warning">
-                <p>
-                  Hay {resumenDeuda.sandboxPrestamosSinCuotas} préstamo(s) sandbox aprobado(s) sin cuotas que pueden inflar la deuda.
-                </p>
-                <button
-                  type="button"
-                  className="btn-secundario"
-                  onClick={depurarSandboxUsuario}
-                  disabled={depurandoSandbox}
-                >
-                  {depurandoSandbox ? 'Depurando...' : 'Depurar préstamos sandbox'}
-                </button>
+          <button
+            className={`prestamo-tab ${nuevoPrestamo.usarDeudaActual ? 'activo' : ''} ${!planPagoDisponible ? 'deshabilitado' : ''}`}
+            onClick={() => {
+              if (planPagoDisponible) {
+                setNuevoPrestamo({
+                  ...nuevoPrestamo,
+                  usarDeudaActual: true,
+                  monto: String(deudaTotalPlanPago.toFixed(2)),
+                });
+              }
+            }}
+            disabled={!planPagoDisponible}
+            title={!planPagoDisponible ? (deudaPlanesPagoUsuario > 0 ? 'Ya existe un plan activo' : 'No hay deuda consolidable') : ''}
+          >
+            🧾 Crear Plan de Pago
+          </button>
+        </div>
+
+        {!nuevoPrestamo.usarDeudaActual ? (
+          // SECCIÓN: CREAR PRÉSTAMO NUEVO
+          <div className="prestamo-seccion prestamo-seccion-nuevo">
+            <h3>Crear Préstamo Nuevo</h3>
+            <p className="prestamo-seccion-desc">Crea un nuevo préstamo con monto, tasa y plazo personalizados. Este prestamo SUMA deuda al usuario.</p>
+            
+            <form className="prestamo-form" onSubmit={handleCrearPrestamo}>
+              <select
+                value={nuevoPrestamo.usuarioId}
+                onChange={(e) => setNuevoPrestamo({
+                  ...nuevoPrestamo,
+                  usuarioId: e.target.value,
+                  monto: '',
+                })}
+                required
+              >
+                <option value="">Selecciona usuario</option>
+                {usuariosAdmin.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.nombre} {u.apellido} - {u.email}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Monto del préstamo"
+                value={nuevoPrestamo.monto}
+                onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, monto: e.target.value })}
+                required
+              />
+
+              <input
+                type="number"
+                placeholder="Número de cuotas"
+                value={nuevoPrestamo.plazo}
+                onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, plazo: e.target.value })}
+                required
+              />
+
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Tasa de interés (%)"
+                value={nuevoPrestamo.tasaInteres}
+                onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, tasaInteres: e.target.value })}
+              />
+
+              <input
+                type="date"
+                placeholder="Primer vencimiento"
+                value={nuevoPrestamo.fechaPrimerVencimiento}
+                onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, fechaPrimerVencimiento: e.target.value })}
+              />
+
+              <button type="submit" className="btn-crear" disabled={creandoPrestamo}>
+                {creandoPrestamo ? 'Creando...' : '➕ Crear Préstamo'}
+              </button>
+            </form>
+
+            {usuarioSeleccionado && resumenDeuda && (
+              <div className="prestamo-info-box">
+                <h4>Estado actual del usuario</h4>
+                <div className="prestamo-estado-grid">
+                  <div className="estado-item">
+                    <label>Wallet:</label>
+                    <span>${Number(resumenDeuda.saldoWallet || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="estado-item">
+                    <label>Saldo negativo:</label>
+                    <span>${deudaActualUsuario.toFixed(2)}</span>
+                  </div>
+                  <div className="estado-item">
+                    <label>Préstamos activos:</label>
+                    <span>${deudaPrestamosUsuario.toFixed(2)}</span>
+                  </div>
+                  <div className="estado-item">
+                    <label>Planes activos:</label>
+                    <span>${deudaPlanesPagoUsuario.toFixed(2)}</span>
+                  </div>
+                </div>
               </div>
+            )}
+          </div>
+        ) : (
+          // SECCIÓN: CREAR PLAN DE PAGO
+          <div className="prestamo-seccion prestamo-seccion-plan">
+            <h3>Crear Plan de Pago</h3>
+            <p className="prestamo-seccion-desc">Consolida la deuda actual del usuario (saldo negativo + préstamos pendientes) en un único plan de pago. NO crea deuda nueva, reorganiza la existente.</p>
+            
+            <form className="prestamo-form" onSubmit={handleCrearPrestamo}>
+              <select
+                value={nuevoPrestamo.usuarioId}
+                onChange={(e) => {
+                  setNuevoPrestamo({
+                    ...nuevoPrestamo,
+                    usuarioId: e.target.value,
+                  });
+                  setCargandoResumen(true);
+                }}
+                required
+              >
+                <option value="">Selecciona usuario</option>
+                {usuariosAdmin.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.nombre} {u.apellido} - {u.email}
+                  </option>
+                ))}
+              </select>
+
+              {cargandoResumen ? (
+                <div className="loading-spinner">Calculando deuda actual...</div>
+              ) : (
+                <>
+                  <div className="prestamo-deuda-breakdown">
+                    <div className="deuda-item">
+                      <label>Saldo negativo:</label>
+                      <span>${deudaActualUsuario.toFixed(2)}</span>
+                    </div>
+                    <div className="deuda-item">
+                      <label>Préstamos pendientes:</label>
+                      <span>${deudaPrestamosUsuario.toFixed(2)}</span>
+                    </div>
+                    <div className="deuda-item deuda-total">
+                      <label>Total a consolidar:</label>
+                      <span>${deudaTotalPlanPago.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Monto del plan"
+                    value={deudaTotalPlanPago.toFixed(2)}
+                    disabled
+                    readOnly
+                  />
+
+                  <input
+                    type="number"
+                    placeholder="Número de cuotas"
+                    value={nuevoPrestamo.plazo}
+                    onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, plazo: e.target.value })}
+                    required
+                  />
+
+                  <input
+                    type="date"
+                    placeholder="Primer vencimiento"
+                    value={nuevoPrestamo.fechaPrimerVencimiento}
+                    onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, fechaPrimerVencimiento: e.target.value })}
+                  />
+
+                  <button type="submit" className="btn-crear btn-plan-pago" disabled={creandoPrestamo}>
+                    {creandoPrestamo ? 'Creando plan...' : '🧾 Consolidar Deuda'}
+                  </button>
+                </>
+              )}
+            </form>
+
+            {usuarioSeleccionado && resumenDeuda && (
+              <>
+                <div className="prestamo-info-box prestamo-info-plan">
+                  <h4>Resumen de deuda consolidable</h4>
+                  <div className="prestamo-plan-breakdown prestamo-plan-breakdown--full">
+                    <span>Wallet: ${Number(resumenDeuda.saldoWallet || 0).toFixed(2)}</span>
+                    <span>Saldo disponible: ${Number(resumenDeuda.saldoDisponible || 0).toFixed(2)}</span>
+                    <span>Saldo de préstamos: ${Number(resumenDeuda.saldoPrestamo || 0).toFixed(2)}</span>
+                    <span className="deuda-total">Deuda total actual: ${Number(resumenDeuda.deudaTotalActual || 0).toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {Number(resumenDeuda.sandboxPrestamosSinCuotas || 0) > 0 && (
+                  <div className="prestamo-sandbox-warning">
+                    <p>
+                      ⚠️ Hay {resumenDeuda.sandboxPrestamosSinCuotas} préstamo(s) sandbox que pueden inflar la deuda. Considera depurarlos primero.
+                    </p>
+                    <button
+                      type="button"
+                      className="btn-secundario"
+                      onClick={depurarSandboxUsuario}
+                      disabled={depurandoSandbox}
+                    >
+                      {depurandoSandbox ? 'Depurando...' : '🧹 Depurar Sandbox'}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

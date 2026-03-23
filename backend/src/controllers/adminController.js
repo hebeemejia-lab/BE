@@ -899,6 +899,8 @@ exports.crearPrestamoAdmin = async (req, res) => {
       await usuario.save();
     }
 
+    const resumenActualizado = await construirResumenDeudaUsuario(usuario.id);
+
     res.json({
       exito: true,
       mensaje: usarDeudaActual
@@ -910,7 +912,8 @@ exports.crearPrestamoAdmin = async (req, res) => {
       deudaActualUsuario: parseFloat(deudaActualUsuario.toFixed(2)),
       deudaPrestamosPendiente: parseFloat(deudaPrestamosPendiente.toFixed(2)),
       deudaConsolidadaTotal: parseFloat(montoNumero.toFixed(2)),
-      cuotas: cuotas.map(c => c.toJSON())
+      cuotas: cuotas.map(c => c.toJSON()),
+      resumenActualizado
     });
   } catch (error) {
     console.error('❌ Error creando préstamo admin:', error);

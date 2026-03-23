@@ -547,6 +547,210 @@
   color: #1d4ed8;
 }
 
+/* Tabs de Prestamos vs Planes de Pago */
+.prestamo-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px;
+}
+
+.prestamo-tab {
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  bottom: -2px;
+}
+
+.prestamo-tab:hover {
+  color: #334155;
+  background: #f1f5f9;
+  border-radius: 6px 6px 0 0;
+}
+
+.prestamo-tab.activo {
+  color: #1d4ed8;
+  border-bottom-color: #1d4ed8;
+}
+
+.prestamo-tab.deshabilitado {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: #cbd5e1;
+}
+
+.prestamo-tab.deshabilitado:hover {
+  background: transparent;
+  color: #cbd5e1;
+}
+
+/* Secciones */
+.prestamo-seccion {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.prestamo-seccion h3 {
+  margin: 0 0 8px 0;
+  color: #1e293b;
+  font-size: 18px;
+}
+
+.prestamo-seccion-desc {
+  margin: 0 0 16px 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 10px;
+  background: #f8fafc;
+  border-left: 3px solid #1d4ed8;
+  border-radius: 6px;
+}
+
+.prestamo-seccion-nuevo .prestamo-seccion-desc {
+  border-left-color: #3b82f6;
+}
+
+.prestamo-seccion-plan .prestamo-seccion-desc {
+  border-left-color: #10b981;
+}
+
+/* Caja de información */
+.prestamo-info-box {
+  margin-top: 16px;
+  padding: 14px;
+  background: #f0f9ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+}
+
+.prestamo-info-box h4 {
+  margin: 0 0 12px 0;
+  color: #1e40af;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.prestamo-info-plan {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.prestamo-info-plan h4 {
+  color: #166534;
+}
+
+.prestamo-estado-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.estado-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e0e7ff;
+}
+
+.estado-item label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.estado-item span {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+/* Breakdown de deuda */
+.prestamo-deuda-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 12px;
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.deuda-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+  border-left: 3px solid #f59e0b;
+}
+
+.deuda-item label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.deuda-item span {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.deuda-item.deuda-total {
+  border-left-color: #10b981;
+  background: #f0fdf4;
+}
+
+.deuda-item.deuda-total span {
+  color: #166534;
+  font-size: 16px;
+}
+
+/* Botón de plan de pago */
+.btn-plan-pago {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.btn-plan-pago:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Loading spinner */
+.loading-spinner {
+  padding: 12px;
+  text-align: center;
+  color: #64748b;
+  font-size: 13px;
+  font-style: italic;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .prestamo-operacion-box {
   margin-top: 14px;
   display: flex;
