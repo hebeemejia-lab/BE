@@ -3,6 +3,7 @@ const router = express.Router();
 const verificarToken = require('../middleware/authMiddleware');
 const {
   comprarAccion,
+  venderAccion,
   listarPosicionesAbiertas,
   obtenerPortfolio,
   obtenerCotizacionAccion,
@@ -15,6 +16,9 @@ router.use(verificarToken);
 
 // Comprar acción
 router.post('/comprar', comprarAccion);
+
+// Vender acción
+router.post('/vender', venderAccion);
 
 // Listar posiciones abiertas
 router.get('/posiciones', listarPosicionesAbiertas);

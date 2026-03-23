@@ -46,6 +46,7 @@ export default function TradingPanel() {
   const [cantidad, setCantidad]     = useState('');
   const [modoUsd, setModoUsd]       = useState(true);
   const [buying, setBuying]         = useState(false);
+  const [sellingId, setSellingId]   = useState(null);
   const [mensaje, setMensaje]       = useState(null);
   const [posiciones, setPosiciones] = useState([]);
   const [loadingPos, setLoadingPos] = useState(false);
@@ -118,7 +119,12 @@ export default function TradingPanel() {
     if (!cantidad || !quote?.price) return null;
     const n = parseFloat(cantidad);
     if (!Number.isFinite(n) || n <= 0) return null;
-    return modoUsd ? n / quote.price : n;
+    const rawUnits = modoUsd ? n / quote.price : n;
+    if (activeClass === 'stock') {
+      const shares = Math.floor(rawUnits);
+      return shares > 0 ? shares : null;
+    }
+    return rawUnits;
   })();
 
   const costoEstimado = unidades && quote?.price ? unidades * quote.price : null;
@@ -149,6 +155,27 @@ export default function TradingPanel() {
       setMensaje({ ok: false, text: err });
     } finally {
       setBuying(false);
+    }
+  };
+
+  const handleVender = async (inversionId, symbol) => {
+    const confirmado = window.confirm(`¿Confirmas vender ${symbol} ahora?\n\nEsta es una orden REAL en Alpaca.`);
+    if (!confirmado) return;
+
+    setSellingId(inversionId);
+    setMensaje(null);
+    try {
+      const res = await inversionesAPI.vender({ inversionId });
+      setMensaje({ ok: true, text: res.data?.mensaje || `✅ Venta ejecutada de ${symbol}` });
+      if (res.data?.nuevoSaldo != null) setSaldoBe(parseFloat(res.data.nuevoSaldo || 0));
+      if (res.data?.nuevoSaldoChain != null) setSaldoChain(parseFloat(res.data.nuevoSaldoChain || 0));
+      fetchPosiciones();
+      fetchQuote(activeSymbol);
+    } catch (e) {
+      const err = e.response?.data?.mensaje || e.response?.data?.error || '❌ Error al ejecutar la venta';
+      setMensaje({ ok: false, text: err });
+    } finally {
+      setSellingId(null);
     }
   };
 
@@ -274,6 +301,12 @@ export default function TradingPanel() {
             placeholder={modoUsd ? 'Monto en USD (ej: 50)' : `Cantidad (ej: ${activeClass === 'crypto' ? '0.001' : '1'})`}
           />
 
+          {activeClass === 'stock' && modoUsd && (
+            <p style={{ margin: '8px 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>
+              Para acciones se compran unidades enteras; el cálculo en USD se redondea hacia abajo.
+            </p>
+          )}
+
           {costoEstimado != null && (
             <div style={S.estimado}>
               <span>≈ {unidades.toFixed(activeClass === 'crypto' ? 6 : 4)} {activeSymbol.split('/')[0]}</span>
@@ -353,6 +386,16 @@ export default function TradingPanel() {
                   <span style={{ ...S.posPnl, color: pnl >= 0 ? '#34d399' : '#f87171' }}>
                     {pnl >= 0 ? '+' : ''}{fmtPrice(pnl)} ({pnlPct.toFixed(2)}%)
                   </span>
+                  {!isAlpaca && pos.id && (
+                    <button
+                      type="button"
+                      style={{ ...S.sellBtn, opacity: sellingId === pos.id ? 0.6 : 1 }}
+                      onClick={() => handleVender(pos.id, pos.symbol)}
+                      disabled={sellingId === pos.id}
+                    >
+                      {sellingId === pos.id ? 'Vendiendo…' : 'Vender'}
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -580,4 +623,15 @@ const S = {
   posQty:    { display: 'block', fontSize: '0.74rem', color: '#6b7280', marginTop: 2 },
   posVal:    { display: 'block', fontWeight: 700, fontSize: '0.95rem' },
   posPnl:    { display: 'block', fontSize: '0.76rem', marginTop: 2 },
+  sellBtn: {
+    marginTop: 8,
+    background: 'rgba(239,68,68,0.16)',
+    border: '1px solid rgba(239,68,68,0.35)',
+    borderRadius: 8,
+    color: '#fca5a5',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    padding: '6px 10px',
+    cursor: 'pointer',
+  },
 };

@@ -194,13 +194,29 @@ const venderAccion = async (req, res) => {
       return res.status(404).json({ mensaje: 'Inversión no encontrada o ya cerrada' });
     }
 
-    // Obtener precio actual
-    const cotizacion = await alpacaService.obtenerCotizacion(inversion.symbol);
-    const precioVenta = cotizacion.precioVenta || cotizacion.precio;
-    const ingresoTotal = parseFloat((precioVenta * inversion.cantidad).toFixed(2));
+    const orden = await alpacaService.crearOrdenMercado({
+      symbol: inversion.symbol,
+      cantidad: inversion.cantidad,
+      side: 'sell',
+      clientOrderId: `be-sell-${usuarioId}-${Date.now()}`,
+    });
+
+    const ordenConfirmada = await alpacaService.confirmarOrdenMercado(orden.id);
+    const cantidadEjecutada = ordenConfirmada.filledQty || 0;
+
+    if (cantidadEjecutada <= 0) {
+      return res.status(400).json({
+        mensaje: 'La orden real de venta no se ejecuto. Se mantiene la posición abierta.',
+        estadoOrden: ordenConfirmada.status,
+        orderId: ordenConfirmada.id,
+      });
+    }
+
+    const precioVenta = ordenConfirmada.filledAvgPrice || 0;
+    const ingresoTotal = parseFloat((precioVenta * cantidadEjecutada).toFixed(2));
     const ganancia = parseFloat((ingresoTotal - inversion.costoTotal).toFixed(2));
 
-    console.log(`💵 VENTA REAL: ${inversion.cantidad} ${inversion.symbol} @ $${precioVenta} = $${ingresoTotal}`);
+    console.log(`💵 VENTA REAL: ${cantidadEjecutada} ${inversion.symbol} @ $${precioVenta} = $${ingresoTotal}`);
     console.log(`   Ganancia/Pérdida REAL: $${ganancia}`);
 
     // Actualizar inversión
@@ -231,7 +247,7 @@ const venderAccion = async (req, res) => {
       venta: {
         id: inversion.id,
         symbol: inversion.symbol,
-        cantidad: inversion.cantidad,
+        cantidad: cantidadEjecutada,
         precioCompra: inversion.precioCompra,
         precioVenta: inversion.precioVenta,
         costoTotal: inversion.costoTotal,

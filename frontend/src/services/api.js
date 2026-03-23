@@ -75,6 +75,7 @@ export const depositoAPI = {
 // Inversiones (trading en vivo)
 export const inversionesAPI = {
   comprar: (datos) => API.post('/inversiones/comprar', datos),
+  vender: (datos) => API.post('/inversiones/vender', datos),
   obtenerPosiciones: () => API.get('/inversiones/posiciones'),
   obtenerPortfolio: () => API.get('/inversiones/portfolio'),
   buscarActivos: (query, options = {}) => API.get('/inversiones/buscar', { params: { q: query, ...options } }),
