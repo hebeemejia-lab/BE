@@ -780,6 +780,10 @@ exports.crearPrestamoAdmin = async (req, res) => {
       return res.status(400).json({ exito: false, mensaje: 'Monto inválido' });
     }
 
+    const prefijoReferencia = usarDeudaActual
+      ? (sandbox ? 'PLAN-PAGO-SANDBOX' : 'PLAN-PAGO')
+      : (sandbox ? 'SANDBOX' : 'PREST-ADMIN');
+
     const prestamo = await Loan.create({
       usuarioId: usuario.id,
       montoSolicitado: montoNumero,
@@ -793,7 +797,7 @@ exports.crearPrestamoAdmin = async (req, res) => {
       cuentaBancaria: process.env.BANCO_CUENTA,
       emailAprobacion: process.env.ADMIN_EMAIL,
       fechaAprobacion: new Date(),
-      numeroReferencia: `${sandbox ? 'SANDBOX' : (usarDeudaActual ? 'PLAN-PAGO' : 'PREST-ADMIN')}-${Date.now().toString().slice(-8)}`
+      numeroReferencia: `${prefijoReferencia}-${Date.now().toString().slice(-8)}`
     });
 
     const tasaMensual = tasaAplicable > 0 ? (tasaAplicable / 12 / 100) : 0;
@@ -824,7 +828,7 @@ exports.crearPrestamoAdmin = async (req, res) => {
       cuotas.push(cuota);
     }
 
-    if (!sandbox && usarDeudaActual && prestamosAConsolidar.length > 0) {
+    if (usarDeudaActual && prestamosAConsolidar.length > 0) {
       const idsPrestamos = prestamosAConsolidar.map((prestamo) => prestamo.id);
 
       await Loan.update(
