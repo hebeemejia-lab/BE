@@ -55,7 +55,7 @@ const calcularSaldoPrestamoPendiente = (prestamo, cuotas = []) => {
 
 const construirResumenDeudaUsuario = async (usuarioId) => {
   const usuario = await User.findByPk(usuarioId, {
-    attributes: ['id', 'nombre', 'apellido', 'email', 'saldo', 'saldoPrestamo'],
+    attributes: ['id', 'nombre', 'apellido', 'email', 'saldo'],
   });
 
   if (!usuario) {
@@ -82,6 +82,20 @@ const construirResumenDeudaUsuario = async (usuarioId) => {
     (prestamo) => String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO'),
   );
 
+  // Deuda de préstamos normales activos (solo los que NO son planes de pago)
+  const deudaPrestamos = redondearDinero(
+    prestamosNoPlan.reduce((sum, prestamo) => {
+      return sum + calcularSaldoPrestamoPendiente(prestamo, prestamo.cuotasPrestamo || []);
+    }, 0),
+  );
+
+  // Deuda de planes de pago activos (cuotas pendientes de pago)
+  const deudaPlanesPago = redondearDinero(
+    planesPagoActivos.reduce((sum, prestamo) => {
+      return sum + calcularSaldoPrestamoPendiente(prestamo, prestamo.cuotasPrestamo || []);
+    }, 0),
+  );
+
   const sandboxPrestamosSinCuotas = prestamosNoPlan.filter((prestamo) => {
     const referencia = String(prestamo.numeroReferencia || '');
     const cuotas = Array.isArray(prestamo.cuotasPrestamo) ? prestamo.cuotasPrestamo : [];
@@ -89,19 +103,12 @@ const construirResumenDeudaUsuario = async (usuarioId) => {
   });
 
   const saldoWallet = redondearDinero(usuario.saldo || 0);
-  const saldoPrestamoActual = redondearDinero(usuario.saldoPrestamo || 0);
-  
-  // Deuda de saldo negativo = wallet negativo (solo si no está en un plan)
-  const deudaSaldoNegativo = saldoWallet < 0 ? redondearDinero(Math.abs(saldoWallet)) : 0;
-  
-  // Deuda de préstamos = saldoPrestamo negativo (INCLUYE todos los planes consolidados)
-  const deudaPrestamos = saldoPrestamoActual < 0 ? redondearDinero(Math.abs(saldoPrestamoActual)) : 0;
-  const deudaPlanesPago = deudaPrestamos; // En la nueva lógica, todo es plan consolidado
 
-  const saldoPrestamo = deudaPrestamos;
-  const saldoDisponible = redondearDinero(saldoWallet - saldoPrestamo);
-  const deudaConsolidable = deudaPrestamos; // Solo lo que está en saldoPrestamo
-  const deudaTotalActual = redondearDinero(deudaSaldoNegativo + deudaPrestamos);
+  // Deuda consolidable = solo los préstamos normales (no los planes)
+  // porque un plan ya es la reorganización de esa deuda
+  const deudaConsolidable = deudaPrestamos;
+  const deudaTotalActual = redondearDinero(deudaPrestamos + deudaPlanesPago);
+  const saldoDisponible = redondearDinero(saldoWallet - deudaTotalActual);
 
   return {
     usuarioId: usuario.id,
@@ -109,8 +116,7 @@ const construirResumenDeudaUsuario = async (usuarioId) => {
     apellido: usuario.apellido,
     email: usuario.email,
     saldoWallet,
-    saldoPrestamo: saldoPrestamoActual,
-    deudaSaldoNegativo,
+    deudaSaldoNegativo: saldoWallet < 0 ? Math.abs(saldoWallet) : 0,
     deudaPrestamos,
     deudaPlanesPago,
     deudaConsolidable,
@@ -118,6 +124,7 @@ const construirResumenDeudaUsuario = async (usuarioId) => {
     saldoDisponible,
     prestamosActivos: prestamosNoPlan.length,
     planesPagoActivos: planesPagoActivos.length,
+    // Se puede crear plan si hay préstamos con deuda y no hay plan activo todavía
     puedeCrearPlanPago: deudaPrestamos > 0 && planesPagoActivos.length === 0,
     sandboxPrestamosSinCuotas: sandboxPrestamosSinCuotas.length,
     sandboxPrestamosSinCuotasIds: sandboxPrestamosSinCuotas.map((prestamo) => prestamo.id),
@@ -704,68 +711,47 @@ exports.crearPrestamoAdmin = async (req, res) => {
     }
 
     const saldoActualUsuario = redondearDinero(usuario.saldo || 0);
-    const saldoPrestamoUsuario = redondearDinero(usuario.saldoPrestamo || 0);
     const deudaActualUsuario = saldoActualUsuario < 0 ? redondearDinero(Math.abs(saldoActualUsuario)) : 0;
-    
-    // Para planes de pago: usar saldoPrestamo como fuente de deuda
-    let deudaPrestamosPendiente = saldoPrestamoUsuario < 0 ? redondearDinero(Math.abs(saldoPrestamoUsuario)) : 0;
 
+    // Calcular préstamos activos NO plan que tienen cuotas pendientes (la deuda real)
     let prestamosAConsolidar = [];
+    let deudaPrestamosPendiente = 0;
+
     if (usarDeudaActual) {
       prestamosAConsolidar = await Loan.findAll({
         where: {
           usuarioId: usuario.id,
           estado: { [Op.notIn]: ['completado', 'rechazado'] },
         },
+        include: [{ model: CuotaPrestamo, as: 'cuotasPrestamo', required: false }],
       });
 
+      // Solo los préstamos que NO son planes de pago
       prestamosAConsolidar = prestamosAConsolidar.filter(
         (prestamo) => !String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO'),
       );
+
+      // Sumar cuotas pendientes de cada préstamo
+      deudaPrestamosPendiente = redondearDinero(
+        prestamosAConsolidar.reduce((sum, prestamo) => {
+          return sum + calcularSaldoPrestamoPendiente(prestamo, prestamo.cuotasPrestamo || []);
+        }, 0),
+      );
     }
 
-    let deudaTotalConsolidada = 0;
-    if (usarDeudaActual) {
-      // El plan SOLO consolida saldoPrestamo (deuda de préstamos)
-      deudaTotalConsolidada = deudaPrestamosPendiente;
-    }
+    const deudaTotalConsolidada = usarDeudaActual ? deudaPrestamosPendiente : 0;
 
     if (usarDeudaActual) {
+      // No permitir duplicar planes activos
       const planesActivos = await Loan.findAll({
         where: {
           usuarioId: usuario.id,
-          estado: { [Op.ne]: 'completado' },
+          estado: { [Op.notIn]: ['completado', 'rechazado'] },
           numeroReferencia: { [Op.like]: 'PLAN-PAGO-%' },
         },
       });
 
-      // Si ya no hay deuda total, cerramos cualquier plan activo residual.
-      if (deudaTotalConsolidada <= 0 && planesActivos.length > 0) {
-        const idsPlanes = planesActivos.map((plan) => plan.id);
-
-        await Loan.update(
-          { estado: 'completado' },
-          { where: { id: { [Op.in]: idsPlanes } } },
-        );
-
-        await CuotaPrestamo.update(
-          {
-            pagado: true,
-            fechaPago: new Date(),
-            metodoPago: 'Ajuste',
-            notas: 'Plan cerrado automáticamente: saldo del usuario en 0',
-          },
-          {
-            where: {
-              prestamoId: { [Op.in]: idsPlanes },
-              pagado: false,
-            },
-          },
-        );
-      }
-
-      // Si aún hay deuda, no permitir duplicar planes activos.
-      if (deudaTotalConsolidada > 0 && planesActivos.length > 0) {
+      if (planesActivos.length > 0) {
         return res.status(400).json({
           exito: false,
           mensaje: 'El usuario ya tiene un plan de pago activo. Debe completarlo antes de crear otro.'
@@ -865,9 +851,8 @@ exports.crearPrestamoAdmin = async (req, res) => {
     }
 
     if (!sandbox && !usarDeudaActual) {
-      // Préstamo nuevo: se acredita el monto al wallet Y se registra la deuda en saldoPrestamo
+      // Préstamo nuevo: acreditar el monto al wallet del usuario
       usuario.saldo = redondearDinero(parseFloat(usuario.saldo || 0) + montoNumero);
-      usuario.saldoPrestamo = redondearDinero(parseFloat(usuario.saldoPrestamo || 0) - montoNumero);
       await usuario.save();
     }
 
@@ -978,24 +963,9 @@ exports.registrarPagoCuota = async (req, res) => {
     if (esPlanDePago && prestamo) {
       const usuario = await User.findByPk(prestamo.usuarioId);
       if (usuario) {
-        const saldoPrestamoActual = redondearDinero(usuario.saldoPrestamo || 0);
         const montoCuota = redondearDinero(cuota.montoCuota || 0);
-
-        if (saldoPrestamoActual < 0 && montoCuota > 0) {
-          // Cada pago de cuota reduce el saldoPrestamo (deuda de préstamos)
-          // De -100 va a -80, -60, etc., hasta 0
-          abonoSaldo = redondearDinero(Math.min(Math.abs(saldoPrestamoActual), montoCuota));
-          usuario.saldoPrestamo = redondearDinero(saldoPrestamoActual + abonoSaldo);
-
-          // Evitar residuos como -0.01 por redondeo
-          if (usuario.saldoPrestamo > -0.01 && usuario.saldoPrestamo < 0.01) {
-            usuario.saldoPrestamo = 0;
-          }
-
-          await usuario.save();
-        }
-
-        nuevoSaldoUsuario = redondearDinero(usuario.saldoPrestamo || 0);
+        abonoSaldo = montoCuota;
+        nuevoSaldoUsuario = redondearDinero(usuario.saldo || 0);
       }
     }
 
