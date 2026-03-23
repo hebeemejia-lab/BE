@@ -43,6 +43,13 @@ const CRYPTO_MARKET_INITIAL = [
   { id: 'cardano',    label: 'Cardano',   symbol: 'ADA',  icon: '₳',   color: '#0033ad', price: '-', change: '...', trend: null },
 ];
 
+const STOCK_WATCHLIST_INITIAL = [
+  { id: 'aapl', symbol: 'AAPL', label: 'Apple', icon: '🍎', color: '#111827', price: '-', spread: '...' },
+  { id: 'msft', symbol: 'MSFT', label: 'Microsoft', icon: '🪟', color: '#2563eb', price: '-', spread: '...' },
+  { id: 'nvda', symbol: 'NVDA', label: 'NVIDIA', icon: '🟢', color: '#16a34a', price: '-', spread: '...' },
+  { id: 'tsla', symbol: 'TSLA', label: 'Tesla', icon: '⚡', color: '#dc2626', price: '-', spread: '...' },
+];
+
 export default function Dashboard() {
   const { usuario, loading, logout } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -55,6 +62,7 @@ export default function Dashboard() {
   const [cargandoInversion, setCargandoInversion] = useState(true);
   const [favorites, setFavorites] = useState(INITIAL_FAVORITES);
   const [marketPrices, setMarketPrices] = useState(CRYPTO_MARKET_INITIAL);
+  const [stockWatchlist, setStockWatchlist] = useState(STOCK_WATCHLIST_INITIAL);
   const rolUsuario = String(usuario?.rol || '').toLowerCase();
   const esAdmin = rolUsuario === 'admin' || rolUsuario === 'admin_lite' || rolUsuario === 'administrador';
   const etiquetaRol = esAdmin ? 'Admin' : 'Cliente';
@@ -136,6 +144,32 @@ export default function Dashboard() {
             };
           }));
         }
+
+        // Seguimiento de acciones (cotizaciones en vivo desde backend/Alpaca)
+        const stockSymbols = STOCK_WATCHLIST_INITIAL.map((s) => s.symbol);
+        const stockResponses = await Promise.allSettled(
+          stockSymbols.map((symbol) => api.get(`/inversiones/cotizacion/${symbol}`)),
+        );
+
+        setStockWatchlist((prev) => prev.map((stock, index) => {
+          const response = stockResponses[index];
+          if (response?.status !== 'fulfilled') {
+            return stock;
+          }
+
+          const data = response.value?.data || {};
+          const precio = Number(data.precio ?? data.precioCompra ?? data.precioVenta);
+          const bid = Number(data.precioCompra ?? data.precio ?? 0);
+          const ask = Number(data.precioVenta ?? data.precio ?? 0);
+
+          return {
+            ...stock,
+            price: Number.isFinite(precio) ? `$${precio.toFixed(2)}` : stock.price,
+            spread: (Number.isFinite(bid) && Number.isFinite(ask))
+              ? `Bid ${bid.toFixed(2)} • Ask ${ask.toFixed(2)}`
+              : stock.spread,
+          };
+        }));
       } catch (error) {
         console.error('Error cargando precios de crypto:', error);
       }
@@ -456,6 +490,37 @@ export default function Dashboard() {
                 <span className={`db-fav-change ${fav.up ? 'db-up' : fav.up === false ? 'db-down' : ''}`}>
                   {fav.change}
                 </span>
+              </button>
+            ))}
+          </div>
+            </section>
+
+            <section aria-labelledby="acciones-heading" className="db-section">
+          <div className="db-section-header">
+            <h2 id="acciones-heading" className="db-section-title">Seguimiento de acciones</h2>
+            <button className="db-link-btn" onClick={() => navigate('/trading')} aria-label="Ir a trading">
+              Abrir trading
+            </button>
+          </div>
+          <div className="db-cml-list" role="list" aria-label="Acciones monitoreadas">
+            {stockWatchlist.map((stock) => (
+              <button
+                key={stock.id}
+                className="db-cml-item"
+                onClick={() => navigate('/trading')}
+                role="listitem"
+                aria-label={`${stock.label}: ${stock.price}`}
+              >
+                <span className="db-cml-icon" style={{ color: stock.color }} aria-hidden="true">{stock.icon}</span>
+                <div className="db-cml-meta">
+                  <span className="db-cml-name">{stock.label}</span>
+                  <span className="db-cml-symbol">{stock.symbol}</span>
+                </div>
+                <div className="db-cml-right">
+                  <span className="db-cml-price">{stock.price}</span>
+                  <span className="db-cml-chg">{stock.spread}</span>
+                </div>
+                <span className="db-cml-buy" aria-hidden="true">Ver</span>
               </button>
             ))}
           </div>
