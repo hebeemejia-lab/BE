@@ -117,13 +117,15 @@ function Saldos() {
   });
 
   const [depositForm, setDepositForm] = useState({ method: 'paypal', amount: '', code: '' });
-  const [buyForm, setBuyForm] = useState({ symbol: '', cantidad: '' });
+  const [buyForm, setBuyForm] = useState({ assetClass: 'crypto', symbol: '', cantidad: '' });
   const [transferForm, setTransferForm] = useState({ modo: 'cedula', cedula: '', walletId: '', monto: '', concepto: 'Transferencia crypto' });
   const [withdrawForm, setWithdrawForm] = useState({ coin: 'BTC', network: 'Bitcoin Network', walletAddress: '', monto: '' });
   const [availableNetworks, setAvailableNetworks] = useState(CRYPTO_COINS[0].networks);
   const [assetQuery, setAssetQuery] = useState('');
   const [assetOptions, setAssetOptions] = useState([]);
   const [assetsLoading, setAssetsLoading] = useState(false);
+  const [buyQuote, setBuyQuote] = useState(null);
+  const [buyQuoteLoading, setBuyQuoteLoading] = useState(false);
   const [feedback, setFeedback] = useState({ open: false, severity: 'success', message: '' });
 
   const isPositiveAmount = (value) => {
@@ -225,7 +227,7 @@ function Saldos() {
     const timer = setTimeout(async () => {
       try {
         setAssetsLoading(true);
-        const response = await inversionesAPI.buscarActivos(query, { assetClass: 'crypto' });
+        const response = await inversionesAPI.buscarActivos(query, { assetClass: buyForm.assetClass });
         const resultados = asArray(response?.data?.resultados);
         setAssetOptions(resultados);
         setBuyForm((prev) => {
@@ -244,10 +246,51 @@ function Saldos() {
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [activeFlow, assetQuery]);
+  }, [activeFlow, assetQuery, buyForm.assetClass]);
+
+  useEffect(() => {
+    if (activeFlow !== 'buy' || !buyForm.symbol) {
+      setBuyQuote(null);
+      return;
+    }
+
+    let cancelled = false;
+    const cargarCotizacion = async () => {
+      try {
+        setBuyQuoteLoading(true);
+        const response = await inversionesAPI.obtenerCotizacion(buyForm.symbol);
+        if (cancelled) return;
+        const data = response?.data || {};
+        const precio = Number(data.precio ?? data.precioCompra ?? data.price ?? 0);
+        const cambio = Number(data.cambio24h ?? data.cambio ?? NaN);
+        setBuyQuote({
+          precio: Number.isFinite(precio) ? precio : null,
+          cambio: Number.isFinite(cambio) ? cambio : null,
+          symbol: data.symbol || buyForm.symbol,
+        });
+      } catch (_) {
+        if (!cancelled) setBuyQuote(null);
+      } finally {
+        if (!cancelled) setBuyQuoteLoading(false);
+      }
+    };
+
+    cargarCotizacion();
+    const timer = setInterval(cargarCotizacion, 10000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [activeFlow, buyForm.symbol]);
 
   const resetDeposit = () => setDepositForm({ method: 'paypal', amount: '', code: '' });
-  const resetBuy = () => setBuyForm({ symbol: '', cantidad: '' });
+  const resetBuy = () => {
+    setBuyForm({ assetClass: 'crypto', symbol: '', cantidad: '' });
+    setAssetQuery('');
+    setAssetOptions([]);
+    setBuyQuote(null);
+  };
   const resetTransfer = () => setTransferForm({ modo: 'cedula', cedula: '', walletId: '', monto: '', concepto: 'Transferencia crypto' });
   const resetWithdraw = () => {
     setAvailableNetworks(CRYPTO_COINS[0].networks);
@@ -313,7 +356,7 @@ function Saldos() {
       const response = await inversionesAPI.comprar({
         symbol: buyForm.symbol.trim().toUpperCase(),
         cantidad: Number(buyForm.cantidad),
-        assetClass: 'crypto',
+        assetClass: buyForm.assetClass,
       });
 
       openFeedback('success', response?.data?.mensaje || 'Compra ejecutada correctamente.');
@@ -414,10 +457,12 @@ function Saldos() {
     {
       id: 'buy',
       title: 'Comprar crypto',
-      subtitle: 'Orden real Alpaca Crypto',
+      subtitle: 'Crypto y acciones en vivo',
       icon: <ShoppingBagOutlinedIcon sx={{ fontSize: 28 }} />,
       onClick: () => {
         setAssetQuery('');
+        setBuyForm((prev) => ({ ...prev, assetClass: 'crypto', symbol: '' }));
+        setBuyQuote(null);
         setActiveFlow('buy');
       },
     },
@@ -537,7 +582,7 @@ function Saldos() {
             </Stack>
 
             <Alert severity="warning" sx={{ borderRadius: '14px' }}>
-              Las compras crypto se envían como ordenes reales a Alpaca Crypto. Usa pares validos como BTC/USD o ETH/USD.
+              Las compras se envían como órdenes reales a Alpaca. Crypto usa pares como BTC/USD y acciones usan símbolos como AAPL o TSLA.
             </Alert>
 
             <Grid container spacing={2}>
@@ -735,10 +780,29 @@ function Saldos() {
       </Dialog>
 
       <Dialog open={activeFlow === 'buy'} onClose={() => setActiveFlow(null)} fullWidth maxWidth="sm" fullScreen={fullScreenDialog}>
-        <DialogTitle sx={{ fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Compra crypto</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Compra de activos</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ pt: 0.5 }}>
-            <Alert severity="info">Busca BTC o ETH y selecciona un par real de crypto como BTC/USD. Esta vista ya no lista acciones.</Alert>
+            <Alert severity="info">Selecciona tipo de activo, busca símbolo y ejecuta orden real en Alpaca.</Alert>
+            <FormControl fullWidth>
+              <InputLabel id="buy-asset-class-label">Tipo de activo</InputLabel>
+              <Select
+                labelId="buy-asset-class-label"
+                label="Tipo de activo"
+                value={buyForm.assetClass}
+                onChange={(event) => {
+                  const nextClass = event.target.value;
+                  setBuyForm((prev) => ({ ...prev, assetClass: nextClass, symbol: '' }));
+                  setAssetQuery('');
+                  setAssetOptions([]);
+                  setBuyQuote(null);
+                }}
+                inputProps={{ 'aria-label': 'Tipo de activo a comprar' }}
+              >
+                <MenuItem value="crypto">Crypto</MenuItem>
+                <MenuItem value="stock">Acciones</MenuItem>
+              </Select>
+            </FormControl>
             <Autocomplete
               fullWidth
               options={assetOptions}
@@ -759,7 +823,7 @@ function Saldos() {
                 <TextField
                   {...params}
                   label="Buscar y seleccionar símbolo"
-                  placeholder="Ej: BTC, ETH, SOL"
+                  placeholder={buyForm.assetClass === 'crypto' ? 'Ej: BTC, ETH, SOL' : 'Ej: AAPL, MSFT, TSLA'}
                   inputProps={{
                     ...params.inputProps,
                     'aria-label': 'Buscar símbolo para compra',
@@ -789,6 +853,28 @@ function Saldos() {
                 <Typography sx={{ fontSize: '0.9rem' }}>
                   Símbolo seleccionado: <strong>{buyForm.symbol}</strong>
                 </Typography>
+              </Stack>
+            )}
+
+            {(buyQuoteLoading || buyQuote) && (
+              <Stack direction="row" alignItems="center" spacing={1.2}>
+                {buyQuoteLoading ? (
+                  <CircularProgress size={16} />
+                ) : (
+                  <>
+                    <Typography sx={{ fontSize: '0.9rem' }}>
+                      Precio en vivo {buyQuote?.symbol || buyForm.symbol}: <strong>{buyQuote?.precio != null ? `USD ${formatUsd(buyQuote.precio)}` : 'N/D'}</strong>
+                    </Typography>
+                    {buyQuote?.cambio != null && (
+                      <Chip
+                        size="small"
+                        label={`${buyQuote.cambio >= 0 ? '+' : ''}${buyQuote.cambio.toFixed(2)}%`}
+                        color={buyQuote.cambio >= 0 ? 'success' : 'error'}
+                        variant="outlined"
+                      />
+                    )}
+                  </>
+                )}
               </Stack>
             )}
 

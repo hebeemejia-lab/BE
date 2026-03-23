@@ -51,6 +51,7 @@ export default function TradingPanel() {
   const [loadingPos, setLoadingPos] = useState(false);
   const [saldoBe, setSaldoBe]       = useState(parseFloat(usuario?.saldo || 0));
   const [saldoChain, setSaldoChain] = useState(parseFloat(usuario?.saldoChain || 0));
+  const [lastQuoteUpdate, setLastQuoteUpdate] = useState(null);
 
   const activeSymbol = selected.symbol;
   const activeClass  = selected.assetClass;
@@ -66,6 +67,7 @@ export default function TradingPanel() {
         change: d.cambio24h ?? d.cambio ?? null,
         symbol: d.symbol || sym,
       });
+      setLastQuoteUpdate(new Date());
     } catch (e) {
       setQuote({ error: e.response?.data?.mensaje || 'No se pudo obtener cotización' });
     } finally {
@@ -89,8 +91,17 @@ export default function TradingPanel() {
     }
   }, []);
 
-  useEffect(() => { fetchQuote(activeSymbol); }, [selected]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { fetchPosiciones(); }, [fetchPosiciones]);
+  useEffect(() => {
+    fetchQuote(activeSymbol);
+    const timer = setInterval(() => fetchQuote(activeSymbol), 8000);
+    return () => clearInterval(timer);
+  }, [activeSymbol, fetchQuote]);
+
+  useEffect(() => {
+    fetchPosiciones();
+    const timer = setInterval(fetchPosiciones, 15000);
+    return () => clearInterval(timer);
+  }, [fetchPosiciones]);
   useEffect(() => {
     setSaldoBe(parseFloat(usuario?.saldo || 0));
     setSaldoChain(parseFloat(usuario?.saldoChain || 0));
@@ -215,6 +226,9 @@ export default function TradingPanel() {
             <div>
               <p style={S.quoteSymbol}>{quote.symbol}</p>
               <p style={S.quotePrice}>{fmtPrice(quote.price)}</p>
+              <p style={{ margin: 0, marginTop: 4, fontSize: '0.75rem', color: '#94a3b8' }}>
+                Actualizado: {lastQuoteUpdate ? lastQuoteUpdate.toLocaleTimeString() : '—'}
+              </p>
             </div>
             {quote.change != null && (
               <span style={{
