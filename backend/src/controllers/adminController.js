@@ -892,6 +892,11 @@ exports.crearPrestamoAdmin = async (req, res) => {
           },
         },
       );
+
+      // 🔧 CRÍTICO: Al consolidar, el saldo negativo YA está capturado en el plan.
+      // Ajustamos saldo a 0 para que no se duplique la deuda.
+      usuario.saldo = 0;
+      await usuario.save();
     }
 
     if (!sandbox && !usarDeudaActual) {
