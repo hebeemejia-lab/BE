@@ -55,7 +55,7 @@ const calcularSaldoPrestamoPendiente = (prestamo, cuotas = []) => {
 
 const construirResumenDeudaUsuario = async (usuarioId) => {
   const usuario = await User.findByPk(usuarioId, {
-    attributes: ['id', 'nombre', 'apellido', 'email', 'saldo'],
+    attributes: ['id', 'nombre', 'apellido', 'email', 'saldo', 'saldoPrestamo'],
   });
 
   if (!usuario) {
