@@ -297,11 +297,17 @@ const AdminPanel = () => {
       };
       const response = await api.post('/admin/prestamos', payload);
       alert(response.data.mensaje || 'Préstamo creado');
-      await cargarPrestamos();
+      await Promise.all([
+        cargarPrestamos(),
+        cargarDashboard(),
+        api.get('/admin/usuarios').then((usuariosRes) => setUsuariosAdmin(usuariosRes.data.usuarios || [])),
+      ]);
+      return response.data;
     } catch (error) {
       console.error('Error creando préstamo:', error);
       const detalle = error.response?.data?.error ? `\nDetalle: ${error.response.data.error}` : '';
       alert((error.response?.data?.mensaje || 'Error al crear préstamo') + detalle);
+      throw error;
     } finally {
       setCargando(false);
     }
@@ -1847,7 +1853,7 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
     }
     setCreandoPrestamo(true);
     try {
-      await onCrearPrestamo({
+      const response = await onCrearPrestamo({
         usuarioId: nuevoPrestamo.usuarioId,
         monto: nuevoPrestamo.monto,
         plazo: nuevoPrestamo.plazo,
@@ -1855,26 +1861,21 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
         fechaPrimerVencimiento: nuevoPrestamo.fechaPrimerVencimiento || null,
         usarDeudaActual: nuevoPrestamo.usarDeudaActual,
       });
-      
-      // Recarga el resumen si es un plan de pago
-      if (nuevoPrestamo.usarDeudaActual) {
-        setTimeout(async () => {
-          try {
-            const response = await api.get(`/admin/usuarios/${nuevoPrestamo.usuarioId}/resumen-deuda`);
-            setResumenDeuda(response.data?.resumen || null);
-          } catch (error) {
-            console.error('Error recargando resumen:', error);
-          }
-        }, 500);
+
+      if (response?.resumenActualizado) {
+        setResumenDeuda(response.resumenActualizado);
+      } else if (nuevoPrestamo.usuarioId) {
+        const resumenResponse = await api.get(`/admin/usuarios/${nuevoPrestamo.usuarioId}/resumen-deuda`);
+        setResumenDeuda(resumenResponse.data?.resumen || null);
       }
     } finally {
       setNuevoPrestamo({
-        usuarioId: '',
+        usuarioId: nuevoPrestamo.usuarioId,
         monto: '',
         plazo: '',
         tasaInteres: '5',
         fechaPrimerVencimiento: '',
-        usarDeudaActual: false,
+        usarDeudaActual: nuevoPrestamo.usarDeudaActual,
       });
       setCreandoPrestamo(false);
     }
