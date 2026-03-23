@@ -103,19 +103,19 @@ const construirResumenDeudaUsuario = async (usuarioId) => {
   });
 
   const saldoWallet = redondearDinero(usuario.saldo || 0);
+  const saldoPrestamoActual = redondearDinero(usuario.saldoPrestamo || 0);
+  
+  // Deuda de saldo negativo = wallet negativo (solo si no está en un plan)
   const deudaSaldoNegativo = saldoWallet < 0 ? redondearDinero(Math.abs(saldoWallet)) : 0;
+  
+  // Deuda de préstamos = saldoPrestamo negativo (INCLUYE todos los planes consolidados)
+  const deudaPrestamos = saldoPrestamoActual < 0 ? redondearDinero(Math.abs(saldoPrestamoActual)) : 0;
+  const deudaPlanesPago = deudaPrestamos; // En la nueva lógica, todo es plan consolidado
 
-  // El saldo negativo que ya está capturado en deudaSaldoNegativoInicial de planes activos
-  // no debe sumarse de nuevo — evita doble conteo al mostrar deuda tras crear un plan.
-  const negativoCubiertoPorPlanes = redondearDinero(
-    planesPagoActivos.reduce((sum, p) => sum + toNumberOrZero(p.deudaSaldoNegativoInicial), 0),
-  );
-  const deudaSaldoNegativoNoCubierto = redondearDinero(Math.max(0, deudaSaldoNegativo - negativoCubiertoPorPlanes));
-
-  const saldoPrestamo = redondearDinero(deudaPrestamos + deudaPlanesPago);
-  const saldoDisponible = redondearDinero(saldoWallet - deudaPrestamos);
-  const deudaConsolidable = redondearDinero(deudaSaldoNegativoNoCubierto + deudaPrestamos);
-  const deudaTotalActual = redondearDinero(deudaConsolidable + deudaPlanesPago);
+  const saldoPrestamo = deudaPrestamos;
+  const saldoDisponible = redondearDinero(saldoWallet - saldoPrestamo);
+  const deudaConsolidable = deudaPrestamos; // Solo lo que está en saldoPrestamo
+  const deudaTotalActual = redondearDinero(deudaSaldoNegativo + deudaPrestamos);
 
   return {
     usuarioId: usuario.id,
@@ -123,16 +123,16 @@ const construirResumenDeudaUsuario = async (usuarioId) => {
     apellido: usuario.apellido,
     email: usuario.email,
     saldoWallet,
+    saldoPrestamo: saldoPrestamoActual,
     deudaSaldoNegativo,
     deudaPrestamos,
     deudaPlanesPago,
     deudaConsolidable,
     deudaTotalActual,
-    saldoPrestamo,
     saldoDisponible,
     prestamosActivos: prestamosNoPlan.length,
     planesPagoActivos: planesPagoActivos.length,
-    puedeCrearPlanPago: deudaConsolidable > 0 && planesPagoActivos.length === 0,
+    puedeCrearPlanPago: deudaPrestamos > 0 && planesPagoActivos.length === 0,
     sandboxPrestamosSinCuotas: sandboxPrestamosSinCuotas.length,
     sandboxPrestamosSinCuotasIds: sandboxPrestamosSinCuotas.map((prestamo) => prestamo.id),
   };
@@ -718,8 +718,11 @@ exports.crearPrestamoAdmin = async (req, res) => {
     }
 
     const saldoActualUsuario = redondearDinero(usuario.saldo || 0);
+    const saldoPrestamoUsuario = redondearDinero(usuario.saldoPrestamo || 0);
     const deudaActualUsuario = saldoActualUsuario < 0 ? redondearDinero(Math.abs(saldoActualUsuario)) : 0;
-    let deudaPrestamosPendiente = 0;
+    
+    // Para planes de pago: usar saldoPrestamo como fuente de deuda
+    let deudaPrestamosPendiente = saldoPrestamoUsuario < 0 ? redondearDinero(Math.abs(saldoPrestamoUsuario)) : 0;
 
     let prestamosAConsolidar = [];
     if (usarDeudaActual) {
@@ -733,37 +736,13 @@ exports.crearPrestamoAdmin = async (req, res) => {
       prestamosAConsolidar = prestamosAConsolidar.filter(
         (prestamo) => !String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO'),
       );
-
-      if (prestamosAConsolidar.length > 0) {
-        const cuotasPrestamos = await CuotaPrestamo.findAll({
-          where: {
-            prestamoId: { [Op.in]: prestamosAConsolidar.map((prestamo) => prestamo.id) },
-            pagado: false,
-          },
-        });
-
-        const deudaPorPrestamo = new Map();
-        cuotasPrestamos.forEach((cuota) => {
-          const actual = deudaPorPrestamo.get(cuota.prestamoId) || 0;
-          deudaPorPrestamo.set(cuota.prestamoId, actual + toNumberOrZero(cuota.montoCuota));
-        });
-
-        deudaPrestamosPendiente = prestamosAConsolidar.reduce((acumulado, prestamo) => {
-          const deudaCuotas = deudaPorPrestamo.get(prestamo.id);
-          const estadoPrestamo = String(prestamo.estado || '').toLowerCase();
-          const deudaPrestamo = deudaCuotas != null
-            ? deudaCuotas
-            : (estadoPrestamo === 'pendiente'
-              ? toNumberOrZero(prestamo.montoAprobado || prestamo.montoSolicitado)
-              : 0);
-          return acumulado + deudaPrestamo;
-        }, 0);
-
-        deudaPrestamosPendiente = redondearDinero(deudaPrestamosPendiente);
-      }
     }
 
-    const deudaTotalConsolidada = redondearDinero(deudaActualUsuario + deudaPrestamosPendiente);
+    let deudaTotalConsolidada = 0;
+    if (usarDeudaActual) {
+      // El plan SOLO consolida saldoPrestamo (deuda de préstamos)
+      deudaTotalConsolidada = deudaPrestamosPendiente;
+    }
 
     if (usarDeudaActual) {
       const planesActivos = await Loan.findAll({
@@ -893,9 +872,9 @@ exports.crearPrestamoAdmin = async (req, res) => {
         },
       );
 
-      // 🔧 CRÍTICO: Al consolidar, el saldo negativo YA está capturado en el plan.
-      // Ajustamos saldo a 0 para que no se duplique la deuda.
-      usuario.saldo = 0;
+      // 🔧 CRÍTICO: Al consolidar, ajustamos saldoPrestamo a 0
+      // porque la deuda ahora está en el plan de pago
+      usuario.saldoPrestamo = 0;
       await usuario.save();
     }
 
@@ -1011,23 +990,24 @@ exports.registrarPagoCuota = async (req, res) => {
     if (esPlanDePago && prestamo) {
       const usuario = await User.findByPk(prestamo.usuarioId);
       if (usuario) {
-        const saldoActual = redondearDinero(usuario.saldo || 0);
+        const saldoPrestamoActual = redondearDinero(usuario.saldoPrestamo || 0);
         const montoCuota = redondearDinero(cuota.montoCuota || 0);
 
-        if (saldoActual < 0 && montoCuota > 0) {
-          // Cada pago de cuota reduce la deuda reflejada en saldo disponible hasta llegar a 0.
-          abonoSaldo = redondearDinero(Math.min(Math.abs(saldoActual), montoCuota));
-          usuario.saldo = redondearDinero(saldoActual + abonoSaldo);
+        if (saldoPrestamoActual < 0 && montoCuota > 0) {
+          // Cada pago de cuota reduce el saldoPrestamo (deuda de préstamos)
+          // De -100 va a -80, -60, etc., hasta 0
+          abonoSaldo = redondearDinero(Math.min(Math.abs(saldoPrestamoActual), montoCuota));
+          usuario.saldoPrestamo = redondearDinero(saldoPrestamoActual + abonoSaldo);
 
-          // Evitar residuos como -0.01 por redondeo: en BanExclusivo, deuda saldada = 0 exacto.
-          if (usuario.saldo > -0.01 && usuario.saldo < 0.01) {
-            usuario.saldo = 0;
+          // Evitar residuos como -0.01 por redondeo
+          if (usuario.saldoPrestamo > -0.01 && usuario.saldoPrestamo < 0.01) {
+            usuario.saldoPrestamo = 0;
           }
 
           await usuario.save();
         }
 
-        nuevoSaldoUsuario = redondearDinero(usuario.saldo || 0);
+        nuevoSaldoUsuario = redondearDinero(usuario.saldoPrestamo || 0);
       }
     }
 
