@@ -197,9 +197,12 @@ const construirCheckoutPlanPago = (prestamo, cuotas = [], saldoUsuarioActual = n
   const pagoAplicable = Math.min(totalPagado, deudaTotalInicial);
   const saldoNegativoRestantePorPagos = Math.max(0, deudaSaldoNegativoInicial - pagoAplicable);
   const saldoActualNumerico = toNumberOrZero(saldoUsuarioActual);
-  const saldoNegativoRestante = Number.isFinite(saldoActualNumerico)
-    ? Math.max(0, -saldoActualNumerico)
-    : saldoNegativoRestantePorPagos;
+  // Si el plan no incluyo saldo negativo inicial, el wallet no debe afectar este checkout.
+  const saldoNegativoRestante = deudaSaldoNegativoInicial > 0
+    ? (Number.isFinite(saldoActualNumerico)
+      ? Math.max(0, -saldoActualNumerico)
+      : saldoNegativoRestantePorPagos)
+    : 0;
   const remanenteTrasSaldo = Math.max(0, pagoAplicable - deudaSaldoNegativoInicial);
   const saldoPrestamoRestante = Math.max(0, deudaPrestamosInicial - remanenteTrasSaldo);
 
@@ -763,7 +766,7 @@ exports.crearPrestamoAdmin = async (req, res) => {
       ? deudaTotalConsolidada
       : parseFloat(monto);
 
-    // Regla BanExclusivo: un plan de pago salda saldo negativo hasta 0, sin interés adicional.
+    // Plan de pago = reestructuracion de deuda existente, sin interes adicional.
     const tasaAplicable = usarDeudaActual ? 0 : tasaNumero;
 
     if (usarDeudaActual && montoNumero <= 0) {
@@ -781,7 +784,7 @@ exports.crearPrestamoAdmin = async (req, res) => {
       usuarioId: usuario.id,
       montoSolicitado: montoNumero,
       montoAprobado: montoNumero,
-      deudaSaldoNegativoInicial: usarDeudaActual ? deudaActualUsuario : 0,
+      deudaSaldoNegativoInicial: 0,
       deudaPrestamosInicial: usarDeudaActual ? deudaPrestamosPendiente : 0,
       tasaInteres: tasaAplicable,
       plazo: plazoNumero,
@@ -844,10 +847,6 @@ exports.crearPrestamoAdmin = async (req, res) => {
         },
       );
 
-      // 🔧 CRÍTICO: Al consolidar, ajustamos saldoPrestamo a 0
-      // porque la deuda ahora está en el plan de pago
-      usuario.saldoPrestamo = 0;
-      await usuario.save();
     }
 
     if (!sandbox && !usarDeudaActual) {
@@ -861,7 +860,7 @@ exports.crearPrestamoAdmin = async (req, res) => {
     res.json({
       exito: true,
       mensaje: usarDeudaActual
-        ? '✅ Plan de pago creado a partir de la deuda actual del usuario'
+        ? '✅ Plan de pago creado como reestructuracion de deuda existente'
         : '✅ Préstamo creado con cuotas',
       prestamo: prestamo.toJSON(),
       sandbox: !!sandbox,
