@@ -104,9 +104,17 @@ const construirResumenDeudaUsuario = async (usuarioId) => {
 
   const saldoWallet = redondearDinero(usuario.saldo || 0);
   const deudaSaldoNegativo = saldoWallet < 0 ? redondearDinero(Math.abs(saldoWallet)) : 0;
+
+  // El saldo negativo que ya está capturado en deudaSaldoNegativoInicial de planes activos
+  // no debe sumarse de nuevo — evita doble conteo al mostrar deuda tras crear un plan.
+  const negativoCubiertoPorPlanes = redondearDinero(
+    planesPagoActivos.reduce((sum, p) => sum + toNumberOrZero(p.deudaSaldoNegativoInicial), 0),
+  );
+  const deudaSaldoNegativoNoCubierto = redondearDinero(Math.max(0, deudaSaldoNegativo - negativoCubiertoPorPlanes));
+
   const saldoPrestamo = redondearDinero(deudaPrestamos + deudaPlanesPago);
-  const saldoDisponible = redondearDinero(saldoWallet - saldoPrestamo);
-  const deudaConsolidable = redondearDinero(deudaSaldoNegativo + deudaPrestamos);
+  const saldoDisponible = redondearDinero(saldoWallet - deudaPrestamos);
+  const deudaConsolidable = redondearDinero(deudaSaldoNegativoNoCubierto + deudaPrestamos);
   const deudaTotalActual = redondearDinero(deudaConsolidable + deudaPlanesPago);
 
   return {
