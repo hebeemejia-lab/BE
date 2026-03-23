@@ -1,6 +1,7 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
+  Autocomplete,
   Alert,
   Box,
   Button,
@@ -44,6 +45,22 @@ const CRYPTO_COINS = [
   { value: 'USDT', label: 'USDT',           networks: ['ERC-20 (Ethereum)', 'TRC-20 (TRON)', 'BEP-20 (BSC)'] },
   { value: 'USDC', label: 'USDC',           networks: ['ERC-20 (Ethereum)', 'Solana', 'Arbitrum'] },
 ];
+
+const CRYPTO_SYMBOL_ICONS = {
+  BTC: '₿',
+  ETH: 'Ξ',
+  SOL: '◎',
+  BNB: 'B',
+  DOGE: 'Ð',
+  ADA: '₳',
+  USDT: '₮',
+  USDC: '◉',
+};
+
+const getCryptoIcon = (symbol) => {
+  const root = String(symbol || '').split('/')[0].toUpperCase();
+  return CRYPTO_SYMBOL_ICONS[root] || '◈';
+};
 
 const panelSx = {
   borderRadius: '24px',
@@ -722,30 +739,59 @@ function Saldos() {
         <DialogContent dividers>
           <Stack spacing={2} sx={{ pt: 0.5 }}>
             <Alert severity="info">Busca BTC o ETH y selecciona un par real de crypto como BTC/USD. Esta vista ya no lista acciones.</Alert>
-            <TextField
+            <Autocomplete
               fullWidth
-              label="Buscar símbolo"
-              value={assetQuery}
-              onChange={(event) => setAssetQuery(event.target.value)}
-              inputProps={{ 'aria-label': 'Buscar símbolo para compra' }}
-              placeholder="Ej: BTC, ETH, SOL"
+              options={assetOptions}
+              loading={assetsLoading}
+              value={assetOptions.find((asset) => asset.symbol === buyForm.symbol) || null}
+              inputValue={assetQuery}
+              onInputChange={(_, newInputValue) => setAssetQuery(newInputValue)}
+              onChange={(_, selectedOption) => {
+                setBuyForm((prev) => ({ ...prev, symbol: selectedOption?.symbol || '' }));
+              }}
+              getOptionLabel={(option) => {
+                if (typeof option === 'string') return option;
+                return option?.symbol || '';
+              }}
+              isOptionEqualToValue={(option, value) => option.symbol === value.symbol}
+              noOptionsText={assetQuery.trim().length < 1 ? 'Escribe para buscar' : 'No hay resultados'}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Buscar y seleccionar símbolo"
+                  placeholder="Ej: BTC, ETH, SOL"
+                  inputProps={{
+                    ...params.inputProps,
+                    'aria-label': 'Buscar símbolo para compra',
+                  }}
+                />
+              )}
+              renderOption={(props, option) => (
+                <Box component="li" {...props} sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                  <Box sx={{ width: 24, textAlign: 'center', fontSize: '1.1rem', lineHeight: 1 }} aria-hidden="true">
+                    {getCryptoIcon(option.symbol)}
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.2 }}>
+                      {option.symbol}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
+                      {option.nombre || option.name || 'Activo'}
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
             />
-            <FormControl fullWidth>
-              <InputLabel id="buy-symbol-label">Símbolo</InputLabel>
-              <Select
-                labelId="buy-symbol-label"
-                label="Símbolo"
-                value={buyForm.symbol}
-                onChange={(event) => setBuyForm((prev) => ({ ...prev, symbol: event.target.value }))}
-                inputProps={{ 'aria-label': 'Símbolo a comprar' }}
-              >
-                {assetOptions.map((asset) => (
-                  <MenuItem key={asset.symbol} value={asset.symbol}>
-                    {asset.symbol} · {asset.nombre || asset.name || 'Activo'}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+
+            {buyForm.symbol && (
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ color: 'text.secondary' }}>
+                <Box sx={{ fontSize: '1.2rem', lineHeight: 1 }} aria-hidden="true">{getCryptoIcon(buyForm.symbol)}</Box>
+                <Typography sx={{ fontSize: '0.9rem' }}>
+                  Símbolo seleccionado: <strong>{buyForm.symbol}</strong>
+                </Typography>
+              </Stack>
+            )}
+
             {assetsLoading && (
               <Stack direction="row" alignItems="center">
                 <CircularProgress size={18} sx={{ mr: 1.2 }} />
