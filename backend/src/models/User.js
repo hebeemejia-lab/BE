@@ -56,11 +56,6 @@ const User = sequelize.define('User', {
     type: DataTypes.DECIMAL(15, 2),
     defaultValue: 0,
   },
-  saldoPrestamo: {
-    type: DataTypes.DECIMAL(15, 2),
-    defaultValue: 0,
-    comment: 'Deuda de préstamos: negativo indica deuda por pagar',
-  },
   saldoChain: {
     type: DataTypes.DECIMAL(15, 2),
     defaultValue: 0,
