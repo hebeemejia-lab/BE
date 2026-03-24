@@ -36,7 +36,6 @@ router.post('/prestamos', adminController.crearPrestamoAdmin);
 router.post('/prestamos/:prestamoId/cuotas', adminController.crearCuotasPrestamo);
 
 // 💳 Cuotas
-router.post('/prestamos/:prestamoId/agregar-cuota', adminController.agregarCuotaIndividual);
 router.post('/cuotas/:cuotaId/pagar', adminController.registrarPagoCuota);
 router.get('/cuotas/:cuotaId/recibo', adminController.obtenerReciboPago);
 

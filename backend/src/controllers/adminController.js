@@ -932,10 +932,10 @@ exports.obtenerPrestamo = async (req, res) => {
 exports.registrarPagoCuota = async (req, res) => {
   try {
     const { cuotaId } = req.params;
-    const { metodoPago, referenciaPago, notas, montoAbono } = req.body;
+    const { metodoPago, referenciaPago, notas } = req.body;
 
     console.log('🔍 Buscando cuota con ID:', cuotaId);
-    console.log('📦 Datos recibidos:', { metodoPago, referenciaPago, notas, montoAbono });
+    console.log('📦 Datos recibidos:', { metodoPago, referenciaPago, notas });
 
     const cuota = await CuotaPrestamo.findByPk(cuotaId);
 
@@ -963,19 +963,16 @@ exports.registrarPagoCuota = async (req, res) => {
     let nuevoSaldoUsuario = null;
     let planAutoCerradoPorSaldo = false;
 
-    // Determinar monto del abono (pago parcial o total)
+    // El pago de cuota siempre es completo.
     const montoCuotaOriginal = redondearDinero(cuota.montoCuota || 0);
-    const montoPago = montoAbono ? redondearDinero(parseFloat(montoAbono)) : montoCuotaOriginal;
-    
-    if (montoPago <= 0 || montoPago > montoCuotaOriginal * 2) {
+    const montoPago = montoCuotaOriginal;
+
+    if (montoPago <= 0) {
       return res.status(400).json({
         exito: false,
-        mensaje: `Monto de abono inválido. Debe estar entre $0 y $${montoCuotaOriginal.toFixed(2)}`
+        mensaje: 'Monto de cuota inválido'
       });
     }
-
-    const esPagoCompleto = montoPago >= montoCuotaOriginal;
-    const montoPendiente = redondearDinero(montoCuotaOriginal - montoPago);
 
     if (esPlanDePago && prestamo) {
       const usuario = await User.findByPk(prestamo.usuarioId);
@@ -986,19 +983,11 @@ exports.registrarPagoCuota = async (req, res) => {
     }
 
     // Actualizar cuota
-    cuota.pagado = esPagoCompleto;
-    cuota.fechaPago = esPagoCompleto ? new Date() : null;
+    cuota.pagado = true;
+    cuota.fechaPago = new Date();
     cuota.metodoPago = metodoPago || 'Efectivo';
     cuota.referenciaPago = referenciaPago || null;
-    cuota.notas = notas || (esPagoCompleto ? null : `Abono parcial de $${montoPago.toFixed(2)}/${montoCuotaOriginal.toFixed(2)}`);    
-    
-    // Si es pago parcial, actualizar el monto pendiente de la cuota
-    if (!esPagoCompleto && montoPendiente > 0) {
-      cuota.montoCuota = montoPendiente;
-      if (!cuota.notas) {
-        cuota.notas = `Pago parcial: $${montoPago.toFixed(2)} abonado, $${montoPendiente.toFixed(2)} pendiente`;
-      }
-    }
+    cuota.notas = notas || null;
     
     console.log('💾 Guardando cuota actualizada...');
     await cuota.save();
@@ -1330,58 +1319,10 @@ exports.obtenerEstadoMercantil = async (req, res) => {
 
 // Agregar una cuota individual a un préstamo existente
 exports.agregarCuotaIndividual = async (req, res) => {
-  try {
-    const { prestamoId } = req.params;
-    const { monto, fechaVencimiento, notas } = req.body;
-
-    if (!prestamoId || !monto || monto <= 0) {
-      return res.status(400).json({
-        exito: false,
-        mensaje: 'Datos inválidos: se requiere prestamoId y monto positivo'
-      });
-    }
-
-    const prestamo = await Loan.findByPk(prestamoId);
-    if (!prestamo) {
-      return res.status(404).json({
-        exito: false,
-        mensaje: 'Préstamo no encontrado'
-      });
-    }
-
-    // Obtener el número de la próxima cuota
-    const ultimaCuota = await CuotaPrestamo.findOne({
-      where: { prestamoId },
-      order: [['numeroCuota', 'DESC']],
-      limit: 1
-    });
-    const numeroCuota = (ultimaCuota?.numeroCuota || 0) + 1;
-
-    // Crear la nueva cuota
-    const nuevaCuota = await CuotaPrestamo.create({
-      prestamoId,
-      numeroCuota,
-      montoCuota: parseFloat(monto),
-      pagado: false,
-      fechaVencimiento: fechaVencimiento ? new Date(fechaVencimiento) : new Date(),
-      notas: notas || null
-    });
-
-    console.log(`✅ Cuota #${numeroCuota} agregada al préstamo ${prestamoId}: $${monto}`);
-
-    res.json({
-      exito: true,
-      mensaje: `✅ Cuota #${numeroCuota} agregada exitosamente`,
-      cuota: nuevaCuota
-    });
-  } catch (error) {
-    console.error('❌ Error agregando cuota:', error);
-    res.status(500).json({
-      exito: false,
-      mensaje: 'Error al agregar cuota',
-      error: error.message
-    });
-  }
+  return res.status(403).json({
+    exito: false,
+    mensaje: 'No está permitido agregar cuotas manualmente. Solo se crean al crear el préstamo.'
+  });
 };
 
 // Crear cuotas para un préstamo
