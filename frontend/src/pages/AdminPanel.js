@@ -265,13 +265,14 @@ const AdminPanel = () => {
     }
   };
 
-  const registrarPago = async (cuotaId, metodoPago, referencia, notas) => {
+  const registrarPago = async (cuotaId, metodoPago, referencia, notas, montoAbono) => {
     try {
-      console.log('📝 Registrando pago con:', { cuotaId, metodoPago, referencia, notas });
+      console.log('📝 Registrando pago con:', { cuotaId, metodoPago, referencia, notas, montoAbono });
       const response = await api.post(`/admin/cuotas/${cuotaId}/pagar`, {
         metodoPago,
         referenciaPago: referencia,
-        notas
+        notas,
+        montoAbono: montoAbono ? parseFloat(montoAbono) : null
       });
 
       alert(response.data.mensaje);
@@ -2168,6 +2169,8 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
               onImprimirPrestamo={onImprimirPrestamo}
               onDescargarPrestamoJpg={onDescargarPrestamoJpg}
               onDescargarReciboJpg={onDescargarReciboJpg}
+              cargarPrestamos={cargarPrestamos}
+              cargarDashboard={cargarDashboard}
             />
           ))}
         </div>
@@ -2177,20 +2180,60 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
 };
 
 // Componente Préstamo Card
-const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprimirRecibo, onImprimirPrestamo, onDescargarPrestamoJpg, onDescargarReciboJpg }) => {
+const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprimirRecibo, onImprimirPrestamo, onDescargarPrestamoJpg, onDescargarReciboJpg, cargarPrestamos, cargarDashboard }) => {
   const [mostrarFormularioPago, setMostrarFormularioPago] = useState(null);
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [referencia, setReferencia] = useState('');
   const [notas, setNotas] = useState('');
+  const [montoAbono, setMontoAbono] = useState('');
+  const [mostrarFormularioAgregarCuota, setMostrarFormularioAgregarCuota] = useState(false);
+  const [montoCuotaNueva, setMontoCuotaNueva] = useState('');
+  const [fechaVencimientoCuota, setFechaVencimientoCuota] = useState('');
+  const [notasCuotaNueva, setNotasCuotaNueva] = useState('');
+  const [cargandoAgregarCuota, setCargandoAgregarCuota] = useState(false);
   const esPlanDePago = String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO');
   const checkoutPlan = prestamo.planPagoCheckout;
 
-  const handlePagar = (cuotaId) => {
-    onRegistrarPago(cuotaId, metodoPago, referencia, notas);
+  const handlePagar = (cuotaId, cuotaMonto) => {
+    onRegistrarPago(cuotaId, metodoPago, referencia, notas, montoAbono || cuotaMonto);
     setMostrarFormularioPago(null);
     setMetodoPago('Efectivo');
     setReferencia('');
     setNotas('');
+    setMontoAbono('');
+  };
+
+  const agregarCuota = async () => {
+    try {
+      if (!montoCuotaNueva || parseFloat(montoCuotaNueva) <= 0) {
+        alert('Ingresa un monto válido mayor que cero');
+        return;
+      }
+
+      setCargandoAgregarCuota(true);
+      const response = await api.post(`/admin/prestamos/${prestamo.id}/agregar-cuota`, {
+        monto: parseFloat(montoCuotaNueva),
+        fechaVencimiento: fechaVencimientoCuota || new Date().toISOString(),
+        notas: notasCuotaNueva || null
+      });
+
+      alert(response.data.mensaje || '✅ Cuota agregada correctamente');
+      setMostrarFormularioAgregarCuota(false);
+      setMontoCuotaNueva('');
+      setFechaVencimientoCuota('');
+      setNotasCuotaNueva('');
+      
+      // Recargar todo
+      await Promise.all([
+        cargarPrestamos(),
+        cargarDashboard(),
+      ]);
+    } catch (error) {
+      console.error('❌ Error agregando cuota:', error);
+      alert(`Error: ${error.response?.data?.mensaje || error.message}`);
+    } finally {
+      setCargandoAgregarCuota(false);
+    }
   };
 
   return (
@@ -2286,6 +2329,62 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
             </div>
           )}
           <h4>Cuotas:</h4>
+          <button 
+            className="btn-secundario" 
+            onClick={() => setMostrarFormularioAgregarCuota(true)}
+            style={{ marginBottom: '12px' }}
+          >
+            ➕ Agregar Cuota
+          </button>
+          
+          {mostrarFormularioAgregarCuota && (
+            <div className="formulario-agregar-cuota" style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#f0f4f8', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+              <h5 style={{ margin: '0 0 12px 0' }}>Nueva Cuota</h5>
+              <input 
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Monto de la cuota"
+                value={montoCuotaNueva}
+                onChange={(e) => setMontoCuotaNueva(e.target.value)}
+                style={{ width: '100%', padding: '8px', marginBottom: '8px', boxSizing: 'border-box' }}
+              />
+              <input 
+                type="date"
+                placeholder="Fecha de vencimiento"
+                value={fechaVencimientoCuota}
+                onChange={(e) => setFechaVencimientoCuota(e.target.value)}
+                style={{ width: '100%', padding: '8px', marginBottom: '8px', boxSizing: 'border-box' }}
+              />
+              <textarea 
+                placeholder="Notas (opcional)"
+                value={notasCuotaNueva}
+                onChange={(e) => setNotasCuotaNueva(e.target.value)}
+                style={{ width: '100%', padding: '8px', marginBottom: '8px', boxSizing: 'border-box', minHeight: '50px' }}
+              />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  className="btn-confirmar"
+                  onClick={agregarCuota}
+                  disabled={cargandoAgregarCuota}
+                >
+                  {cargandoAgregarCuota ? 'Agregando...' : '✓ Agregar'}
+                </button>
+                <button 
+                  className="btn-cancelar"
+                  onClick={() => {
+                    setMostrarFormularioAgregarCuota(false);
+                    setMontoCuotaNueva('');
+                    setFechaVencimientoCuota('');
+                    setNotasCuotaNueva('');
+                  }}
+                  disabled={cargandoAgregarCuota}
+                >
+                  ✕ Cancelar
+                </button>
+              </div>
+            </div>
+          )}
           <div className="cuotas-lista">
             {prestamo.cuotas.map(cuota => (
               <div key={cuota.id} className={`cuota-item ${cuota.pagado ? 'pagada' : 'pendiente'}`}>
@@ -2329,6 +2428,15 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
                     <>
                       {mostrarFormularioPago === cuota.id ? (
                         <div className="formulario-pago">
+                          <input 
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder={`Monto (máx: $${parseFloat(cuota.montoCuota || cuota.monto).toFixed(2)})`}
+                            value={montoAbono}
+                            onChange={(e) => setMontoAbono(e.target.value)}
+                            title="Cantidad a pagar de esta cuota (deja en blanco para pagar el monto completo)"
+                          />
                           <select 
                             value={metodoPago} 
                             onChange={(e) => setMetodoPago(e.target.value)}
@@ -2352,13 +2460,16 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
                           />
                           <button 
                             className="btn-confirmar"
-                            onClick={() => handlePagar(cuota.id)}
+                            onClick={() => handlePagar(cuota.id, parseFloat(cuota.montoCuota || cuota.monto))}
                           >
                             ✓ Confirmar
                           </button>
                           <button 
                             className="btn-cancelar"
-                            onClick={() => setMostrarFormularioPago(null)}
+                            onClick={() => {
+                              setMostrarFormularioPago(null);
+                              setMontoAbono('');
+                            }}
                           >
                             ✕
                           </button>
@@ -2366,7 +2477,10 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
                       ) : (
                         <button 
                           className="btn-pagar"
-                          onClick={() => setMostrarFormularioPago(cuota.id)}
+                          onClick={() => {
+                            setMostrarFormularioPago(cuota.id);
+                            setMontoAbono(parseFloat(cuota.montoCuota || cuota.monto).toFixed(2));
+                          }}
                         >
                           💳 Registrar Pago
                         </button>
