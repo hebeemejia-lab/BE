@@ -2189,7 +2189,7 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onAgregarCuota, onImprimirR
               onToggle={() => setPrestamoExpandido(
                 prestamoExpandido === prestamo.id ? null : prestamo.id
               )}
-              onRegistrarPago={registrarPago}
+              onRegistrarPago={onRegistrarPago}
               onImprimirRecibo={onImprimirRecibo}
               onImprimirPrestamo={onImprimirPrestamo}
               onDescargarPrestamoJpg={onDescargarPrestamoJpg}

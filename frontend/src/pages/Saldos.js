@@ -91,6 +91,33 @@ const formatUsd = (value) =>
     maximumFractionDigits: 2,
   });
 
+const formatQuantity = (value) =>
+  toNumber(value).toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  });
+
+const getPositionSymbol = (position) => String(position?.symbol || '').toUpperCase();
+
+const getPositionRootSymbol = (position) => getPositionSymbol(position).split('/')[0];
+
+const isCryptoPosition = (position) => getPositionSymbol(position).includes('/');
+
+const getPositionQuantity = (position) =>
+  toNumber(position?.cantidad ?? position?.qty ?? position?.quantity);
+
+const getPositionValue = (position) =>
+  toNumber(position?.valorActual ?? position?.market_value);
+
+const getPositionCost = (position) =>
+  toNumber(position?.costoTotal ?? position?.cost_basis);
+
+const getPositionPnl = (position) =>
+  toNumber(position?.gananciaNoRealizada ?? position?.unrealized_pl);
+
+const getPositionCurrentPrice = (position) =>
+  toNumber(position?.precioActual ?? position?.current_price ?? position?.currentPrice);
+
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.mensaje
   || error?.response?.data?.error
@@ -115,6 +142,13 @@ function Saldos() {
     transferencias: 0,
     comprasActivas: 0,
   });
+  const [walletPositions, setWalletPositions] = useState([]);
+  const [positionsSummary, setPositionsSummary] = useState({
+    totalPosiciones: 0,
+    valorTotal: 0,
+    gananciaTotal: 0,
+  });
+  const [positionsSource, setPositionsSource] = useState('local');
 
   const [depositForm, setDepositForm] = useState({ method: 'paypal', amount: '', code: '' });
   const [buyForm, setBuyForm] = useState({ assetClass: 'crypto', symbol: '', cantidad: '' });
@@ -141,6 +175,55 @@ function Saldos() {
     setFeedback((prev) => ({ ...prev, open: false }));
   };
 
+  const cryptoHoldings = useMemo(() => {
+    const grouped = walletPositions
+      .filter(isCryptoPosition)
+      .reduce((accumulator, position) => {
+        const rootSymbol = getPositionRootSymbol(position);
+        if (!rootSymbol) return accumulator;
+
+        if (!accumulator[rootSymbol]) {
+          accumulator[rootSymbol] = {
+            symbol: rootSymbol,
+            pair: getPositionSymbol(position),
+            cantidad: 0,
+            valorActual: 0,
+            costoTotal: 0,
+            ganancia: 0,
+            precioActual: 0,
+          };
+        }
+
+        accumulator[rootSymbol].cantidad += getPositionQuantity(position);
+        accumulator[rootSymbol].valorActual += getPositionValue(position);
+        accumulator[rootSymbol].costoTotal += getPositionCost(position);
+        accumulator[rootSymbol].ganancia += getPositionPnl(position);
+        accumulator[rootSymbol].precioActual = getPositionCurrentPrice(position) || accumulator[rootSymbol].precioActual;
+
+        return accumulator;
+      }, {});
+
+    return Object.values(grouped)
+      .map((holding) => ({
+        ...holding,
+        valorActual: Number(holding.valorActual.toFixed(2)),
+        costoTotal: Number(holding.costoTotal.toFixed(2)),
+        ganancia: Number(holding.ganancia.toFixed(2)),
+        precioActual: Number(holding.precioActual.toFixed(2)),
+        rendimiento: holding.costoTotal > 0
+          ? Number(((holding.ganancia / holding.costoTotal) * 100).toFixed(2))
+          : 0,
+      }))
+      .sort((left, right) => right.valorActual - left.valorActual);
+  }, [walletPositions]);
+
+  const cryptoHoldingsSummary = useMemo(() => ({
+    monedas: cryptoHoldings.length,
+    cantidadTotal: cryptoHoldings.reduce((sum, holding) => sum + holding.cantidad, 0),
+    valorTotal: cryptoHoldings.reduce((sum, holding) => sum + holding.valorActual, 0),
+    gananciaTotal: cryptoHoldings.reduce((sum, holding) => sum + holding.ganancia, 0),
+  }), [cryptoHoldings]);
+
   const loadWalletStats = useCallback(async () => {
     setStatsLoading(true);
 
@@ -164,11 +247,29 @@ function Saldos() {
     let comprasActivas = 0;
     if (posicionesResult.status === 'fulfilled') {
       const payload = posicionesResult.value?.data;
+      const posiciones = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.posiciones)
+          ? payload.posiciones
+          : [];
+
+      setWalletPositions(posiciones);
+      setPositionsSummary({
+        totalPosiciones: toNumber(payload?.resumen?.totalPosiciones ?? posiciones.length),
+        valorTotal: toNumber(payload?.resumen?.valorTotal),
+        gananciaTotal: toNumber(payload?.resumen?.gananciaTotal),
+      });
+      setPositionsSource(payload?.source || 'local');
+
       if (Array.isArray(payload)) {
         comprasActivas = payload.length;
       } else if (Array.isArray(payload?.posiciones)) {
         comprasActivas = payload.posiciones.length;
       }
+    } else {
+      setWalletPositions([]);
+      setPositionsSummary({ totalPosiciones: 0, valorTotal: 0, gananciaTotal: 0 });
+      setPositionsSource('local');
     }
 
     setWalletStats({
@@ -213,6 +314,11 @@ function Saldos() {
 
   useEffect(() => {
     loadWalletStats();
+  }, [loadWalletStats]);
+
+  useEffect(() => {
+    const timer = setInterval(loadWalletStats, 15000);
+    return () => clearInterval(timer);
   }, [loadWalletStats]);
 
   useEffect(() => {
@@ -623,6 +729,139 @@ function Saldos() {
               ))}
             </Grid>
           </Stack>
+        </Paper>
+
+        <Paper sx={{ ...panelSx, mt: 2.5, p: { xs: 2.25, md: 3 } }}>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            justifyContent="space-between"
+            spacing={1.5}
+            alignItems={{ xs: 'flex-start', md: 'center' }}
+          >
+            <Box>
+              <Typography sx={sectionTitleSx}>Tus criptomonedas</Typography>
+              <Typography sx={{ mt: 0.8, color: 'rgba(226,232,240,0.76)', maxWidth: '68ch' }}>
+                Aquí ves cuántas monedas tienes por activo, cuánto valen ahora y la ganancia o pérdida abierta según el precio actual.
+              </Typography>
+            </Box>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Chip
+                label={`Fuente: ${positionsSource === 'alpaca' ? 'Alpaca' : 'Banco Exclusivo'}`}
+                sx={{ bgcolor: 'rgba(59,130,246,0.18)', color: '#bfdbfe', fontWeight: 700 }}
+              />
+              <Chip
+                label={`${cryptoHoldingsSummary.monedas} monedas`}
+                sx={{ bgcolor: 'rgba(148,163,184,0.14)', color: '#e2e8f0', fontWeight: 700 }}
+              />
+            </Stack>
+          </Stack>
+
+          <Grid container spacing={2} sx={{ mt: 0.5, mb: 0.5 }}>
+            <Grid item xs={12} md={4}>
+              <Card sx={{ borderRadius: '20px', bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(167,216,255,0.12)', color: '#f8fafc', boxShadow: 'none' }}>
+                <CardContent>
+                  <Typography sx={sectionTitleSx}>Valor actual cripto</Typography>
+                  <Typography sx={{ mt: 1.2, fontSize: { xs: '1.35rem', md: '1.55rem' }, fontWeight: 800 }}>
+                    USD {formatUsd(cryptoHoldingsSummary.valorTotal)}
+                  </Typography>
+                  <Typography sx={{ mt: 0.7, color: 'rgba(226,232,240,0.68)', fontSize: '0.9rem' }}>
+                    Total marcado a mercado de tus posiciones crypto.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Card sx={{ borderRadius: '20px', bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(167,216,255,0.12)', color: '#f8fafc', boxShadow: 'none' }}>
+                <CardContent>
+                  <Typography sx={sectionTitleSx}>Ganancia abierta</Typography>
+                  <Typography sx={{ mt: 1.2, fontSize: { xs: '1.35rem', md: '1.55rem' }, fontWeight: 800, color: cryptoHoldingsSummary.gananciaTotal >= 0 ? '#86efac' : '#fca5a5' }}>
+                    {cryptoHoldingsSummary.gananciaTotal >= 0 ? '+' : '-'}USD {formatUsd(Math.abs(cryptoHoldingsSummary.gananciaTotal))}
+                  </Typography>
+                  <Typography sx={{ mt: 0.7, color: 'rgba(226,232,240,0.68)', fontSize: '0.9rem' }}>
+                    Se actualiza cada 15 segundos mientras estás en la wallet.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Card sx={{ borderRadius: '20px', bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(167,216,255,0.12)', color: '#f8fafc', boxShadow: 'none' }}>
+                <CardContent>
+                  <Typography sx={sectionTitleSx}>Posiciones abiertas</Typography>
+                  <Typography sx={{ mt: 1.2, fontSize: { xs: '1.35rem', md: '1.55rem' }, fontWeight: 800 }}>
+                    {positionsSummary.totalPosiciones}
+                  </Typography>
+                  <Typography sx={{ mt: 0.7, color: 'rgba(226,232,240,0.68)', fontSize: '0.9rem' }}>
+                    {cryptoHoldingsSummary.cantidadTotal > 0
+                      ? `${formatQuantity(cryptoHoldingsSummary.cantidadTotal)} unidades crypto acumuladas.`
+                      : 'Todavía no tienes compras crypto abiertas.'}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          {statsLoading ? (
+            <Stack direction="row" alignItems="center" spacing={1.2} sx={{ py: 2.5 }}>
+              <CircularProgress size={20} sx={{ color: '#bfdbfe' }} />
+              <Typography sx={{ color: 'rgba(226,232,240,0.72)' }}>Cargando posiciones crypto...</Typography>
+            </Stack>
+          ) : cryptoHoldings.length === 0 ? (
+            <Alert severity="info" sx={{ mt: 1.5, borderRadius: '16px' }}>
+              Cuando compres BTC, ETH, SOL u otra moneda, aquí verás la cantidad, el valor actual y tu ganancia en vivo.
+            </Alert>
+          ) : (
+            <Grid container spacing={2} sx={{ mt: 0.5 }}>
+              {cryptoHoldings.map((holding) => (
+                <Grid item xs={12} md={6} lg={4} key={holding.symbol}>
+                  <Card sx={{ height: '100%', borderRadius: '22px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(167,216,255,0.12)', color: '#f8fafc', boxShadow: 'none' }}>
+                    <CardContent sx={{ p: 2.25 }}>
+                      <Stack direction="row" justifyContent="space-between" spacing={1.5} alignItems="flex-start">
+                        <Stack direction="row" spacing={1.25} alignItems="center">
+                          <Box sx={{ width: 42, height: 42, borderRadius: '14px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(59,130,246,0.18)', color: '#dbeafe', fontSize: '1.25rem', fontWeight: 800 }}>
+                            {getCryptoIcon(holding.pair)}
+                          </Box>
+                          <Box>
+                            <Typography sx={{ fontWeight: 800, fontSize: '1rem' }}>{holding.symbol}</Typography>
+                            <Typography sx={{ color: 'rgba(226,232,240,0.68)', fontSize: '0.86rem' }}>{holding.pair}</Typography>
+                          </Box>
+                        </Stack>
+                        <Chip
+                          size="small"
+                          label={`${holding.rendimiento >= 0 ? '+' : ''}${holding.rendimiento.toFixed(2)}%`}
+                          sx={{
+                            bgcolor: holding.rendimiento >= 0 ? 'rgba(34,197,94,0.16)' : 'rgba(239,68,68,0.16)',
+                            color: holding.rendimiento >= 0 ? '#86efac' : '#fca5a5',
+                            fontWeight: 700,
+                          }}
+                        />
+                      </Stack>
+
+                      <Grid container spacing={1.5} sx={{ mt: 1 }}>
+                        <Grid item xs={6}>
+                          <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Cantidad</Typography>
+                          <Typography sx={{ mt: 0.55, fontWeight: 700 }}>{formatQuantity(holding.cantidad)}</Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Precio actual</Typography>
+                          <Typography sx={{ mt: 0.55, fontWeight: 700 }}>USD {formatUsd(holding.precioActual)}</Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Valor actual</Typography>
+                          <Typography sx={{ mt: 0.55, fontWeight: 700 }}>USD {formatUsd(holding.valorActual)}</Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Ganancia</Typography>
+                          <Typography sx={{ mt: 0.55, fontWeight: 700, color: holding.ganancia >= 0 ? '#86efac' : '#fca5a5' }}>
+                            {holding.ganancia >= 0 ? '+' : '-'}USD {formatUsd(Math.abs(holding.ganancia))}
+                          </Typography>
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
         </Paper>
 
         <Paper sx={{ ...panelSx, mt: 2.5, p: { xs: 2.25, md: 3 } }}>
