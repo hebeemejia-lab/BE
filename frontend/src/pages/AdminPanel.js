@@ -1144,6 +1144,7 @@ const AdminPanel = () => {
           <PrestamosView 
             prestamos={prestamos} 
             onRegistrarPago={registrarPago}
+            onAgregarCuota={onAgregarCuota}
             onImprimirRecibo={imprimirRecibo}
             onCrearPrestamo={crearPrestamoAdmin}
             onBuscarPrestamo={buscarPrestamoPorId}
@@ -1810,7 +1811,7 @@ const RetirosEfectivoView = ({ sandboxMode, onImprimirFacturaRetiro, onDescargar
 };
 
 // Componente Préstamos
-const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPrestamo, onImprimirPrestamo, usuariosAdmin, onBuscarPrestamo, onRecargarPrestamos, sandboxMode, onDescargarPrestamoJpg, onDescargarReciboJpg }) => {
+const PrestamosView = ({ prestamos, onRegistrarPago, onAgregarCuota, onImprimirRecibo, onCrearPrestamo, onImprimirPrestamo, usuariosAdmin, onBuscarPrestamo, onRecargarPrestamos, sandboxMode, onDescargarPrestamoJpg, onDescargarReciboJpg }) => {
   const [prestamoExpandido, setPrestamoExpandido] = useState(null);
   const [nuevoPrestamo, setNuevoPrestamo] = useState({
     usuarioId: '',
