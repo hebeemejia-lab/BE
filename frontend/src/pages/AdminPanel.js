@@ -289,6 +289,30 @@ const AdminPanel = () => {
     }
   };
 
+  const onAgregarCuota = async (prestamoId, montoCuota, fechaVencimiento, notas) => {
+    try {
+      if (!montoCuota || parseFloat(montoCuota) <= 0) {
+        alert('Ingresa un monto válido mayor que cero');
+        return;
+      }
+
+      const response = await api.post(`/admin/prestamos/${prestamoId}/agregar-cuota`, {
+        monto: parseFloat(montoCuota),
+        fechaVencimiento: fechaVencimiento || new Date().toISOString(),
+        notas: notas || null
+      });
+
+      alert(response.data.mensaje || '✅ Cuota agregada correctamente');
+      await Promise.all([
+        cargarPrestamos(),
+        cargarDashboard(),
+      ]);
+    } catch (error) {
+      console.error('❌ Error agregando cuota:', error);
+      alert(`Error: ${error.response?.data?.mensaje || error.message}`);
+    }
+  };
+
   const crearPrestamoAdmin = async (data) => {
     try {
       setCargando(true);
@@ -2164,13 +2188,12 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
               onToggle={() => setPrestamoExpandido(
                 prestamoExpandido === prestamo.id ? null : prestamo.id
               )}
-              onRegistrarPago={onRegistrarPago}
+              onRegistrarPago={registrarPago}
               onImprimirRecibo={onImprimirRecibo}
               onImprimirPrestamo={onImprimirPrestamo}
               onDescargarPrestamoJpg={onDescargarPrestamoJpg}
               onDescargarReciboJpg={onDescargarReciboJpg}
-              cargarPrestamos={cargarPrestamos}
-              cargarDashboard={cargarDashboard}
+              onAgregarCuota={onAgregarCuota}
             />
           ))}
         </div>
@@ -2180,7 +2203,7 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
 };
 
 // Componente Préstamo Card
-const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprimirRecibo, onImprimirPrestamo, onDescargarPrestamoJpg, onDescargarReciboJpg, cargarPrestamos, cargarDashboard }) => {
+const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprimirRecibo, onImprimirPrestamo, onDescargarPrestamoJpg, onDescargarReciboJpg, onAgregarCuota }) => {
   const [mostrarFormularioPago, setMostrarFormularioPago] = useState(null);
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [referencia, setReferencia] = useState('');
@@ -2204,33 +2227,13 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
   };
 
   const agregarCuota = async () => {
+    setCargandoAgregarCuota(true);
     try {
-      if (!montoCuotaNueva || parseFloat(montoCuotaNueva) <= 0) {
-        alert('Ingresa un monto válido mayor que cero');
-        return;
-      }
-
-      setCargandoAgregarCuota(true);
-      const response = await api.post(`/admin/prestamos/${prestamo.id}/agregar-cuota`, {
-        monto: parseFloat(montoCuotaNueva),
-        fechaVencimiento: fechaVencimientoCuota || new Date().toISOString(),
-        notas: notasCuotaNueva || null
-      });
-
-      alert(response.data.mensaje || '✅ Cuota agregada correctamente');
+      await onAgregarCuota(prestamo.id, montoCuotaNueva, fechaVencimientoCuota, notasCuotaNueva);
       setMostrarFormularioAgregarCuota(false);
       setMontoCuotaNueva('');
       setFechaVencimientoCuota('');
       setNotasCuotaNueva('');
-      
-      // Recargar todo
-      await Promise.all([
-        cargarPrestamos(),
-        cargarDashboard(),
-      ]);
-    } catch (error) {
-      console.error('❌ Error agregando cuota:', error);
-      alert(`Error: ${error.response?.data?.mensaje || error.message}`);
     } finally {
       setCargandoAgregarCuota(false);
     }
