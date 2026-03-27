@@ -4,6 +4,7 @@ const { sequelize } = require('./src/config/database');
 require('./src/models');
 const User = require('./src/models/User');
 const Inversion = require('./src/models/Inversion');
+const { buildCantidadRecalculada } = require('./src/services/inversionRepairService');
 const bcrypt = require('bcryptjs');
 
 async function migrar() {
@@ -70,7 +71,7 @@ async function migrar() {
         continue;
       }
 
-      const cantidadRecalculada = Number((costoTotal / precioCompra).toFixed(8));
+      const cantidadRecalculada = buildCantidadRecalculada({ costoTotal, precioCompra });
       if (!Number.isFinite(cantidadRecalculada) || cantidadRecalculada <= 0) {
         continue;
       }
