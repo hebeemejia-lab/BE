@@ -3,6 +3,7 @@ const { sequelize } = require('./src/config/database');
 // Cargar TODOS los modelos para que sequelize los registre antes de sync()
 require('./src/models');
 const User = require('./src/models/User');
+const Inversion = require('./src/models/Inversion');
 const bcrypt = require('bcryptjs');
 
 async function migrar() {
@@ -51,6 +52,35 @@ async function migrar() {
     // Sincronizar TODOS los modelos con alter: true para agregar columnas nuevas
     await sequelize.sync({ alter: true });
     console.log('✅ Tablas sincronizadas (alter: columnas y tablas nuevas agregadas)');
+
+    // Reparar posiciones crypto antiguas truncadas a 4 decimales.
+    const inversionesAbiertas = await Inversion.findAll({
+      where: { estado: 'abierta' },
+    });
+
+    let posicionesReparadas = 0;
+    for (const inversion of inversionesAbiertas) {
+      const symbol = String(inversion.symbol || '');
+      const costoTotal = Number(inversion.costoTotal || 0);
+      const precioCompra = Number(inversion.precioCompra || 0);
+      const cantidadActual = Number(inversion.cantidad || 0);
+      const esCrypto = symbol.includes('/');
+
+      if (!esCrypto || costoTotal <= 0 || precioCompra <= 0 || cantidadActual > 0) {
+        continue;
+      }
+
+      const cantidadRecalculada = Number((costoTotal / precioCompra).toFixed(8));
+      if (!Number.isFinite(cantidadRecalculada) || cantidadRecalculada <= 0) {
+        continue;
+      }
+
+      inversion.cantidad = cantidadRecalculada;
+      await inversion.save();
+      posicionesReparadas += 1;
+    }
+
+    console.log(`✅ Posiciones crypto reparadas: ${posicionesReparadas}`);
 
     // Verificar si existe el usuario admin
     let admin = await User.findOne({ 
