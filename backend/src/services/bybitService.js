@@ -192,12 +192,63 @@ const mapWithdrawalStatus = (status) => {
   return 'enviada';
 };
 
+/**
+ * Coloca una orden de mercado spot en Bybit.
+ * symbol: e.g. 'BTCUSDT', side: 'Buy' | 'Sell'
+ * qty: cantidad en la moneda base (e.g. 0.001 BTC)
+ * Retorna el objeto result de Bybit con orderId, etc.
+ */
+const placeSpotOrder = async ({ symbol, side, qty }) => {
+  const normalizedSymbol = normalizeCoin(symbol.replace('/', '').replace('-', ''));
+  // Bybit spot symbols: BTCUSDT, ETHUSDT, etc.
+  const bybitSymbol = normalizedSymbol.includes('USDT') ? normalizedSymbol : `${normalizedSymbol}USDT`;
+
+  const payload = {
+    category: 'spot',
+    symbol: bybitSymbol,
+    side: side === 'buy' ? 'Buy' : 'Sell',
+    orderType: 'Market',
+    qty: String(qty),
+    timeInForce: 'IOC',
+  };
+
+  const data = await requestPrivate('POST', '/v5/order/create', payload);
+  return {
+    orderId: data.result?.orderId,
+    orderLinkId: data.result?.orderLinkId,
+    symbol: bybitSymbol,
+    side: payload.side,
+    qty,
+    raw: data,
+  };
+};
+
+/**
+ * Obtiene el estado de una orden spot por su orderId.
+ * Retorna el objeto de la orden con avgPrice, cumExecQty, etc.
+ */
+const getSpotOrderStatus = async ({ orderId, symbol }) => {
+  const normalizedSymbol = normalizeCoin((symbol || '').replace('/', '').replace('-', ''));
+  const bybitSymbol = normalizedSymbol.includes('USDT') ? normalizedSymbol : `${normalizedSymbol}USDT`;
+
+  const data = await requestPrivate('GET', '/v5/order/realtime', {
+    category: 'spot',
+    symbol: bybitSymbol,
+    orderId,
+  });
+
+  const orders = data?.result?.list || [];
+  return orders.find((o) => o.orderId === orderId) || null;
+};
+
 module.exports = {
   createWithdrawal,
+  getSpotOrderStatus,
   getSpotPriceUsd,
   getWithdrawalById,
   mapWithdrawalStatus,
   normalizeChain,
   normalizeCoin,
+  placeSpotOrder,
   queryWithdrawalRecords,
 };

@@ -171,6 +171,7 @@ function Saldos() {
   const [buyQuote, setBuyQuote] = useState(null);
   const [buyQuoteLoading, setBuyQuoteLoading] = useState(false);
   const [feedback, setFeedback] = useState({ open: false, severity: 'success', message: '' });
+  const [recibo, setRecibo] = useState(null); // receipt after buy/sell
 
   const isPositiveAmount = (value) => {
     const numericValue = Number(value);
@@ -245,15 +246,25 @@ function Saldos() {
     }
 
     try {
-      const [perfilResult, recargasResult, transferenciasResult, posicionesResult] = await Promise.allSettled([
+      const [perfilResult, recargasResult, transferenciasResult, posicionesResult, pnlResult] = await Promise.allSettled([
         typeof refrescarPerfil === 'function' ? refrescarPerfil() : Promise.resolve(usuario),
         depositoAPI.obtenerDepositos(),
         transferAPI.obtenerHistorial(),
         inversionesAPI.obtenerPosiciones(),
+        inversionesAPI.obtenerPNLActualizado?.(),
       ]);
 
       const perfilActual = perfilResult.status === 'fulfilled' ? perfilResult.value : usuario;
-      const saldoChainActual = toNumber(perfilActual?.saldoChain);
+      const saldoChainBase = toNumber(perfilActual?.saldoChain);
+
+      // Obtener P&L actualizado si está disponible
+      let pnlData = { pnlTotalActual: 0, detallesPNL: {}, inversionesAbiertas: [] };
+      if (pnlResult.status === 'fulfilled' && pnlResult.value?.success) {
+        pnlData = pnlResult.value;
+      }
+
+      // saldoChainDisplay = saldoChainBase + PNLActual (así el cliente ve la ganancia/pérdida en tiempo real)
+      const saldoChainDisplay = parseFloat((saldoChainBase + pnlData.pnlTotalActual).toFixed(2));
 
       const recargas = recargasResult.status === 'fulfilled' ? asArray(recargasResult.value?.data) : [];
       const recargasExitosas = recargas.filter((recarga) => String(recarga.estado || '').toLowerCase() === 'exitosa');
@@ -294,7 +305,10 @@ function Saldos() {
       }
 
       const newStats = {
-        saldoDisponible: saldoChainActual,
+        saldoDisponible: saldoChainDisplay,
+        saldoChainBase,
+        pnlTotalActual: pnlData.pnlTotalActual,
+        detallesPNL: pnlData.detallesPNL,
         recargasExitosas: recargasExitosas.length,
         totalRecargado,
         transferencias: transferencias.length,
@@ -362,7 +376,7 @@ function Saldos() {
   useEffect(() => {
     const timer = setInterval(() => {
       loadWalletStats({ silent: true });
-    }, 45000);
+    }, 15000); // Refresco cada 15s para ver P&L en tiempo real
     return () => clearInterval(timer);
   }, [loadWalletStats]);
 
@@ -547,7 +561,11 @@ function Saldos() {
         response = await inversionesAPI.comprar(buyPayload);
       }
 
-      openFeedback('success', response?.data?.mensaje || 'Compra ejecutada correctamente.');
+      if (response?.data?.recibo) {
+        setRecibo(response.data.recibo);
+      } else {
+        openFeedback('success', response?.data?.mensaje || 'Compra ejecutada correctamente.');
+      }
       setActiveFlow(null);
       resetBuy();
       await loadWalletStats();
@@ -706,7 +724,12 @@ function Saldos() {
     {
       label: 'Saldo Chain',
       value: `USD ${formatUsd(walletStats.saldoDisponible)}`,
-      helper: 'Saldo disponible en tu cuenta',
+      helper: `Base: USD ${formatUsd(walletStats.saldoChainBase || 0)} ${
+        walletStats.pnlTotalActual !== 0
+          ? ` | P&L: ${walletStats.pnlTotalActual >= 0 ? '+' : ''}USD ${formatUsd(walletStats.pnlTotalActual)}`
+          : ''
+      } (actualizado cada 15s)`,
+      pnl: walletStats.pnlTotalActual,
     },
     {
       label: 'Depósitos exitosos',
@@ -782,41 +805,61 @@ function Saldos() {
             </Alert>
 
             <Grid container spacing={2}>
-              {walletMetrics.map((metric) => (
-                <Grid item xs={12} sm={6} md={3} key={metric.label}>
-                  <Card
-                    sx={{
-                      height: '100%',
-                      borderRadius: '20px',
-                      bgcolor: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(167,216,255,0.12)',
-                      boxShadow: 'none',
-                      color: '#f8fafc',
-                    }}
-                  >
-                    <CardContent sx={{ p: 2.25 }}>
-                      <Typography sx={sectionTitleSx}>{metric.label}</Typography>
-                      {statsLoading ? (
-                        <Stack direction="row" alignItems="center" sx={{ mt: 1.4 }}>
-                          <CircularProgress size={20} sx={{ color: '#bfdbfe' }} />
-                          <Typography sx={{ ml: 1.2, fontSize: '0.9rem', color: 'rgba(226,232,240,0.7)' }}>
-                            Cargando...
-                          </Typography>
-                        </Stack>
-                      ) : (
-                        <>
-                          <Typography sx={{ mt: 1.2, fontSize: { xs: '1.3rem', md: '1.55rem' }, fontWeight: 800 }}>
-                            {metric.value}
-                          </Typography>
-                          <Typography sx={{ mt: 0.7, fontSize: '0.9rem', color: 'rgba(226,232,240,0.68)' }}>
-                            {metric.helper}
-                          </Typography>
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
+              {walletMetrics.map((metric) => {
+                const isSaldoMetric = metric.label === 'Saldo Chain';
+                const hasPNL = isSaldoMetric && metric.pnl !== undefined && metric.pnl !== 0;
+                const isPNLPositive = hasPNL && metric.pnl > 0;
+                
+                return (
+                  <Grid item xs={12} sm={6} md={3} key={metric.label}>
+                    <Card
+                      sx={{
+                        height: '100%',
+                        borderRadius: '20px',
+                        bgcolor: hasPNL 
+                          ? (isPNLPositive ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)')
+                          : 'rgba(255,255,255,0.05)',
+                        border: hasPNL
+                          ? `1.5px solid ${isPNLPositive ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)'}`
+                          : '1px solid rgba(167,216,255,0.12)',
+                        boxShadow: hasPNL
+                          ? `0 0 20px ${isPNLPositive ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}`
+                          : 'none',
+                        color: '#f8fafc',
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      <CardContent sx={{ p: 2.25 }}>
+                        <Typography sx={sectionTitleSx}>{metric.label}</Typography>
+                        {statsLoading ? (
+                          <Stack direction="row" alignItems="center" sx={{ mt: 1.4 }}>
+                            <CircularProgress size={20} sx={{ color: '#bfdbfe' }} />
+                            <Typography sx={{ ml: 1.2, fontSize: '0.9rem', color: 'rgba(226,232,240,0.7)' }}>
+                              Cargando...
+                            </Typography>
+                          </Stack>
+                        ) : (
+                          <>
+                            <Typography 
+                              sx={{ 
+                                mt: 1.2, 
+                                fontSize: { xs: '1.3rem', md: '1.55rem' },
+                                fontWeight: 800,
+                                color: hasPNL ? (isPNLPositive ? '#10b981' : '#ef4444') : 'inherit'
+                              }}
+                            >
+                              {metric.value}
+                            </Typography>
+                            <Typography sx={{ mt: 0.7, fontSize: '0.9rem', color: 'rgba(226,232,240,0.68)' }}>
+                              {metric.helper}
+                            </Typography>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
             </Grid>
           </Stack>
         </Paper>
@@ -901,55 +944,86 @@ function Saldos() {
             </Alert>
           ) : (
             <Grid container spacing={2} sx={{ mt: 0.5 }}>
-              {cryptoHoldings.map((holding) => (
-                <Grid item xs={12} md={6} lg={4} key={holding.symbol}>
-                  <Card sx={{ height: '100%', borderRadius: '22px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(167,216,255,0.12)', color: '#f8fafc', boxShadow: 'none' }}>
-                    <CardContent sx={{ p: 2.25 }}>
-                      <Stack direction="row" justifyContent="space-between" spacing={1.5} alignItems="flex-start">
-                        <Stack direction="row" spacing={1.25} alignItems="center">
-                          <Box sx={{ width: 42, height: 42, borderRadius: '14px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(59,130,246,0.18)', color: '#dbeafe', fontSize: '1.25rem', fontWeight: 800 }}>
-                            {getCryptoIcon(holding.pair)}
-                          </Box>
-                          <Box>
-                            <Typography sx={{ fontWeight: 800, fontSize: '1rem' }}>{holding.symbol}</Typography>
-                            <Typography sx={{ color: 'rgba(226,232,240,0.68)', fontSize: '0.86rem' }}>{holding.pair}</Typography>
-                          </Box>
+              {cryptoHoldings.map((holding) => {
+                const isPNLPositive = holding.ganancia >= 0;
+                
+                return (
+                  <Grid item xs={12} md={6} lg={4} key={holding.symbol}>
+                    <Card 
+                      sx={{ 
+                        height: '100%', 
+                        borderRadius: '22px', 
+                        bgcolor: isPNLPositive ? 'rgba(34,197,94,0.06)' : 'rgba(239,68,68,0.06)',
+                        border: isPNLPositive 
+                          ? '1.5px solid rgba(34,197,94,0.25)' 
+                          : '1.5px solid rgba(239,68,68,0.25)',
+                        color: '#f8fafc', 
+                        boxShadow: isPNLPositive
+                          ? '0 0 16px rgba(34,197,94,0.1)'
+                          : '0 0 16px rgba(239,68,68,0.1)',
+                        transition: 'all 0.3s ease',
+                        _hover: {
+                          boxShadow: isPNLPositive
+                            ? '0 0 24px rgba(34,197,94,0.2)'
+                            : '0 0 24px rgba(239,68,68,0.2)',
+                        }
+                      }}>
+                      <CardContent sx={{ p: 2.25 }}>
+                        <Stack direction="row" justifyContent="space-between" spacing={1.5} alignItems="flex-start">
+                          <Stack direction="row" spacing={1.25} alignItems="center">
+                            <Box sx={{ width: 42, height: 42, borderRadius: '14px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', bgcolor: isPNLPositive ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)', color: isPNLPositive ? '#10b981' : '#ef4444', fontSize: '1.25rem', fontWeight: 800 }}>
+                              {getCryptoIcon(holding.pair)}
+                            </Box>
+                            <Box>
+                              <Typography sx={{ fontWeight: 800, fontSize: '1rem' }}>{holding.symbol}</Typography>
+                              <Typography sx={{ color: 'rgba(226,232,240,0.68)', fontSize: '0.86rem' }}>{holding.pair}</Typography>
+                            </Box>
+                          </Stack>
+                          <Chip
+                            size="small"
+                            label={`${holding.rendimiento >= 0 ? '+' : ''}${holding.rendimiento.toFixed(2)}%`}
+                            sx={{
+                              bgcolor: holding.rendimiento >= 0 ? 'rgba(34,197,94,0.16)' : 'rgba(239,68,68,0.16)',
+                              color: holding.rendimiento >= 0 ? '#86efac' : '#fca5a5',
+                              fontWeight: 700,
+                              fontSize: '0.75rem',
+                            }}
+                          />
                         </Stack>
-                        <Chip
-                          size="small"
-                          label={`${holding.rendimiento >= 0 ? '+' : ''}${holding.rendimiento.toFixed(2)}%`}
-                          sx={{
-                            bgcolor: holding.rendimiento >= 0 ? 'rgba(34,197,94,0.16)' : 'rgba(239,68,68,0.16)',
-                            color: holding.rendimiento >= 0 ? '#86efac' : '#fca5a5',
-                            fontWeight: 700,
-                          }}
-                        />
-                      </Stack>
 
-                      <Grid container spacing={1.5} sx={{ mt: 1 }}>
-                        <Grid item xs={6}>
-                          <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Cantidad</Typography>
-                          <Typography sx={{ mt: 0.55, fontWeight: 700 }}>{formatQuantity(holding.cantidad)}</Typography>
+                        <Grid container spacing={1.5} sx={{ mt: 1 }}>
+                          <Grid item xs={6}>
+                            <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Cantidad</Typography>
+                            <Typography sx={{ mt: 0.55, fontWeight: 700 }}>{formatQuantity(holding.cantidad)}</Typography>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Precio actual</Typography>
+                            <Typography sx={{ mt: 0.55, fontWeight: 700 }}>USD {formatUsd(holding.precioActual)}</Typography>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Valor actual</Typography>
+                            <Typography sx={{ mt: 0.55, fontWeight: 700, color: isPNLPositive ? '#86efac' : '#fca5a5' }}>
+                              USD {formatUsd(holding.valorActual)}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Ganancia/Pérdida</Typography>
+                            <Typography sx={{ mt: 0.55, fontWeight: 700, color: isPNLPositive ? '#86efac' : '#fca5a5', fontSize: '1.05rem' }}>
+                              {isPNLPositive ? '🔺' : '🔻'} {holding.ganancia >= 0 ? '+' : '-'}USD {formatUsd(Math.abs(holding.ganancia))}
+                            </Typography>
+                          </Grid>
                         </Grid>
-                        <Grid item xs={6}>
-                          <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Precio actual</Typography>
-                          <Typography sx={{ mt: 0.55, fontWeight: 700 }}>USD {formatUsd(holding.precioActual)}</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Valor actual</Typography>
-                          <Typography sx={{ mt: 0.55, fontWeight: 700 }}>USD {formatUsd(holding.valorActual)}</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Ganancia</Typography>
-                          <Typography sx={{ mt: 0.55, fontWeight: 700, color: holding.ganancia >= 0 ? '#86efac' : '#fca5a5' }}>
-                            {holding.ganancia >= 0 ? '+' : '-'}USD {formatUsd(Math.abs(holding.ganancia))}
+                        
+                        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                          <Typography sx={{ fontSize: '0.75rem', color: 'rgba(226,232,240,0.6)' }}>
+                            💰 Costo inicial: USD {formatUsd(holding.costoTotal)}
                           </Typography>
-                        </Grid>
-                      </Grid>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
             </Grid>
           )}
         </Paper>
@@ -1383,6 +1457,35 @@ function Saldos() {
           </Button>
         </DialogActions>
       </Dialog>
+
+        <Dialog open={Boolean(recibo)} onClose={() => setRecibo(null)} fullWidth maxWidth="xs">
+          <DialogTitle>Recibo de comisión</DialogTitle>
+          <DialogContent dividers>
+            <Stack spacing={1}>
+              <Typography variant="body2"><strong>Operación:</strong> {recibo?.operacion || 'N/A'}</Typography>
+              <Typography variant="body2"><strong>Activo:</strong> {recibo?.symbol || 'N/A'}</Typography>
+              <Typography variant="body2"><strong>Cantidad:</strong> {recibo?.cantidad ?? 'N/A'}</Typography>
+              <Typography variant="body2"><strong>Precio:</strong> USD {formatUsd(toNumber(recibo?.precioEjecutado))}</Typography>
+              <Typography variant="body2"><strong>Comisión:</strong> {recibo?.comisionPct || '1.5%'} (USD {formatUsd(toNumber(recibo?.comisionUSD))})</Typography>
+              {recibo?.costoActivo != null && (
+                <Typography variant="body2"><strong>Costo activo:</strong> USD {formatUsd(toNumber(recibo.costoActivo))}</Typography>
+              )}
+              {recibo?.totalDeducido != null && (
+                <Typography variant="body2"><strong>Total debitado:</strong> USD {formatUsd(toNumber(recibo.totalDeducido))}</Typography>
+              )}
+              {recibo?.ingresosBrutos != null && (
+                <Typography variant="body2"><strong>Ingresos brutos:</strong> USD {formatUsd(toNumber(recibo.ingresosBrutos))}</Typography>
+              )}
+              {recibo?.ingresosNetos != null && (
+                <Typography variant="body2"><strong>Ingresos netos:</strong> USD {formatUsd(toNumber(recibo.ingresosNetos))}</Typography>
+              )}
+              <Typography variant="caption" color="text.secondary">Orden Bybit: {recibo?.bybitOrderId || 'N/A'}</Typography>
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button variant="contained" onClick={() => setRecibo(null)}>Entendido</Button>
+          </DialogActions>
+        </Dialog>
 
       <Snackbar open={feedback.open} autoHideDuration={4200} onClose={closeFeedback} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert

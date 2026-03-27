@@ -1,9 +1,13 @@
 const Inversion = require('../models/Inversion');
+const Comision = require('../models/Comision');
 const User = require('../models/User');
 const { sequelize } = require('../config/database');
 const alpacaService = require('../services/alpacaService');
+const bybitService = require('../services/bybitService');
 const pnlUpdateService = require('../services/pnlUpdateService');
 const axios = require('axios');
+
+const COMISION_PCT = 0.015; // 1.5% por operación
 
 const normalizeCryptoSymbol = (symbol) => {
   const normalized = String(symbol || '').trim().toUpperCase();
@@ -142,34 +146,106 @@ const comprarAccion = async (req, res) => {
       });
     }
 
-    // Crypto sin Alpaca: compra directa usando saldo CHAIN.
+    // Crypto: compra real en Bybit + cobro de comisión 1.5%
     if (esCrypto) {
-      const cantidadEjecutada = cantidadNum;
-      const precioEjecutado = precioCompra;
-      const costoTotal = parseFloat((precioEjecutado * cantidadEjecutada).toFixed(2));
+      const comisionMonto = parseFloat((costoEstimado * COMISION_PCT).toFixed(2));
+      const costoTotalConComision = parseFloat((costoEstimado + comisionMonto).toFixed(2));
+
+      // Re-validar saldo incluyendo la comisión
+      if (costoTotalConComision > saldoDisponible) {
+        return res.status(400).json({
+          mensaje: 'Saldo CHAIN insuficiente (incluida comisión del 1.5%)',
+          costoActivo: costoEstimado,
+          comision: comisionMonto,
+          costoTotal: costoTotalConComision,
+          saldoDisponible,
+          faltante: parseFloat((costoTotalConComision - saldoDisponible).toFixed(2)),
+          tipoSaldo: 'saldoChain',
+        });
+      }
+
+      // Extraer símbolo base (BTC de "BTC/USD")
+      const baseSymbol = activo.symbol.split('/')[0];
+
+      // Colocar orden de mercado spot en Bybit
+      const bybitOrden = await bybitService.placeSpotOrder({
+        symbol: `${baseSymbol}USDT`,
+        side: 'buy',
+        qty: cantidadNum,
+      });
+
+      // Esperar fill (hasta 10s: 5 intentos × 2s)
+      let filledOrder = null;
+      for (let i = 0; i < 5; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const status = await bybitService.getSpotOrderStatus({
+          orderId: bybitOrden.orderId,
+          symbol: `${baseSymbol}USDT`,
+        });
+        if (status && ['Filled', 'PartiallyFilled'].includes(status.orderStatus)) {
+          filledOrder = status;
+          break;
+        }
+      }
+
+      const cantidadEjecutada = filledOrder
+        ? parseFloat(filledOrder.cumExecQty || cantidadNum)
+        : cantidadNum;
+      const precioEjecutado = filledOrder
+        ? parseFloat(filledOrder.avgPrice || precioCompra)
+        : precioCompra;
+      const costoReal = parseFloat((precioEjecutado * cantidadEjecutada).toFixed(2));
+      const comisionReal = parseFloat((costoReal * COMISION_PCT).toFixed(2));
+      const totalDeducir = parseFloat((costoReal + comisionReal).toFixed(2));
 
       let inversion;
-      await sequelize.transaction(async (transaction) => {
-        usuario.saldoChain = parseFloat((saldoDisponible - costoTotal).toFixed(2));
-        await usuario.save({ transaction });
+      let comision;
+      await sequelize.transaction(async (t) => {
+        usuario.saldoChain = parseFloat((saldoDisponible - totalDeducir).toFixed(2));
+        await usuario.save({ transaction: t });
 
         inversion = await Inversion.create({
           usuarioId,
           symbol: activo.symbol,
           cantidad: cantidadEjecutada,
           precioCompra: precioEjecutado,
-          costoTotal,
+          costoTotal: costoReal,
           estado: 'abierta',
           tipo: 'compra',
           fechaCompra: new Date(),
-        }, { transaction });
+        }, { transaction: t });
+
+        comision = await Comision.create({
+          usuarioId,
+          inversionId: inversion.id,
+          tipo: 'compra',
+          symbol: activo.symbol,
+          montoBase: costoReal,
+          porcentaje: COMISION_PCT * 100,
+          montoComision: comisionReal,
+          precioEjecutado,
+          cantidadCrypto: cantidadEjecutada,
+          bybitOrderId: bybitOrden.orderId || null,
+        }, { transaction: t });
       });
 
-      console.log(`✅ Compra CHAIN ejecutada (sin Alpaca) - Nuevo saldo CHAIN: $${usuario.saldoChain}`);
+      console.log(`✅ Compra BYBIT REAL: ${cantidadEjecutada} ${activo.symbol} @ $${precioEjecutado} | Comisión: $${comisionReal} | Nuevo saldoChain: $${usuario.saldoChain}`);
 
       return res.json({
-        mensaje: `✅ COMPRA EJECUTADA CON SALDO CHAIN: ${cantidadEjecutada} ${activo.symbol}`,
-        modo: 'chain_local',
+        mensaje: `✅ COMPRA REAL EJECUTADA EN BYBIT: ${cantidadEjecutada} ${activo.symbol}`,
+        modo: 'bybit_spot',
+        recibo: {
+          operacion: 'COMPRA',
+          symbol: activo.symbol,
+          cantidad: cantidadEjecutada,
+          precioEjecutado,
+          costoActivo: costoReal,
+          comisionPct: `${(COMISION_PCT * 100).toFixed(1)}%`,
+          comisionUSD: comisionReal,
+          totalDeducido: totalDeducir,
+          bybitOrderId: bybitOrden.orderId,
+          fecha: new Date().toISOString(),
+        },
         inversion: {
           id: inversion.id,
           symbol: inversion.symbol,
@@ -311,6 +387,109 @@ const venderAccion = async (req, res) => {
       return res.status(404).json({ mensaje: 'Inversión no encontrada o ya cerrada' });
     }
 
+    const esCrypto = String(inversion.symbol || '').includes('/');
+
+    // --- VENTA CRYPTO: Bybit spot + comisión 1.5% ---
+    if (esCrypto) {
+      const baseSymbol = inversion.symbol.split('/')[0];
+
+      const bybitOrden = await bybitService.placeSpotOrder({
+        symbol: `${baseSymbol}USDT`,
+        side: 'sell',
+        qty: parseFloat(inversion.cantidad),
+      });
+
+      // Esperar fill (hasta 10s)
+      let filledOrder = null;
+      for (let i = 0; i < 5; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const status = await bybitService.getSpotOrderStatus({
+          orderId: bybitOrden.orderId,
+          symbol: `${baseSymbol}USDT`,
+        });
+        if (status && ['Filled', 'PartiallyFilled'].includes(status.orderStatus)) {
+          filledOrder = status;
+          break;
+        }
+      }
+
+      const cantidadVendida = filledOrder
+        ? parseFloat(filledOrder.cumExecQty || inversion.cantidad)
+        : parseFloat(inversion.cantidad);
+      const precioVenta = filledOrder
+        ? parseFloat(filledOrder.avgPrice || 0)
+        : 0;
+      const ingresoTotal = parseFloat((precioVenta * cantidadVendida).toFixed(2));
+      const comisionMonto = parseFloat((ingresoTotal * COMISION_PCT).toFixed(2));
+      const ingresoNeto = parseFloat((ingresoTotal - comisionMonto).toFixed(2));
+      const ganancia = parseFloat((ingresoNeto - inversion.costoTotal).toFixed(2));
+
+      console.log(`💵 VENTA BYBIT REAL: ${cantidadVendida} ${inversion.symbol} @ $${precioVenta} = $${ingresoTotal} | Comisión: $${comisionMonto} | Neto: $${ingresoNeto}`);
+
+      const usuario = await User.findByPk(usuarioId);
+
+      await sequelize.transaction(async (t) => {
+        inversion.precioVenta = precioVenta;
+        inversion.ingresoTotal = ingresoNeto;
+        inversion.ganancia = ganancia;
+        inversion.estado = 'cerrada';
+        inversion.fechaVenta = new Date();
+        await inversion.save({ transaction: t });
+
+        usuario.saldoChain = parseFloat((parseFloat(usuario.saldoChain || 0) + ingresoNeto).toFixed(2));
+        await usuario.save({ transaction: t });
+
+        await Comision.create({
+          usuarioId,
+          inversionId: inversion.id,
+          tipo: 'venta',
+          symbol: inversion.symbol,
+          montoBase: ingresoTotal,
+          porcentaje: COMISION_PCT * 100,
+          montoComision: comisionMonto,
+          precioEjecutado: precioVenta,
+          cantidadCrypto: cantidadVendida,
+          bybitOrderId: bybitOrden.orderId || null,
+        }, { transaction: t });
+      });
+
+      console.log(`✅ Venta BYBIT REAL ejecutada - Nuevo saldoChain: $${usuario.saldoChain}`);
+
+      return res.json({
+        mensaje: `✅ VENTA REAL EJECUTADA EN BYBIT: ${cantidadVendida} ${inversion.symbol}`,
+        advertencia: ganancia >= 0
+          ? `✅ Ganancia neta: $${ganancia}`
+          : `⚠️ Pérdida neta: $${Math.abs(ganancia)}`,
+        recibo: {
+          operacion: 'VENTA',
+          symbol: inversion.symbol,
+          cantidad: cantidadVendida,
+          precioEjecutado: precioVenta,
+          ingresosBrutos: ingresoTotal,
+          comisionPct: `${(COMISION_PCT * 100).toFixed(1)}%`,
+          comisionUSD: comisionMonto,
+          ingresosNetos: ingresoNeto,
+          bybitOrderId: bybitOrden.orderId,
+          fecha: new Date().toISOString(),
+        },
+        venta: {
+          id: inversion.id,
+          symbol: inversion.symbol,
+          cantidad: cantidadVendida,
+          precioCompra: inversion.precioCompra,
+          precioVenta,
+          costoTotal: inversion.costoTotal,
+          ingresoNeto,
+          ganancia,
+          porcentajeGanancia: parseFloat(((ganancia / inversion.costoTotal) * 100).toFixed(2)),
+          esGanancia: ganancia >= 0,
+        },
+        nuevoSaldo: usuario.saldo,
+        nuevoSaldoChain: parseFloat(usuario.saldoChain || 0),
+      });
+    }
+
+    // --- VENTA ACCIONES: Alpaca ---
     const orden = await alpacaService.crearOrdenMercado({
       symbol: inversion.symbol,
       cantidad: inversion.cantidad,
@@ -333,10 +512,8 @@ const venderAccion = async (req, res) => {
     const ingresoTotal = parseFloat((precioVenta * cantidadEjecutada).toFixed(2));
     const ganancia = parseFloat((ingresoTotal - inversion.costoTotal).toFixed(2));
 
-    console.log(`💵 VENTA REAL: ${cantidadEjecutada} ${inversion.symbol} @ $${precioVenta} = $${ingresoTotal}`);
-    console.log(`   Ganancia/Pérdida REAL: $${ganancia}`);
+    console.log(`💵 VENTA REAL ALPACA: ${cantidadEjecutada} ${inversion.symbol} @ $${precioVenta} = $${ingresoTotal}`);
 
-    // Actualizar inversión
     inversion.precioVenta = precioVenta;
     inversion.ingresoTotal = ingresoTotal;
     inversion.ganancia = ganancia;
@@ -344,21 +521,15 @@ const venderAccion = async (req, res) => {
     inversion.fechaVenta = new Date();
     await inversion.save();
 
-    // Agregar ingreso segun tipo de activo: crypto -> saldoChain, acciones -> saldo
-    const usuario = await User.findByPk(usuarioId);
-    const esCrypto = String(inversion.symbol || '').includes('/');
-    if (esCrypto) {
-      usuario.saldoChain = parseFloat((parseFloat(usuario.saldoChain || 0) + ingresoTotal).toFixed(2));
-    } else {
-      usuario.saldo = parseFloat((parseFloat(usuario.saldo) + ingresoTotal).toFixed(2));
-    }
-    await usuario.save();
+    const usuarioAccion = await User.findByPk(usuarioId);
+    usuarioAccion.saldo = parseFloat((parseFloat(usuarioAccion.saldo) + ingresoTotal).toFixed(2));
+    await usuarioAccion.save();
 
-    console.log(`✅ Venta REAL ejecutada - Nuevo saldo ${esCrypto ? 'CHAIN' : 'BE'}: $${esCrypto ? usuario.saldoChain : usuario.saldo}`);
+    console.log(`✅ Venta REAL Alpaca ejecutada - Nuevo saldo BE: $${usuarioAccion.saldo}`);
 
     res.json({
-      mensaje: `✅ VENTA REAL EJECUTADA: ${inversion.cantidad} ${inversion.symbol}`,
-      advertencia: ganancia >= 0 
+      mensaje: `✅ VENTA REAL EJECUTADA EN ALPACA: ${cantidadEjecutada} ${inversion.symbol}`,
+      advertencia: ganancia >= 0
         ? `✅ Ganancia real: $${ganancia}`
         : `⚠️ Pérdida real: $${Math.abs(ganancia)}`,
       venta: {
@@ -373,8 +544,8 @@ const venderAccion = async (req, res) => {
         porcentajeGanancia: parseFloat(((ganancia / inversion.costoTotal) * 100).toFixed(2)),
         esGanancia: ganancia >= 0,
       },
-      nuevoSaldo: usuario.saldo,
-      nuevoSaldoChain: parseFloat(usuario.saldoChain || 0),
+      nuevoSaldo: usuarioAccion.saldo,
+      nuevoSaldoChain: parseFloat(usuarioAccion.saldoChain || 0),
     });
   } catch (error) {
     console.error('❌ Error vendiendo acción:', error.message);
@@ -606,6 +777,47 @@ const obtenerPNLActualizado = async (req, res) => {
   }
 };
 
+// Obtener historial de comisiones del usuario
+const obtenerComisiones = async (req, res) => {
+  try {
+    const usuarioId = req.usuario.id;
+    const comisiones = await Comision.findAll({
+      where: { usuarioId },
+      order: [['createdAt', 'DESC']],
+      limit: 100,
+    });
+
+    const totalComisionado = comisiones.reduce(
+      (sum, c) => sum + parseFloat(c.montoComision || 0),
+      0,
+    );
+
+    res.json({
+      comisiones: comisiones.map((c) => ({
+        id: c.id,
+        tipo: c.tipo,
+        symbol: c.symbol,
+        montoBase: parseFloat(c.montoBase),
+        porcentaje: parseFloat(c.porcentaje),
+        montoComision: parseFloat(c.montoComision),
+        precioEjecutado: parseFloat(c.precioEjecutado || 0),
+        cantidadCrypto: parseFloat(c.cantidadCrypto || 0),
+        bybitOrderId: c.bybitOrderId,
+        inversionId: c.inversionId,
+        fecha: c.createdAt,
+      })),
+      resumen: {
+        totalOperaciones: comisiones.length,
+        totalComisionado: parseFloat(totalComisionado.toFixed(2)),
+        pctPromedio: `${(COMISION_PCT * 100).toFixed(1)}%`,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo comisiones:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   comprarAccion,
   venderAccion,
@@ -615,4 +827,5 @@ module.exports = {
   buscarAcciones,
   obtenerHistorialPrecios,
   obtenerPNLActualizado,
+  obtenerComisiones,
 };
