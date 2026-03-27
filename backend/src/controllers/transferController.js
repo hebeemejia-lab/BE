@@ -1,9 +1,10 @@
 const Transfer = require('../models/Transfer');
 const TransferenciaBancaria = require('../models/TransferenciaBancaria');
+const SolicitudRetiroManual = require('../models/SolicitudRetiroManual');
 const User = require('../models/User');
 const stripeService = require('../services/stripeService');
 
-const TRANSFER_SAFE_ATTRS = ['id', 'nombre', 'apellido', 'email', 'cedula', 'saldo', 'rol'];
+const TRANSFER_SAFE_ATTRS = ['id', 'nombre', 'apellido', 'email', 'cedula', 'saldo', 'saldoChain', 'rol'];
 const ADMIN_ID = 1; // Used as placeholder destinatario for crypto withdrawals
 
 // Realizar transferencia
@@ -97,8 +98,9 @@ const solicitarRetiroCrypto = async (req, res) => {
     const usuario = await User.findByPk(usuarioId, { attributes: TRANSFER_SAFE_ATTRS });
     if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado.' });
 
-    if (parseFloat(usuario.saldo) < montoNum) {
-      return res.status(400).json({ mensaje: 'Saldo insuficiente para el retiro.' });
+    const saldoChainActual = parseFloat(usuario.saldoChain || 0);
+    if (saldoChainActual < montoNum) {
+      return res.status(400).json({ mensaje: 'Saldo CHAIN insuficiente para el retiro.' });
     }
 
     if (usuarioId === ADMIN_ID) {
@@ -107,23 +109,47 @@ const solicitarRetiroCrypto = async (req, res) => {
 
     const maskedAddr = `${direccion.slice(0, 6)}...${direccion.slice(-4)}`;
 
-    usuario.saldo = parseFloat(usuario.saldo) - montoNum;
-    await usuario.save();
+    const numeroReferencia = `CRYPTO-RET-${Date.now()}`;
+    const metadataRetiro = JSON.stringify({
+      tipo: 'crypto_wallet',
+      walletAddress: direccion,
+      walletAddressMasked: maskedAddr,
+      coin: String(coin).toUpperCase(),
+      network: String(network),
+      montoUsd: montoNum,
+    });
 
-    await Transfer.create({
-      remitenteId:    usuarioId,
-      destinatarioId: ADMIN_ID,
-      monto:          montoNum,
-      concepto:       `Retiro crypto: ${String(coin).toUpperCase()} (${network}) → ${maskedAddr}`,
-      estado:         'pendiente',
+    const solicitud = await SolicitudRetiroManual.create({
+      usuarioId,
+      monto: montoNum,
+      moneda: 'USD',
+      metodo: 'crypto_bybit',
+      estado: 'pendiente',
+      nombreUsuario: `${usuario.nombre || ''} ${usuario.apellido || ''}`.trim(),
+      emailUsuario: usuario.email,
+      cedulaUsuario: usuario.cedula,
+      banco: 'CRYPTO_WALLET',
+      tipoCuenta: String(network).slice(0, 50),
+      numeroCuenta: maskedAddr,
+      nombreBeneficiario: String(coin).toUpperCase(),
+      numeroReferencia,
+      proveedorRetiro: 'bybit',
+      monedaActiva: String(coin).toUpperCase(),
+      redRetiro: String(network).slice(0, 50),
+      walletAddress: direccion,
+      notasAdmin: metadataRetiro,
     });
 
     res.status(201).json({
-      mensaje: `Retiro de ${montoNum} USD en ${String(coin).toUpperCase()} solicitado. Será procesado en 24-48 h.`,
+      mensaje: `Retiro de ${montoNum} USD en ${String(coin).toUpperCase()} solicitado. En espera de aprobación admin.`,
+      solicitudId: solicitud.id,
+      numeroReferencia,
+      estado: solicitud.estado,
       monto: montoNum,
       coin,
       network,
       walletAddress: maskedAddr,
+      saldoChainDisponible: saldoChainActual,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
