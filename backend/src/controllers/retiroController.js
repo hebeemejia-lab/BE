@@ -406,14 +406,8 @@ const aprobarSolicitudRetiroManual = async (req, res) => {
     }
 
     const esRetiroCrypto = isCryptoWithdrawalRequest(solicitud);
-    const cryptoMeta = esRetiroCrypto ? parseSolicitudCryptoMetadata(solicitud) : null;
-    const montoActivoSolicitud = esRetiroCrypto
-      ? parseFloat(cryptoMeta?.montoActivo || solicitud.montoActivo || 0)
-      : 0;
-    const saldoActual = esRetiroCrypto
-      ? await getAvailableCryptoBalance({ usuarioId: usuario.id, coin: cryptoMeta?.coin })
-      : parseFloat(usuario.saldo || 0);
     const montoSolicitud = parseFloat(solicitud.monto || 0);
+    
     if (montoSolicitud <= 0) {
       return res.status(400).json({
         exito: false,
@@ -421,25 +415,21 @@ const aprobarSolicitudRetiroManual = async (req, res) => {
       });
     }
 
-    if (esRetiroCrypto && montoActivoSolicitud <= 0) {
+    // ✅ AHORA TODO USA saldoChain (USD)
+    const saldoChainActual = Number(usuario.saldoChain || 0);
+    
+    if (montoSolicitud > saldoChainActual) {
       return res.status(400).json({
         exito: false,
-        mensaje: 'La solicitud no tiene una cantidad valida del activo a retirar',
-      });
-    }
-
-    if ((!esRetiroCrypto && montoSolicitud > saldoActual) || (esRetiroCrypto && montoActivoSolicitud > saldoActual)) {
-      return res.status(400).json({
-        exito: false,
-        mensaje: esRetiroCrypto
-          ? `Saldo insuficiente de ${cryptoMeta.coin} para aprobar el retiro`
-          : 'Saldo insuficiente para aprobar el retiro',
-        saldoActual,
-        montoSolicitud: esRetiroCrypto ? montoActivoSolicitud : montoSolicitud,
+        mensaje: `Saldo CHAIN insuficiente. Necesitas USD ${montoSolicitud.toFixed(2)}, disponible USD ${saldoChainActual.toFixed(2)}`,
+        saldoChainActual,
+        montoSolicitud,
       });
     }
 
     if (esRetiroCrypto) {
+      const cryptoMeta = parseSolicitudCryptoMetadata(solicitud);
+      
       if (!cryptoMeta.coin || !cryptoMeta.walletAddress || !cryptoMeta.network) {
         return res.status(400).json({
           exito: false,
@@ -447,20 +437,20 @@ const aprobarSolicitudRetiroManual = async (req, res) => {
         });
       }
 
+      // Crear withdrawl en Bybit
       const bybitWithdrawal = await bybitService.createWithdrawal({
         coin: cryptoMeta.coin,
         chain: cryptoMeta.network,
         address: cryptoMeta.walletAddress,
-        amount: montoActivoSolicitud,
+        amount: parseFloat(cryptoMeta.cantidadCrypto || cryptoMeta.montoActivo || 0),
         requestId: solicitud.numeroReferencia,
       });
 
-      const consumeResult = await sequelize.transaction(async (transaction) => consumeCryptoBalance({
-        usuarioId: usuario.id,
-        coin: cryptoMeta.coin,
-        amount: montoActivoSolicitud,
-        transaction,
-      }));
+      // Deducir del saldoChain (USD)
+      await sequelize.transaction(async (transaction) => {
+        usuario.saldoChain = parseFloat((saldoChainActual - montoSolicitud).toFixed(2));
+        await usuario.save({ transaction });
+      });
 
       solicitud.estado = 'enviada';
       solicitud.proveedorRetiro = 'bybit';
@@ -469,40 +459,42 @@ const aprobarSolicitudRetiroManual = async (req, res) => {
       solicitud.monedaActiva = cryptoMeta.coin;
       solicitud.redRetiro = bybitService.normalizeChain(cryptoMeta.network, cryptoMeta.coin);
       solicitud.walletAddress = cryptoMeta.walletAddress;
-      solicitud.montoActivo = montoActivoSolicitud;
+      solicitud.montoActivo = parseFloat(cryptoMeta.cantidadCrypto || 0);
       solicitud.precioReferenciaUsd = cryptoMeta.precioReferenciaUsd || solicitud.precioReferenciaUsd;
       solicitud.withdrawalIdExterno = bybitWithdrawal.result?.id || bybitWithdrawal.result?.withdrawId || bybitWithdrawal.requestId;
       solicitud.txHash = bybitWithdrawal.result?.txID || bybitWithdrawal.result?.txId || solicitud.txHash;
+      
       updateCryptoNotes(solicitud, {
         coin: cryptoMeta.coin,
         network: cryptoMeta.network,
         walletAddress: cryptoMeta.walletAddress,
         walletAddressMasked: cryptoMeta.walletAddressMasked,
-        montoActivo: montoActivoSolicitud,
-        montoUsd: cryptoMeta.montoUsd || montoSolicitud,
+        montoUsd: montoSolicitud,
+        cantidadCrypto: parseFloat(cryptoMeta.cantidadCrypto || 0),
         precioReferenciaUsd: cryptoMeta.precioReferenciaUsd || solicitud.precioReferenciaUsd,
-        consumedLots: consumeResult.consumedLots,
-        adminNotes: notasAdmin ? [...cryptoMeta.adminNotes, String(notasAdmin).trim()].filter(Boolean) : cryptoMeta.adminNotes,
+        adminNotes: notasAdmin ? [String(notasAdmin).trim()].filter(Boolean) : [],
       });
+      
       await solicitud.save();
 
       return res.json({
         exito: true,
-        mensaje: `Solicitud crypto enviada a Bybit y saldo ${cryptoMeta.coin} descontado`,
+        mensaje: `Retiro de USD ${montoSolicitud.toFixed(2)} enviado a Bybit. Saldo CHAIN descontado.`,
         solicitud,
-        nuevoSaldoActivo: consumeResult.availableAfter,
-        saldoAfectado: cryptoMeta.coin,
+        nuevoSaldoChain: parseFloat(usuario.saldoChain || 0),
+        saldoAfectado: 'saldoChain',
         retiroProveedor: {
           proveedor: 'bybit',
           withdrawalId: solicitud.withdrawalIdExterno,
           coin: solicitud.monedaActiva,
           chain: solicitud.redRetiro,
           amountAsset: solicitud.montoActivo,
-          precioReferenciaUsd: solicitud.precioReferenciaUsd,
+          amountUsd: montoSolicitud,
         },
       });
     } else {
-      usuario.saldo = saldoActual - montoSolicitud;
+      // Retiro USD tradicional - deducir de saldo
+      usuario.saldo = parseFloat((saldoChainActual - montoSolicitud).toFixed(2));
       await usuario.save();
 
       solicitud.estado = 'procesada';
@@ -510,15 +502,15 @@ const aprobarSolicitudRetiroManual = async (req, res) => {
       solicitud.procesadoPor = adminId || null;
       solicitud.fechaProcesamiento = new Date();
       await solicitud.save();
-    }
 
-    return res.json({
-      exito: true,
-      mensaje: 'Solicitud aprobada y saldo descontado',
-      solicitud,
-      nuevoSaldo: esRetiroCrypto ? parseFloat(usuario.saldoChain || 0) : parseFloat(usuario.saldo || 0),
-      saldoAfectado: esRetiroCrypto ? 'saldoChain' : 'saldo',
-    });
+      return res.json({
+        exito: true,
+        mensaje: 'Solicitud USD aprobada y saldo descontado',
+        solicitud,
+        nuevoSaldo: parseFloat(usuario.saldo || 0),
+        saldoAfectado: 'saldo',
+      });
+    }
   } catch (error) {
     console.error('❌ Error aprobando solicitud de retiro:', error);
     res.status(500).json({
