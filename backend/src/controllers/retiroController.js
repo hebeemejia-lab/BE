@@ -6,6 +6,12 @@ const cuentasBancariasConfig = require('../config/cuentasBancariasConfig');
 const bybitService = require('../services/bybitService');
 const paypalPayoutsService = require('../services/paypalPayoutsService');
 const { calcularComisionRetiro, calcularMontoNeto } = require('../config/comisiones');
+const { sequelize } = require('../config/database');
+const {
+  getAvailableCryptoBalance,
+  consumeCryptoBalance,
+  restoreConsumedCryptoBalance,
+} = require('../services/cryptoHoldingsService');
 
 const isCryptoWithdrawalRequest = (solicitud) => {
   if (!solicitud) return false;
@@ -18,7 +24,29 @@ const appendAdminNotes = (currentNotes, nextNotes) => {
   return chunks.join('\n');
 };
 
+const parseCryptoNotesPayload = (rawNotes) => {
+  try {
+    const parsed = JSON.parse(rawNotes || '{}');
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed;
+    }
+  } catch (_) {
+    return null;
+  }
+
+  return null;
+};
+
+const updateCryptoNotes = (solicitud, updates = {}) => {
+  const current = parseCryptoNotesPayload(solicitud?.notasAdmin) || {};
+  solicitud.notasAdmin = JSON.stringify({
+    ...current,
+    ...updates,
+  });
+};
+
 const parseSolicitudCryptoMetadata = (solicitud) => {
+  const notesPayload = parseCryptoNotesPayload(solicitud?.notasAdmin) || {};
   const fallback = {
     coin: solicitud?.monedaActiva || solicitud?.nombreBeneficiario || null,
     network: solicitud?.redRetiro || solicitud?.tipoCuenta || null,
@@ -27,12 +55,16 @@ const parseSolicitudCryptoMetadata = (solicitud) => {
   };
 
   try {
-    const parsed = JSON.parse(solicitud?.notasAdmin || '{}');
     return {
-      coin: String(parsed.coin || fallback.coin || '').toUpperCase(),
-      network: parsed.network || fallback.network || '',
-      walletAddress: parsed.walletAddress || fallback.walletAddress || '',
-      walletAddressMasked: parsed.walletAddressMasked || fallback.walletAddressMasked || '',
+      coin: String(notesPayload.coin || fallback.coin || '').toUpperCase(),
+      network: notesPayload.network || fallback.network || '',
+      walletAddress: notesPayload.walletAddress || fallback.walletAddress || '',
+      walletAddressMasked: notesPayload.walletAddressMasked || fallback.walletAddressMasked || '',
+      montoActivo: parseFloat(notesPayload.montoActivo || solicitud?.montoActivo || 0),
+      montoUsd: parseFloat(notesPayload.montoUsd || solicitud?.monto || 0),
+      precioReferenciaUsd: parseFloat(notesPayload.precioReferenciaUsd || solicitud?.precioReferenciaUsd || 0),
+      consumedLots: Array.isArray(notesPayload.consumedLots) ? notesPayload.consumedLots : [],
+      adminNotes: Array.isArray(notesPayload.adminNotes) ? notesPayload.adminNotes : [],
     };
   } catch (_) {
     return {
@@ -40,6 +72,11 @@ const parseSolicitudCryptoMetadata = (solicitud) => {
       network: fallback.network || '',
       walletAddress: fallback.walletAddress || '',
       walletAddressMasked: fallback.walletAddressMasked || '',
+      montoActivo: parseFloat(solicitud?.montoActivo || 0),
+      montoUsd: parseFloat(solicitud?.monto || 0),
+      precioReferenciaUsd: parseFloat(solicitud?.precioReferenciaUsd || 0),
+      consumedLots: [],
+      adminNotes: [],
     };
   }
 };
@@ -78,8 +115,18 @@ const sincronizarEstadoRetiroCryptoBybit = async (solicitud, usuario) => {
   }
 
   if (nextState === 'fallida' && previousState !== 'fallida' && previousState !== 'rechazada' && previousState !== 'completada') {
-    usuario.saldoChain = parseFloat((parseFloat(usuario.saldoChain || 0) + parseFloat(solicitud.monto || 0)).toFixed(2));
-    await usuario.save();
+    if (cryptoMeta.consumedLots?.length) {
+      await sequelize.transaction(async (transaction) => {
+        await restoreConsumedCryptoBalance({
+          usuarioId: usuario.id,
+          consumedLots: cryptoMeta.consumedLots,
+          transaction,
+        });
+      });
+    } else {
+      usuario.saldoChain = parseFloat((parseFloat(usuario.saldoChain || 0) + parseFloat(solicitud.monto || 0)).toFixed(2));
+      await usuario.save();
+    }
     refunded = true;
   }
 
@@ -359,7 +406,13 @@ const aprobarSolicitudRetiroManual = async (req, res) => {
     }
 
     const esRetiroCrypto = isCryptoWithdrawalRequest(solicitud);
-    const saldoActual = parseFloat(esRetiroCrypto ? (usuario.saldoChain || 0) : (usuario.saldo || 0));
+    const cryptoMeta = esRetiroCrypto ? parseSolicitudCryptoMetadata(solicitud) : null;
+    const montoActivoSolicitud = esRetiroCrypto
+      ? parseFloat(cryptoMeta?.montoActivo || solicitud.montoActivo || 0)
+      : 0;
+    const saldoActual = esRetiroCrypto
+      ? await getAvailableCryptoBalance({ usuarioId: usuario.id, coin: cryptoMeta?.coin })
+      : parseFloat(usuario.saldo || 0);
     const montoSolicitud = parseFloat(solicitud.monto || 0);
     if (montoSolicitud <= 0) {
       return res.status(400).json({
@@ -368,19 +421,25 @@ const aprobarSolicitudRetiroManual = async (req, res) => {
       });
     }
 
-    if (montoSolicitud > saldoActual) {
+    if (esRetiroCrypto && montoActivoSolicitud <= 0) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'La solicitud no tiene una cantidad valida del activo a retirar',
+      });
+    }
+
+    if ((!esRetiroCrypto && montoSolicitud > saldoActual) || (esRetiroCrypto && montoActivoSolicitud > saldoActual)) {
       return res.status(400).json({
         exito: false,
         mensaje: esRetiroCrypto
-          ? 'Saldo CHAIN insuficiente para aprobar el retiro'
+          ? `Saldo insuficiente de ${cryptoMeta.coin} para aprobar el retiro`
           : 'Saldo insuficiente para aprobar el retiro',
         saldoActual,
-        montoSolicitud,
+        montoSolicitud: esRetiroCrypto ? montoActivoSolicitud : montoSolicitud,
       });
     }
 
     if (esRetiroCrypto) {
-      const cryptoMeta = parseSolicitudCryptoMetadata(solicitud);
       if (!cryptoMeta.coin || !cryptoMeta.walletAddress || !cryptoMeta.network) {
         return res.status(400).json({
           exito: false,
@@ -388,46 +447,51 @@ const aprobarSolicitudRetiroManual = async (req, res) => {
         });
       }
 
-      const quote = await bybitService.getSpotPriceUsd(cryptoMeta.coin);
-      const montoActivo = parseFloat((montoSolicitud / quote.price).toFixed(8));
-      if (!Number.isFinite(montoActivo) || montoActivo <= 0) {
-        return res.status(400).json({
-          exito: false,
-          mensaje: 'No se pudo calcular el monto del activo a retirar en Bybit.',
-        });
-      }
-
       const bybitWithdrawal = await bybitService.createWithdrawal({
         coin: cryptoMeta.coin,
         chain: cryptoMeta.network,
         address: cryptoMeta.walletAddress,
-        amount: montoActivo,
+        amount: montoActivoSolicitud,
         requestId: solicitud.numeroReferencia,
       });
 
-      usuario.saldoChain = saldoActual - montoSolicitud;
-      await usuario.save();
+      const consumeResult = await sequelize.transaction(async (transaction) => consumeCryptoBalance({
+        usuarioId: usuario.id,
+        coin: cryptoMeta.coin,
+        amount: montoActivoSolicitud,
+        transaction,
+      }));
 
       solicitud.estado = 'enviada';
-      solicitud.notasAdmin = appendAdminNotes(solicitud.notasAdmin, notasAdmin);
       solicitud.proveedorRetiro = 'bybit';
       solicitud.procesadoPor = adminId || null;
       solicitud.fechaProcesamiento = new Date();
       solicitud.monedaActiva = cryptoMeta.coin;
       solicitud.redRetiro = bybitService.normalizeChain(cryptoMeta.network, cryptoMeta.coin);
       solicitud.walletAddress = cryptoMeta.walletAddress;
-      solicitud.montoActivo = montoActivo;
-      solicitud.precioReferenciaUsd = quote.price;
+      solicitud.montoActivo = montoActivoSolicitud;
+      solicitud.precioReferenciaUsd = cryptoMeta.precioReferenciaUsd || solicitud.precioReferenciaUsd;
       solicitud.withdrawalIdExterno = bybitWithdrawal.result?.id || bybitWithdrawal.result?.withdrawId || bybitWithdrawal.requestId;
       solicitud.txHash = bybitWithdrawal.result?.txID || bybitWithdrawal.result?.txId || solicitud.txHash;
+      updateCryptoNotes(solicitud, {
+        coin: cryptoMeta.coin,
+        network: cryptoMeta.network,
+        walletAddress: cryptoMeta.walletAddress,
+        walletAddressMasked: cryptoMeta.walletAddressMasked,
+        montoActivo: montoActivoSolicitud,
+        montoUsd: cryptoMeta.montoUsd || montoSolicitud,
+        precioReferenciaUsd: cryptoMeta.precioReferenciaUsd || solicitud.precioReferenciaUsd,
+        consumedLots: consumeResult.consumedLots,
+        adminNotes: notasAdmin ? [...cryptoMeta.adminNotes, String(notasAdmin).trim()].filter(Boolean) : cryptoMeta.adminNotes,
+      });
       await solicitud.save();
 
       return res.json({
         exito: true,
-        mensaje: 'Solicitud crypto enviada a Bybit y saldo CHAIN descontado',
+        mensaje: `Solicitud crypto enviada a Bybit y saldo ${cryptoMeta.coin} descontado`,
         solicitud,
-        nuevoSaldo: parseFloat(usuario.saldoChain || 0),
-        saldoAfectado: 'saldoChain',
+        nuevoSaldoActivo: consumeResult.availableAfter,
+        saldoAfectado: cryptoMeta.coin,
         retiroProveedor: {
           proveedor: 'bybit',
           withdrawalId: solicitud.withdrawalIdExterno,

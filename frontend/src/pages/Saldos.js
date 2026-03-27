@@ -234,6 +234,11 @@ function Saldos() {
     gananciaTotal: cryptoHoldings.reduce((sum, holding) => sum + holding.ganancia, 0),
   }), [cryptoHoldings]);
 
+  const selectedWithdrawHolding = useMemo(() => {
+    const selectedCoin = String(withdrawForm.coin || '').toUpperCase();
+    return cryptoHoldings.find((holding) => holding.symbol === selectedCoin) || null;
+  }, [cryptoHoldings, withdrawForm.coin]);
+
   const loadWalletStats = useCallback(async ({ silent = false } = {}) => {
     if (!silent) {
       setStatsLoading(true);
@@ -607,12 +612,19 @@ function Saldos() {
         return;
       }
 
+      const montoActivo = Number(withdrawForm.monto);
+      const saldoActivoDisponible = toNumber(selectedWithdrawHolding?.cantidad);
+      if (montoActivo > saldoActivoDisponible) {
+        openFeedback('error', `No tienes suficiente ${withdrawForm.coin} disponible para este retiro.`);
+        return;
+      }
+
       setProcessing(true);
       const response = await transferAPI.retiroCryptoWallet({
         walletAddress: addr,
         coin:          withdrawForm.coin,
         network:       withdrawForm.network,
-        monto:         Number(withdrawForm.monto),
+        monto:         montoActivo,
       });
 
       openFeedback('success', response?.data?.mensaje || 'Retiro solicitado correctamente.');
@@ -1357,9 +1369,11 @@ function Saldos() {
               type="number"
               value={withdrawForm.monto}
               onChange={(e) => setWithdrawForm((prev) => ({ ...prev, monto: e.target.value }))}
-              inputProps={{ min: 0.01, step: '0.01', 'aria-label': 'Monto a retirar' }}
-              InputProps={{ startAdornment: <InputAdornment position="start">USD</InputAdornment> }}
-              helperText={`Saldo Chain disponible: USD ${formatUsd(walletStats.saldoDisponible)}`}
+              inputProps={{ min: 0.0001, step: '0.0001', 'aria-label': 'Monto a retirar en activo' }}
+              InputProps={{ startAdornment: <InputAdornment position="start">{withdrawForm.coin}</InputAdornment> }}
+              helperText={selectedWithdrawHolding
+                ? `Saldo disponible: ${formatQuantity(selectedWithdrawHolding.cantidad)} ${withdrawForm.coin} (~USD ${formatUsd(selectedWithdrawHolding.valorActual)})`
+                : `No tienes saldo disponible en ${withdrawForm.coin}.`}
             />
           </Stack>
         </DialogContent>
