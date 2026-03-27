@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Autocomplete,
@@ -139,6 +139,8 @@ function Saldos() {
   const theme = useTheme();
   const fullScreenDialog = useMediaQuery(theme.breakpoints.down('sm'));
   const nombreCompleto = [usuario?.nombre, usuario?.apellido].filter(Boolean).join(' ') || 'Usuario';
+  const initialWalletLoadRef = useRef(true);
+  const [, startTransition] = useTransition();
 
   const [activeFlow, setActiveFlow] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -232,68 +234,86 @@ function Saldos() {
     gananciaTotal: cryptoHoldings.reduce((sum, holding) => sum + holding.ganancia, 0),
   }), [cryptoHoldings]);
 
-  const loadWalletStats = useCallback(async () => {
-    setStatsLoading(true);
-
-    const [perfilResult, recargasResult, transferenciasResult, posicionesResult] = await Promise.allSettled([
-      typeof refrescarPerfil === 'function' ? refrescarPerfil() : Promise.resolve(usuario),
-      depositoAPI.obtenerDepositos(),
-      transferAPI.obtenerHistorial(),
-      inversionesAPI.obtenerPosiciones(),
-    ]);
-
-    const perfilActual = perfilResult.status === 'fulfilled' ? perfilResult.value : usuario;
-    const saldoChainActual = toNumber(perfilActual?.saldoChain);
-
-    const recargas = recargasResult.status === 'fulfilled' ? asArray(recargasResult.value?.data) : [];
-    const recargasExitosas = recargas.filter((recarga) => String(recarga.estado || '').toLowerCase() === 'exitosa');
-    const totalRecargado = recargasExitosas.reduce(
-      (sum, recarga) => sum + toNumber(recarga.montoNeto ?? recarga.monto),
-      0,
-    );
-
-    const transferencias = transferenciasResult.status === 'fulfilled'
-      ? asArray(transferenciasResult.value?.data)
-      : [];
-
-    let comprasActivas = 0;
-    if (posicionesResult.status === 'fulfilled') {
-      const payload = posicionesResult.value?.data;
-      const posiciones = Array.isArray(payload)
-        ? payload
-        : Array.isArray(payload?.posiciones)
-          ? payload.posiciones
-          : [];
-
-      setWalletPositions(posiciones);
-      setPositionsSummary({
-        totalPosiciones: toNumber(payload?.resumen?.totalPosiciones ?? posiciones.length),
-        valorTotal: toNumber(payload?.resumen?.valorTotal),
-        gananciaTotal: toNumber(payload?.resumen?.gananciaTotal),
-      });
-      setPositionsSource(payload?.source || 'local');
-
-      if (Array.isArray(payload)) {
-        comprasActivas = payload.length;
-      } else if (Array.isArray(payload?.posiciones)) {
-        comprasActivas = payload.posiciones.length;
-      }
-    } else {
-      setWalletPositions([]);
-      setPositionsSummary({ totalPosiciones: 0, valorTotal: 0, gananciaTotal: 0 });
-      setPositionsSource('local');
+  const loadWalletStats = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setStatsLoading(true);
     }
 
-    setWalletStats({
-      saldoDisponible: saldoChainActual,
-      recargasExitosas: recargasExitosas.length,
-      totalRecargado,
-      transferencias: transferencias.length,
-      comprasActivas,
-    });
+    try {
+      const [perfilResult, recargasResult, transferenciasResult, posicionesResult] = await Promise.allSettled([
+        typeof refrescarPerfil === 'function' ? refrescarPerfil() : Promise.resolve(usuario),
+        depositoAPI.obtenerDepositos(),
+        transferAPI.obtenerHistorial(),
+        inversionesAPI.obtenerPosiciones(),
+      ]);
 
-    setStatsLoading(false);
-  }, [refrescarPerfil, usuario]);
+      const perfilActual = perfilResult.status === 'fulfilled' ? perfilResult.value : usuario;
+      const saldoChainActual = toNumber(perfilActual?.saldoChain);
+
+      const recargas = recargasResult.status === 'fulfilled' ? asArray(recargasResult.value?.data) : [];
+      const recargasExitosas = recargas.filter((recarga) => String(recarga.estado || '').toLowerCase() === 'exitosa');
+      const totalRecargado = recargasExitosas.reduce(
+        (sum, recarga) => sum + toNumber(recarga.montoNeto ?? recarga.monto),
+        0,
+      );
+
+      const transferencias = transferenciasResult.status === 'fulfilled'
+        ? asArray(transferenciasResult.value?.data)
+        : [];
+
+      let comprasActivas = 0;
+      let posiciones = [];
+      let resumen = { totalPosiciones: 0, valorTotal: 0, gananciaTotal: 0 };
+      let source = 'local';
+
+      if (posicionesResult.status === 'fulfilled') {
+        const payload = posicionesResult.value?.data;
+        posiciones = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.posiciones)
+            ? payload.posiciones
+            : [];
+
+        resumen = {
+          totalPosiciones: toNumber(payload?.resumen?.totalPosiciones ?? posiciones.length),
+          valorTotal: toNumber(payload?.resumen?.valorTotal),
+          gananciaTotal: toNumber(payload?.resumen?.gananciaTotal),
+        };
+        source = payload?.source || 'local';
+
+        if (Array.isArray(payload)) {
+          comprasActivas = payload.length;
+        } else if (Array.isArray(payload?.posiciones)) {
+          comprasActivas = payload.posiciones.length;
+        }
+      }
+
+      const newStats = {
+        saldoDisponible: saldoChainActual,
+        recargasExitosas: recargasExitosas.length,
+        totalRecargado,
+        transferencias: transferencias.length,
+        comprasActivas,
+      };
+
+      const updateState = () => {
+        setWalletStats(newStats);
+        setWalletPositions(posiciones);
+        setPositionsSummary(resumen);
+        setPositionsSource(source);
+      };
+
+      if (silent) {
+        startTransition(updateState);
+      } else {
+        updateState();
+      }
+    } finally {
+      if (!silent) {
+        setStatsLoading(false);
+      }
+    }
+  }, [refrescarPerfil, usuario?.id, startTransition]);
 
   useEffect(() => {
     const state = location.state || {};
@@ -325,11 +345,19 @@ function Saldos() {
   }, [location.state]);
 
   useEffect(() => {
-    loadWalletStats();
+    const isFirstLoad = initialWalletLoadRef.current;
+    initialWalletLoadRef.current = false;
+    if (isFirstLoad) {
+      loadWalletStats({ silent: false });
+    } else {
+      loadWalletStats({ silent: true });
+    }
   }, [loadWalletStats]);
 
   useEffect(() => {
-    const timer = setInterval(loadWalletStats, 15000);
+    const timer = setInterval(() => {
+      loadWalletStats({ silent: true });
+    }, 45000);
     return () => clearInterval(timer);
   }, [loadWalletStats]);
 
@@ -827,7 +855,7 @@ function Saldos() {
                     {cryptoHoldingsSummary.gananciaTotal >= 0 ? '+' : '-'}USD {formatUsd(Math.abs(cryptoHoldingsSummary.gananciaTotal))}
                   </Typography>
                   <Typography sx={{ mt: 0.7, color: 'rgba(226,232,240,0.68)', fontSize: '0.9rem' }}>
-                    Se actualiza cada 15 segundos mientras estás en la wallet.
+                    Se actualiza silenciosamente cada 45 segundos mientras estás en la wallet.
                   </Typography>
                 </CardContent>
               </Card>
