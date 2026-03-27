@@ -9,6 +9,7 @@ const {
   obtenerCotizacionAccion,
   buscarAcciones,
   obtenerHistorialPrecios,
+  obtenerPNLActualizado,
 } = require('../controllers/inversionesController');
 
 // Todas las rutas requieren autenticación
@@ -34,5 +35,8 @@ router.get('/buscar', buscarAcciones);
 
 // Obtener historial de precios (para gráficos)
 router.get('/historial/:symbol', obtenerHistorialPrecios);
+
+// Obtener P&L actualizado
+router.get('/pnl/actualizado', obtenerPNLActualizado);
 
 module.exports = router;

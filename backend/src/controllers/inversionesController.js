@@ -2,6 +2,7 @@ const Inversion = require('../models/Inversion');
 const User = require('../models/User');
 const { sequelize } = require('../config/database');
 const alpacaService = require('../services/alpacaService');
+const pnlUpdateService = require('../services/pnlUpdateService');
 const axios = require('axios');
 
 const normalizeCryptoSymbol = (symbol) => {
@@ -585,6 +586,26 @@ const obtenerHistorialPrecios = async (req, res) => {
   }
 };
 
+// Obtener P&L actualizado de todas las inversiones abiertas
+const obtenerPNLActualizado = async (req, res) => {
+  try {
+    const usuarioId = req.usuario.id;
+
+    const resultado = await pnlUpdateService.actualizarPNLUsuario({ usuarioId });
+
+    res.json({
+      success: true,
+      ...resultado,
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo P&L actualizado:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   comprarAccion,
   venderAccion,
@@ -593,4 +614,5 @@ module.exports = {
   obtenerCotizacionAccion,
   buscarAcciones,
   obtenerHistorialPrecios,
+  obtenerPNLActualizado,
 };
