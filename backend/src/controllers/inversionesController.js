@@ -2,6 +2,68 @@ const Inversion = require('../models/Inversion');
 const User = require('../models/User');
 const { sequelize } = require('../config/database');
 const alpacaService = require('../services/alpacaService');
+const axios = require('axios');
+
+const normalizeCryptoSymbol = (symbol) => {
+  const normalized = String(symbol || '').trim().toUpperCase();
+  if (!normalized) return normalized;
+  if (normalized.includes('/')) return normalized;
+  return `${normalized}/USD`;
+};
+
+const isCryptoSymbol = (symbol) => String(symbol || '').includes('/');
+
+const obtenerCotizacionCryptoFallback = async (symbol) => {
+  const base = normalizeCryptoSymbol(symbol).split('/')[0];
+  const response = await axios.get('https://min-api.cryptocompare.com/data/price', {
+    params: { fsym: base, tsyms: 'USD' },
+    timeout: 7000,
+  });
+
+  const precio = Number(response?.data?.USD || 0);
+  if (!Number.isFinite(precio) || precio <= 0) {
+    throw new Error(`No se pudo obtener cotizacion fallback para ${base}`);
+  }
+
+  return {
+    symbol: `${base}/USD`,
+    precio,
+    precioCompra: precio,
+    precioVenta: precio,
+    assetClass: 'crypto',
+    source: 'fallback',
+  };
+};
+
+const obtenerCotizacionResiliente = async (symbol) => {
+  const normalized = String(symbol || '').toUpperCase();
+  try {
+    return await alpacaService.obtenerCotizacion(normalized);
+  } catch (error) {
+    if (!isCryptoSymbol(normalized)) {
+      throw error;
+    }
+    return obtenerCotizacionCryptoFallback(normalized);
+  }
+};
+
+const obtenerCotizacionesResilientes = async (symbols) => {
+  const entries = await Promise.all(
+    symbols.map(async (symbol) => {
+      try {
+        const quote = await obtenerCotizacionResiliente(symbol);
+        return [symbol, quote];
+      } catch (_) {
+        return [symbol, null];
+      }
+    }),
+  );
+
+  return entries.reduce((acc, [symbol, quote]) => {
+    acc[symbol] = quote;
+    return acc;
+  }, {});
+};
 
 // Comprar activo
 const comprarAccion = async (req, res) => {
@@ -36,16 +98,29 @@ const comprarAccion = async (req, res) => {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     }
 
-    // Validar que el activo existe
-    const symbolUpper = symbol.toUpperCase();
-    const activo = await alpacaService.validarAccion(symbolUpper);
+    // Definir activo segun clase solicitada.
+    const symbolUpper = String(symbol || '').toUpperCase();
+    const assetClassNormalized = String(assetClass || '').toLowerCase();
+    const esCryptoSolicitado = assetClassNormalized === 'crypto';
 
-    if (assetClass === 'crypto' && activo.assetClass !== 'crypto') {
+    let activo;
+    if (esCryptoSolicitado) {
+      activo = {
+        valid: true,
+        symbol: normalizeCryptoSymbol(symbolUpper),
+        assetClass: 'crypto',
+        nombre: normalizeCryptoSymbol(symbolUpper),
+      };
+    } else {
+      activo = await alpacaService.validarAccion(symbolUpper);
+    }
+
+    if (esCryptoSolicitado && activo.assetClass !== 'crypto') {
       return res.status(400).json({ mensaje: 'Esta wallet solo permite compras de pares crypto reales.' });
     }
 
     // Obtener precio actual
-    const cotizacion = await alpacaService.obtenerCotizacion(activo.symbol);
+    const cotizacion = await obtenerCotizacionResiliente(activo.symbol);
     const precioCompra = cotizacion.precioCompra || cotizacion.precio;
     const costoEstimado = parseFloat((precioCompra * cantidadNum).toFixed(2));
     const costoValidacion = parseFloat((costoEstimado * (activo.assetClass === 'crypto' ? 1.05 : 1.02)).toFixed(2));
@@ -63,6 +138,47 @@ const comprarAccion = async (req, res) => {
         saldoDisponible,
         faltante: parseFloat((costoValidacion - saldoDisponible).toFixed(2)),
         tipoSaldo: esCrypto ? 'saldoChain' : 'saldo',
+      });
+    }
+
+    // Crypto sin Alpaca: compra directa usando saldo CHAIN.
+    if (esCrypto) {
+      const cantidadEjecutada = cantidadNum;
+      const precioEjecutado = precioCompra;
+      const costoTotal = parseFloat((precioEjecutado * cantidadEjecutada).toFixed(2));
+
+      let inversion;
+      await sequelize.transaction(async (transaction) => {
+        usuario.saldoChain = parseFloat((saldoDisponible - costoTotal).toFixed(2));
+        await usuario.save({ transaction });
+
+        inversion = await Inversion.create({
+          usuarioId,
+          symbol: activo.symbol,
+          cantidad: cantidadEjecutada,
+          precioCompra: precioEjecutado,
+          costoTotal,
+          estado: 'abierta',
+          tipo: 'compra',
+          fechaCompra: new Date(),
+        }, { transaction });
+      });
+
+      console.log(`✅ Compra CHAIN ejecutada (sin Alpaca) - Nuevo saldo CHAIN: $${usuario.saldoChain}`);
+
+      return res.json({
+        mensaje: `✅ COMPRA EJECUTADA CON SALDO CHAIN: ${cantidadEjecutada} ${activo.symbol}`,
+        modo: 'chain_local',
+        inversion: {
+          id: inversion.id,
+          symbol: inversion.symbol,
+          cantidad: inversion.cantidad,
+          precioCompra: inversion.precioCompra,
+          costoTotal: inversion.costoTotal,
+          fechaCompra: inversion.fechaCompra,
+        },
+        nuevoSaldo: usuario.saldo,
+        nuevoSaldoChain: parseFloat(usuario.saldoChain || 0),
       });
     }
 
@@ -302,7 +418,7 @@ const listarPosicionesAbiertas = async (req, res) => {
 
     // Obtener precios actuales
     const symbols = [...new Set(posiciones.map(p => p.symbol))];
-    const cotizaciones = await alpacaService.obtenerCotizaciones(symbols);
+    const cotizaciones = await obtenerCotizacionesResilientes(symbols);
 
     // Calcular valores actuales
     const posicionesConValor = posiciones.map(pos => {
@@ -367,7 +483,7 @@ const obtenerPortfolio = async (req, res) => {
     // Obtener precios actuales para posiciones abiertas
     const symbols = [...new Set(posicionesAbiertas.map(p => p.symbol))];
     const cotizaciones = symbols.length > 0 
-      ? await alpacaService.obtenerCotizaciones(symbols)
+      ? await obtenerCotizacionesResilientes(symbols)
       : {};
 
     // Calcular valores
@@ -419,7 +535,7 @@ const obtenerCotizacionAccion = async (req, res) => {
       return res.status(400).json({ mensaje: 'Symbol requerido' });
     }
 
-    const cotizacion = await alpacaService.obtenerCotizacion(symbol.toUpperCase());
+    const cotizacion = await obtenerCotizacionResiliente(symbol.toUpperCase());
 
     res.json(cotizacion);
   } catch (error) {

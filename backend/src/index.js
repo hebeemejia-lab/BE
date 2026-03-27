@@ -25,6 +25,7 @@ const inversionesRoutes = require('./routes/inversionesRoutes');
 const fundingAlpacaRoutes = require('./routes/fundingAlpacaRoutes');
 const expensesRoutes = require('./routes/expenses');
 const forumRoutes = require('./routes/forumRoutes');
+const bybitService = require('./services/bybitService');
 
 const app = express();
 
@@ -130,6 +131,49 @@ app.get('/debug/routes', (req, res) => {
       ],
     }
   });
+});
+
+app.get('/debug/bybit', async (req, res) => {
+  const configuredToken = String(process.env.BYBIT_DEBUG_TOKEN || '').trim();
+  const requestToken = String(req.query.token || '').trim();
+
+  if (configuredToken && configuredToken !== requestToken) {
+    return res.status(401).json({ mensaje: 'Token de debug inválido' });
+  }
+
+  const key = String(process.env.BYBIT_API_KEY || '');
+  const secret = String(process.env.BYBIT_API_SECRET || '');
+  const result = {
+    env: {
+      bybitBaseUrl: process.env.BYBIT_BASE_URL || null,
+      bybitKeyLength: key.length,
+      bybitSecretLength: secret.length,
+      bybitKeyPreview: key ? `${key.slice(0, 4)}***${key.slice(-3)}` : '',
+    },
+    checks: {
+      public: { ok: false, error: null, data: null },
+      private: { ok: false, error: null, rows: null },
+    },
+    timestamp: new Date().toISOString(),
+  };
+
+  try {
+    const quote = await bybitService.getSpotPriceUsd('BTC');
+    result.checks.public.ok = true;
+    result.checks.public.data = quote;
+  } catch (error) {
+    result.checks.public.error = error.message;
+  }
+
+  try {
+    const rows = await bybitService.queryWithdrawalRecords({ limit: 1 });
+    result.checks.private.ok = true;
+    result.checks.private.rows = Array.isArray(rows) ? rows.length : 0;
+  } catch (error) {
+    result.checks.private.error = error.message;
+  }
+
+  return res.status(200).json(result);
 });
 
 // Endpoint de prueba para recargas

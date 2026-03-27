@@ -52,9 +52,15 @@ const buildFundingReference = () => `ALPACA-ACH-${Date.now()}`;
 const isSettledFunding = (status) => status === 'settled';
 const isFailedFunding = (status) => status === 'failed' || status === 'canceled';
 
-const moveSaldoToTransit = (usuario, amount) => {
+const resolveSourceBalanceField = (sourceBalance) => (
+  String(sourceBalance || '').toLowerCase() === 'saldochain' ? 'saldoChain' : 'saldo'
+);
+
+const getSaldoLabel = (sourceField) => (sourceField === 'saldoChain' ? 'CHAIN' : 'BE');
+
+const moveSaldoToTransit = (usuario, amount, sourceField = 'saldo') => {
   const monto = toNumberOrZero(amount);
-  const saldoDisponible = toNumberOrZero(usuario.saldo);
+  const saldoDisponible = toNumberOrZero(usuario[sourceField]);
   const saldoEnTransito = toNumberOrZero(usuario.saldoEnTransitoAlpaca);
 
   if (monto <= 0) {
@@ -62,16 +68,16 @@ const moveSaldoToTransit = (usuario, amount) => {
   }
 
   if (saldoDisponible < monto) {
-    throw new Error('Saldo BE insuficiente para iniciar funding');
+    throw new Error(`Saldo ${getSaldoLabel(sourceField)} insuficiente para iniciar funding`);
   }
 
-  usuario.saldo = parseFloat((saldoDisponible - monto).toFixed(2));
+  usuario[sourceField] = parseFloat((saldoDisponible - monto).toFixed(2));
   usuario.saldoEnTransitoAlpaca = parseFloat((saldoEnTransito + monto).toFixed(2));
 };
 
-const releaseTransitToSaldo = (usuario, amount) => {
+const releaseTransitToSaldo = (usuario, amount, sourceField = 'saldo') => {
   const monto = toNumberOrZero(amount);
-  const saldoDisponible = toNumberOrZero(usuario.saldo);
+  const saldoDisponible = toNumberOrZero(usuario[sourceField]);
   const saldoEnTransito = toNumberOrZero(usuario.saldoEnTransitoAlpaca);
   const montoLiberado = Math.min(monto, saldoEnTransito);
 
@@ -79,7 +85,7 @@ const releaseTransitToSaldo = (usuario, amount) => {
     return 0;
   }
 
-  usuario.saldo = parseFloat((saldoDisponible + montoLiberado).toFixed(2));
+  usuario[sourceField] = parseFloat((saldoDisponible + montoLiberado).toFixed(2));
   usuario.saldoEnTransitoAlpaca = parseFloat((saldoEnTransito - montoLiberado).toFixed(2));
   return montoLiberado;
 };
@@ -129,6 +135,7 @@ const persistFundingState = async ({
   const statusCandidate = mapFundingLifecycleStatus(newStatus);
   const status = isSettledFunding(previousStatus) ? 'settled' : statusCandidate;
   const ledgerReleased = hasLedgerBeenReleased(fundingTransfer);
+  const sourceField = resolveSourceBalanceField(fundingTransfer?.metadata?.sourceBalance);
 
   fundingTransfer.status = status;
   fundingTransfer.providerStatus = providerStatus || fundingTransfer.providerStatus;
@@ -141,7 +148,7 @@ const persistFundingState = async ({
 
     // Libera el hold local solo una vez al confirmar settlement.
     if (!ledgerReleased) {
-      releaseTransitToSaldo(usuario, fundingTransfer.amount);
+      releaseTransitToSaldo(usuario, fundingTransfer.amount, sourceField);
       markLedgerReleased(fundingTransfer, 'settled');
     }
 
@@ -159,7 +166,7 @@ const persistFundingState = async ({
   if (isFailedFunding(status)) {
     // Si falla/cancela, se devuelve el hold local al saldo disponible.
     if (!ledgerReleased && !isSettledFunding(previousStatus)) {
-      releaseTransitToSaldo(usuario, fundingTransfer.amount);
+      releaseTransitToSaldo(usuario, fundingTransfer.amount, sourceField);
       markLedgerReleased(fundingTransfer, 'failed');
     }
 
@@ -409,8 +416,9 @@ const desvincularCuenta = async (req, res) => {
 // Recargar desde cuenta bancaria
 const recargarDesdeBanco = async (req, res) => {
   try {
-    const { cuentaId, monto } = req.body;
+    const { cuentaId, monto, sourceBalance } = req.body;
     const usuarioId = req.usuario.id;
+    const sourceField = resolveSourceBalanceField(sourceBalance);
 
     const montoNum = toNumber(monto);
     if (!cuentaId || !Number.isFinite(montoNum) || montoNum <= 0) {
@@ -441,11 +449,12 @@ const recargarDesdeBanco = async (req, res) => {
     const usuario = await User.findByPk(usuarioId);
     ensureUsuarioConCuentaAlpacaActiva(usuario);
 
-    const saldoDisponible = toNumberOrZero(usuario.saldo);
+    const saldoDisponible = toNumberOrZero(usuario[sourceField]);
     if (montoNum > saldoDisponible) {
       return res.status(400).json({
-        mensaje: 'Saldo BE insuficiente para iniciar funding a Alpaca',
+        mensaje: `Saldo ${getSaldoLabel(sourceField)} insuficiente para iniciar funding a Alpaca`,
         saldoDisponible,
+        fuenteSaldo: sourceField,
         montoSolicitado: montoNum,
         faltante: parseFloat((montoNum - saldoDisponible).toFixed(2)),
       });
@@ -457,7 +466,7 @@ const recargarDesdeBanco = async (req, res) => {
     let fundingTransfer;
 
     await sequelize.transaction(async (transaction) => {
-      moveSaldoToTransit(usuario, montoNum);
+      moveSaldoToTransit(usuario, montoNum, sourceField);
       await usuario.save({ transaction });
 
       // Ledger local: recarga pendiente
@@ -496,6 +505,7 @@ const recargarDesdeBanco = async (req, res) => {
         metadata: {
           banco: cuenta.banco,
           ultimosDigitos: cuenta.numerosCuenta,
+          sourceBalance: sourceField,
           ledgerReservado: true,
           ledgerReservadoAt: new Date().toISOString(),
         },
@@ -557,7 +567,8 @@ const recargarDesdeBanco = async (req, res) => {
       estado: fundingTransfer.status,
       providerStatus: fundingTransfer.providerStatus,
       montoSolicitado: montoNum,
-      saldoDisponible: parseFloat(usuario.saldo),
+      saldoDisponible: parseFloat(usuario[sourceField] || 0),
+      fuenteSaldo: sourceField,
       saldoEnTransitoAlpaca: parseFloat(usuario.saldoEnTransitoAlpaca),
     };
 

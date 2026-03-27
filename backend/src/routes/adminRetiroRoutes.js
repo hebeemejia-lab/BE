@@ -7,6 +7,7 @@ const {
   aprobarSolicitudRetiroManual,
   rechazarSolicitudRetiroManual,
   obtenerEstadoSolicitudRetiro,
+  sincronizarSolicitudRetiroBybit,
 } = require('../controllers/retiroController');
 
 // Todas las rutas requieren autenticación y rol de admin
@@ -21,6 +22,9 @@ router.get('/solicitudes-retiro/:solicitudId/estado', obtenerEstadoSolicitudReti
 
 // Aprobar solicitud de retiro
 router.post('/solicitudes-retiro/:solicitudId/aprobar', aprobarSolicitudRetiroManual);
+
+// Sincronizar retiro crypto con Bybit
+router.post('/solicitudes-retiro/:solicitudId/sincronizar-bybit', sincronizarSolicitudRetiroBybit);
 
 // Rechazar solicitud de retiro
 router.post('/solicitudes-retiro/:solicitudId/rechazar', rechazarSolicitudRetiroManual);

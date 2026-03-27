@@ -33,7 +33,7 @@ import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
 import SouthWestRoundedIcon from '@mui/icons-material/SouthWestRounded';
 import { AuthContext } from '../context/AuthContext';
-import { depositoAPI, inversionesAPI, transferAPI } from '../services/api';
+import { bankAccountAPI, depositoAPI, inversionesAPI, transferAPI } from '../services/api';
 
 const CRYPTO_COINS = [
   { value: 'BTC',  label: 'Bitcoin (BTC)',  networks: ['Bitcoin Network'] },
@@ -124,8 +124,16 @@ const getErrorMessage = (error, fallback) =>
   || error?.message
   || fallback;
 
+const isBrokerFundsInsufficient = (error) =>
+  String(getErrorMessage(error, '') || '').toLowerCase().includes('fondos insuficientes en la cuenta real de trading');
+
+const getFundingAmountFromError = (error) => {
+  const costoValidacion = Number(error?.response?.data?.costoValidacion);
+  return Number.isFinite(costoValidacion) && costoValidacion > 0 ? costoValidacion : 0;
+};
+
 function Saldos() {
-  const { usuario } = useContext(AuthContext);
+  const { usuario, refrescarPerfil } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -136,7 +144,7 @@ function Saldos() {
   const [processing, setProcessing] = useState(false);
   const [statsLoading, setStatsLoading] = useState(true);
   const [walletStats, setWalletStats] = useState({
-    saldoDisponible: toNumber(usuario?.saldo),
+    saldoDisponible: toNumber(usuario?.saldoChain),
     recargasExitosas: 0,
     totalRecargado: 0,
     transferencias: 0,
@@ -227,11 +235,15 @@ function Saldos() {
   const loadWalletStats = useCallback(async () => {
     setStatsLoading(true);
 
-    const [recargasResult, transferenciasResult, posicionesResult] = await Promise.allSettled([
+    const [perfilResult, recargasResult, transferenciasResult, posicionesResult] = await Promise.allSettled([
+      typeof refrescarPerfil === 'function' ? refrescarPerfil() : Promise.resolve(usuario),
       depositoAPI.obtenerDepositos(),
       transferAPI.obtenerHistorial(),
       inversionesAPI.obtenerPosiciones(),
     ]);
+
+    const perfilActual = perfilResult.status === 'fulfilled' ? perfilResult.value : usuario;
+    const saldoChainActual = toNumber(perfilActual?.saldoChain);
 
     const recargas = recargasResult.status === 'fulfilled' ? asArray(recargasResult.value?.data) : [];
     const recargasExitosas = recargas.filter((recarga) => String(recarga.estado || '').toLowerCase() === 'exitosa');
@@ -273,7 +285,7 @@ function Saldos() {
     }
 
     setWalletStats({
-      saldoDisponible: toNumber(usuario?.saldo),
+      saldoDisponible: saldoChainActual,
       recargasExitosas: recargasExitosas.length,
       totalRecargado,
       transferencias: transferencias.length,
@@ -281,7 +293,7 @@ function Saldos() {
     });
 
     setStatsLoading(false);
-  }, [usuario?.saldo]);
+  }, [refrescarPerfil, usuario]);
 
   useEffect(() => {
     const state = location.state || {};
@@ -459,11 +471,48 @@ function Saldos() {
       }
 
       setProcessing(true);
-      const response = await inversionesAPI.comprar({
+      const buyPayload = {
         symbol: buyForm.symbol.trim().toUpperCase(),
         cantidad: Number(buyForm.cantidad),
         assetClass: buyForm.assetClass,
-      });
+      };
+
+      let response;
+      try {
+        response = await inversionesAPI.comprar(buyPayload);
+      } catch (buyError) {
+        const puedeAutoFunding = buyForm.assetClass === 'crypto' && isBrokerFundsInsufficient(buyError);
+        if (!puedeAutoFunding) {
+          throw buyError;
+        }
+
+        const montoFunding = getFundingAmountFromError(buyError);
+        if (!isPositiveAmount(montoFunding)) {
+          throw buyError;
+        }
+
+        const cuentaDefaultResponse = await bankAccountAPI.obtenerDefault();
+        const cuentaDefaultId = cuentaDefaultResponse?.data?.id;
+
+        if (!cuentaDefaultId) {
+          openFeedback('error', 'No tienes cuenta bancaria default para fondear Alpaca automaticamente.');
+          return;
+        }
+
+        const fundingResponse = await bankAccountAPI.depositarEnAlpaca({
+          cuentaId: cuentaDefaultId,
+          monto: montoFunding,
+          sourceBalance: 'saldoChain',
+        });
+
+        const fundingStatus = String(fundingResponse?.data?.estado || '').toLowerCase();
+        if (fundingStatus && fundingStatus !== 'settled') {
+          openFeedback('warning', 'Funding enviado a Alpaca. Espera settlement y vuelve a intentar la compra.');
+          return;
+        }
+
+        response = await inversionesAPI.comprar(buyPayload);
+      }
 
       openFeedback('success', response?.data?.mensaje || 'Compra ejecutada correctamente.');
       setActiveFlow(null);
