@@ -612,10 +612,11 @@ function Saldos() {
         return;
       }
 
-      const montoActivo = Number(withdrawForm.monto);
-      const saldoActivoDisponible = toNumber(selectedWithdrawHolding?.cantidad);
-      if (montoActivo > saldoActivoDisponible) {
-        openFeedback('error', `No tienes suficiente ${withdrawForm.coin} disponible para este retiro.`);
+      // ✅ Validar contra saldoChain (USD) desde el perfil
+      const montoUsd = Number(withdrawForm.monto);
+      const saldoChainDisponible = toNumber(usuario?.saldoChain);
+      if (montoUsd > saldoChainDisponible) {
+        openFeedback('error', `Saldo CHAIN insuficiente. Necesitas USD ${montoUsd.toFixed(2)}, tienes USD ${saldoChainDisponible.toFixed(2)}.`);
         return;
       }
 
@@ -624,7 +625,7 @@ function Saldos() {
         walletAddress: addr,
         coin:          withdrawForm.coin,
         network:       withdrawForm.network,
-        monto:         montoActivo,
+        monto:         montoUsd,
       });
 
       openFeedback('success', response?.data?.mensaje || 'Retiro solicitado correctamente.');
@@ -1365,15 +1366,13 @@ function Saldos() {
 
             <TextField
               fullWidth
-              label="Monto a retirar"
+              label="Monto a retirar (USD)"
               type="number"
               value={withdrawForm.monto}
               onChange={(e) => setWithdrawForm((prev) => ({ ...prev, monto: e.target.value }))}
-              inputProps={{ min: 0.0001, step: '0.0001', 'aria-label': 'Monto a retirar en activo' }}
-              InputProps={{ startAdornment: <InputAdornment position="start">{withdrawForm.coin}</InputAdornment> }}
-              helperText={selectedWithdrawHolding
-                ? `Saldo disponible: ${formatQuantity(selectedWithdrawHolding.cantidad)} ${withdrawForm.coin} (~USD ${formatUsd(selectedWithdrawHolding.valorActual)})`
-                : `No tienes saldo disponible en ${withdrawForm.coin}.`}
+              inputProps={{ min: 0.01, step: '0.01', 'aria-label': 'Monto a retirar en USD' }}
+              InputProps={{ startAdornment: <InputAdornment position="start">USD</InputAdornment> }}
+              helperText={`Saldo disponible (CHAIN): USD ${formatUsd(toNumber(usuario?.saldoChain))}`}
             />
           </Stack>
         </DialogContent>
