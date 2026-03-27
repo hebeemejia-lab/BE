@@ -80,6 +80,8 @@ export const inversionesAPI = {
   obtenerPortfolio: () => API.get('/inversiones/portfolio'),
   buscarActivos: (query, options = {}) => API.get('/inversiones/buscar', { params: { q: query, ...options } }),
   obtenerCotizacion: (symbol) => API.get(`/inversiones/cotizacion/${encodeURIComponent(symbol)}`),
+  obtenerPNLActualizado: () => API.get('/inversiones/pnl/actualizado'),
+  obtenerComisiones: () => API.get('/inversiones/comisiones'),
 };
 
 // Cuentas Bancarias

@@ -5,6 +5,7 @@ const Loan = require('./Loan');
 const BankAccount = require('./BankAccount');
 const CuotaPrestamo = require('./CuotaPrestamo');
 const Inversion = require('./Inversion');
+const Comision = require('./Comision');
 const FundingTransfer = require('./FundingTransfer');
 const Transaction = require('./Transaction');
 const Budget = require('./Budget');
@@ -53,6 +54,26 @@ User.hasMany(Inversion, {
 
 Inversion.belongsTo(User, {
   foreignKey: 'usuarioId'
+});
+
+// Usuario tiene muchas comisiones cobradas
+User.hasMany(Comision, {
+  foreignKey: 'usuarioId',
+  as: 'comisiones'
+});
+
+Comision.belongsTo(User, {
+  foreignKey: 'usuarioId'
+});
+
+// Inversion puede tener comisiones asociadas
+Inversion.hasMany(Comision, {
+  foreignKey: 'inversionId',
+  as: 'comisiones'
+});
+
+Comision.belongsTo(Inversion, {
+  foreignKey: 'inversionId'
 });
 
 // Usuario tiene muchas transferencias de fondeo (BE -> Alpaca)
@@ -155,6 +176,7 @@ module.exports = {
   BankAccount,
   CuotaPrestamo,
   Inversion,
+  Comision,
   FundingTransfer,
   Transaction,
   Budget,

@@ -144,7 +144,11 @@ export default function TradingPanel() {
         cantidad:   unidades,
         assetClass: activeClass,
       });
-      setMensaje({ ok: true, text: res.data?.mensaje || '✅ Orden ejecutada correctamente' });
+      const recibo = res.data?.recibo;
+      const textoRecibo = recibo
+        ? `\nComisión cobrada: ${recibo.comisionPct || '1.5%'} (USD ${Number(recibo.comisionUSD || 0).toFixed(2)}).`
+        : '';
+      setMensaje({ ok: true, text: `${res.data?.mensaje || '✅ Orden ejecutada correctamente'}${textoRecibo}` });
       if (res.data?.nuevoSaldo != null) setSaldoBe(parseFloat(res.data.nuevoSaldo || 0));
       if (res.data?.nuevoSaldoChain != null) setSaldoChain(parseFloat(res.data.nuevoSaldoChain || 0));
       setCantidad('');
@@ -159,14 +163,18 @@ export default function TradingPanel() {
   };
 
   const handleVender = async (inversionId, symbol) => {
-    const confirmado = window.confirm(`¿Confirmas vender ${symbol} ahora?\n\nEsta es una orden REAL en Alpaca.`);
+    const confirmado = window.confirm(`¿Confirmas vender ${symbol} ahora?\n\nEsta es una orden REAL ejecutada en broker activo (Bybit/Alpaca).`);
     if (!confirmado) return;
 
     setSellingId(inversionId);
     setMensaje(null);
     try {
       const res = await inversionesAPI.vender({ inversionId });
-      setMensaje({ ok: true, text: res.data?.mensaje || `✅ Venta ejecutada de ${symbol}` });
+      const recibo = res.data?.recibo;
+      const textoRecibo = recibo
+        ? `\nComisión cobrada: ${recibo.comisionPct || '1.5%'} (USD ${Number(recibo.comisionUSD || 0).toFixed(2)}).`
+        : '';
+      setMensaje({ ok: true, text: `${res.data?.mensaje || `✅ Venta ejecutada de ${symbol}`}${textoRecibo}` });
       if (res.data?.nuevoSaldo != null) setSaldoBe(parseFloat(res.data.nuevoSaldo || 0));
       if (res.data?.nuevoSaldoChain != null) setSaldoChain(parseFloat(res.data.nuevoSaldoChain || 0));
       fetchPosiciones();
