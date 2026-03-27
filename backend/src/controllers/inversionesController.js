@@ -4,6 +4,7 @@ const User = require('../models/User');
 const { sequelize } = require('../config/database');
 const alpacaService = require('../services/alpacaService');
 const bybitService = require('../services/bybitService');
+const { reconcileOpenPositions } = require('../services/inversionRepairService');
 const pnlUpdateService = require('../services/pnlUpdateService');
 const axios = require('axios');
 
@@ -564,13 +565,23 @@ const listarPosicionesAbiertas = async (req, res) => {
       attributes: ['id', 'alpacaAccountId'],
     });
 
-    const posiciones = await Inversion.findAll({
+    const posicionesRaw = await Inversion.findAll({
       where: {
         usuarioId,
         estado: 'abierta',
       },
       order: [['fechaCompra', 'DESC']],
     });
+
+    const { validPositions: posiciones, repairedIds, invalidIds } = await reconcileOpenPositions(posicionesRaw);
+
+    if (repairedIds.length > 0) {
+      console.log(`🛠️ Posiciones abiertas reparadas al listar: ${repairedIds.join(', ')}`);
+    }
+
+    if (invalidIds.length > 0) {
+      console.warn(`⚠️ Posiciones abiertas ocultadas por cantidad inválida: ${invalidIds.join(', ')}`);
+    }
 
     if (posiciones.length === 0 && usuario?.alpacaAccountId) {
       const posicionesBroker = await alpacaService.listarPosicionesCuentaBroker(usuario.alpacaAccountId);
@@ -640,10 +651,20 @@ const obtenerPortfolio = async (req, res) => {
     const usuario = await User.findByPk(usuarioId);
 
     // Posiciones abiertas
-    const posicionesAbiertas = await Inversion.findAll({
+    const posicionesAbiertasRaw = await Inversion.findAll({
       where: { usuarioId, estado: 'abierta' },
       order: [['fechaCompra', 'DESC']],
     });
+
+    const { validPositions: posicionesAbiertas, repairedIds, invalidIds } = await reconcileOpenPositions(posicionesAbiertasRaw);
+
+    if (repairedIds.length > 0) {
+      console.log(`🛠️ Posiciones de portfolio reparadas: ${repairedIds.join(', ')}`);
+    }
+
+    if (invalidIds.length > 0) {
+      console.warn(`⚠️ Posiciones excluidas del portfolio por cantidad inválida: ${invalidIds.join(', ')}`);
+    }
 
     // Historial cerrado
     const historial = await Inversion.findAll({

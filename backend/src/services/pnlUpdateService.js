@@ -11,6 +11,7 @@
 const Inversion = require('../models/Inversion');
 const User = require('../models/User');
 const { obtenerCotizacionResiliente } = require('./cotizacionesService');
+const { reconcileOpenPositions } = require('./inversionRepairService');
 
 /**
  * Calcula la ganancia/pérdida NO REALIZADA actual de una inversión
@@ -46,12 +47,26 @@ const actualizarPNLUsuario = async ({ usuarioId, transaction = null }) => {
       throw new Error(`Usuario no encontrado: ${usuarioId}`);
     }
 
-    const inversionesAbiertas = await Inversion.findAll({
+    const inversionesAbiertasRaw = await Inversion.findAll({
       where: {
         usuarioId,
         estado: 'abierta',
       },
     });
+
+    const {
+      validPositions: inversionesAbiertas,
+      repairedIds,
+      invalidIds,
+    } = await reconcileOpenPositions(inversionesAbiertasRaw);
+
+    if (repairedIds.length > 0) {
+      console.log(`🛠️ Posiciones reparadas en P&L: ${repairedIds.join(', ')}`);
+    }
+
+    if (invalidIds.length > 0) {
+      console.warn(`⚠️ Posiciones excluidas del P&L por cantidad inválida: ${invalidIds.join(', ')}`);
+    }
 
     if (inversionesAbiertas.length === 0) {
       // Sin inversiones abiertas, nada que actualizar

@@ -103,6 +103,18 @@ const getPositionRootSymbol = (position) => getPositionSymbol(position).split('/
 
 const isCryptoPosition = (position) => getPositionSymbol(position).includes('/');
 
+const isRenderableCryptoPosition = (position) => {
+  if (!isCryptoPosition(position)) return false;
+
+  const quantity = getPositionQuantity(position);
+  const cost = getPositionCost(position);
+
+  // Posiciones crypto con cantidad 0 y costo > 0 son registros dañados.
+  if (quantity <= 0 && cost > 0) return false;
+
+  return quantity > 0;
+};
+
 const getPositionQuantity = (position) =>
   toNumber(position?.cantidad ?? position?.qty ?? position?.quantity);
 
@@ -188,7 +200,7 @@ function Saldos() {
 
   const cryptoHoldings = useMemo(() => {
     const grouped = walletPositions
-      .filter(isCryptoPosition)
+      .filter(isRenderableCryptoPosition)
       .reduce((accumulator, position) => {
         const rootSymbol = getPositionRootSymbol(position);
         if (!rootSymbol) return accumulator;
