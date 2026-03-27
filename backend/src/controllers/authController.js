@@ -23,6 +23,7 @@ const AUTH_SAFE_USER_ATTRIBUTES = [
   'telefono',
   'direccion',
   'saldo',
+  'saldoChain',
   'rol',
 ];
 
