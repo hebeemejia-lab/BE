@@ -82,6 +82,8 @@ export const inversionesAPI = {
   obtenerCotizacion: (symbol) => API.get(`/inversiones/cotizacion/${encodeURIComponent(symbol)}`),
   obtenerPNLActualizado: () => API.get('/inversiones/pnl/actualizado'),
   obtenerComisiones: () => API.get('/inversiones/comisiones'),
+  listarPosicionesCriptoWallet: () => API.get('/inversiones/wallet/posiciones-cripto'),
+  venderCriptoWallet: (datos) => API.post('/inversiones/wallet/vender-cripto', datos),
 };
 
 // Cuentas Bancarias

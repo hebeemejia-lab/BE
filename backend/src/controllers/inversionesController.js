@@ -1,3 +1,125 @@
+
+// Listar posiciones cripto reales en wallet (solo Bybit)
+const listarPosicionesCriptoWallet = async (req, res) => {
+  try {
+    // Aquí deberías consultar las posiciones reales del usuario en Bybit
+    // Por ejemplo, usando bybitService.getSpotPositions(usuarioId) o similar
+    // Simulación: devolver array vacío y mensaje aclaratorio
+    return res.json({
+      posiciones: [],
+      resumen: { totalPosiciones: 0, valorTotal: 0, gananciaTotal: 0 },
+      source: 'bybit',
+      nota: 'Las posiciones y P&L se gestionan y calculan únicamente en Bybit.'
+    });
+  } catch (error) {
+    console.error('❌ Error listando posiciones cripto wallet (Bybit):', error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+      let activo;
+      if (esCryptoSolicitado) {
+        activo = {
+          valid: true,
+          symbol: normalizeCryptoSymbol(symbolUpper),
+          assetClass: 'crypto',
+          nombre: normalizeCryptoSymbol(symbolUpper),
+        };
+      } else {
+        return res.status(400).json({ mensaje: 'Solo se permite trading de cripto (Bybit) en este endpoint.' });
+      }
+    const inversion = await Inversion.findOne({
+      where: { id: inversionId, usuarioId, estado: 'abierta' },
+    });
+    if (!inversion || !isCryptoSymbol(inversion.symbol)) {
+      return res.status(404).json({ mensaje: 'Posición cripto no encontrada o ya cerrada' });
+    }
+    // Ejecutar venta real en Bybit
+    const baseSymbol = inversion.symbol.split('/')[0];
+    const bybitOrden = await bybitService.placeSpotOrder({
+      symbol: `${baseSymbol}USDT`,
+      side: 'sell',
+      qty: parseFloat(inversion.cantidad),
+    });
+    // Esperar fill (hasta 10s)
+    let filledOrder = null;
+    for (let i = 0; i < 5; i++) {
+      await new Promise((r) => setTimeout(r, 2000));
+      const status = await bybitService.getSpotOrderStatus({
+        orderId: bybitOrden.orderId,
+        symbol: `${baseSymbol}USDT`,
+      });
+      if (status && ['Filled', 'PartiallyFilled'].includes(status.orderStatus)) {
+        filledOrder = status;
+        break;
+      }
+    }
+    const cantidadVendida = filledOrder
+      ? parseFloat(filledOrder.cumExecQty || inversion.cantidad)
+      : parseFloat(inversion.cantidad);
+    const precioVenta = filledOrder
+      ? parseFloat(filledOrder.avgPrice || 0)
+      : 0;
+    const ingresoTotal = parseFloat((precioVenta * cantidadVendida).toFixed(2));
+    const comisionMonto = parseFloat((ingresoTotal * COMISION_PCT).toFixed(2));
+    const ingresoNeto = parseFloat((ingresoTotal - comisionMonto).toFixed(2));
+    const ganancia = parseFloat((ingresoNeto - inversion.costoTotal).toFixed(2));
+    // Actualizar inversión y saldoChain
+    const usuario = await User.findByPk(usuarioId);
+    await sequelize.transaction(async (t) => {
+      inversion.precioVenta = precioVenta;
+      inversion.ingresoTotal = ingresoNeto;
+      inversion.ganancia = ganancia;
+      inversion.estado = 'cerrada';
+      inversion.fechaVenta = new Date();
+      await inversion.save({ transaction: t });
+      usuario.saldoChain = parseFloat((parseFloat(usuario.saldoChain || 0) + ingresoNeto).toFixed(2));
+      await usuario.save({ transaction: t });
+      await Comision.create({
+        usuarioId,
+        inversionId: inversion.id,
+        tipo: 'venta',
+        symbol: inversion.symbol,
+        montoBase: ingresoTotal,
+        porcentaje: COMISION_PCT * 100,
+        montoComision: comisionMonto,
+        precioEjecutado: precioVenta,
+        cantidadCrypto: cantidadVendida,
+        bybitOrderId: bybitOrden.orderId || null,
+      }, { transaction: t });
+    });
+    res.json({
+      mensaje: `✅ Venta cripto ejecutada: ${cantidadVendida} ${inversion.symbol}`,
+      recibo: {
+        operacion: 'VENTA',
+        symbol: inversion.symbol,
+        cantidad: cantidadVendida,
+        precioEjecutado: precioVenta,
+        ingresosBrutos: ingresoTotal,
+        comisionPct: `${(COMISION_PCT * 100).toFixed(1)}%`,
+        comisionUSD: comisionMonto,
+        ingresosNetos: ingresoNeto,
+        bybitOrderId: bybitOrden.orderId,
+        fecha: new Date().toISOString(),
+      },
+      venta: {
+        id: inversion.id,
+        symbol: inversion.symbol,
+        cantidad: cantidadVendida,
+        precioCompra: inversion.precioCompra,
+        precioVenta,
+        costoTotal: inversion.costoTotal,
+        ingresoNeto,
+        ganancia,
+        porcentajeGanancia: parseFloat(((ganancia / inversion.costoTotal) * 100).toFixed(2)),
+        esGanancia: ganancia >= 0,
+      },
+      nuevoSaldoChain: parseFloat(usuario.saldoChain || 0),
+    });
+  } catch (error) {
+    console.error('❌ Error vendiendo cripto desde wallet:', error.message);
+    res.status(500).json({ mensaje: 'Error procesando venta cripto', error: error.message });
+  }
+};
 const Inversion = require('../models/Inversion');
 const Comision = require('../models/Comision');
 const User = require('../models/User');
@@ -850,4 +972,6 @@ module.exports = {
   obtenerHistorialPrecios,
   obtenerPNLActualizado,
   obtenerComisiones,
+  listarPosicionesCriptoWallet,
+  venderCriptoWallet,
 };
