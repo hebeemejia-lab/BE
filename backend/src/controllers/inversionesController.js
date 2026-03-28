@@ -870,5 +870,4 @@ module.exports = {
   obtenerPNLActualizado,
   obtenerComisiones,
   listarPosicionesCriptoWallet,
-  venderCriptoWallet,
 };
