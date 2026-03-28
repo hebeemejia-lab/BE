@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { obtenerCotizacionMarketStack } = require('./marketstackService');
 
 // Alpaca Trading API Service
 // ⚠️ LIVE TRADING - DINERO REAL
@@ -284,25 +285,31 @@ const obtenerCotizacion = async (symbol) => {
   
   try {
     console.log(`📊 Obteniendo cotización de ${normalizedSymbol}...`);
-    
     const response = await axios.get(
       `${config.baseUrl}/v2/stocks/${normalizedSymbol}/quotes/latest`,
       { headers: getHeaders() }
     );
-
     const quote = response.data.quote;
     console.log(`✅ ${normalizedSymbol}: $${Number(quote.ap || quote.bp || 0).toFixed(2)}`);
-
     return formatQuote(normalizedSymbol, quote, 'us_equity');
   } catch (error) {
     console.error(`❌ Error obteniendo cotización de ${normalizedSymbol}:`, error.message);
-    
     // Fallback a última cotización de cierre
     try {
       const fallback = await obtenerUltimoCierre(normalizedSymbol);
       return fallback;
     } catch (fallbackError) {
-      throw new Error(`No se pudo obtener precio de ${normalizedSymbol}: ${error.message}`);
+      // Fallback a MarketStack
+      try {
+        const marketstack = await obtenerCotizacionMarketStack(normalizedSymbol);
+        return {
+          symbol: marketstack.symbol,
+          price: marketstack.price,
+          source: 'marketstack',
+        };
+      } catch (marketstackError) {
+        throw new Error(`No se pudo obtener precio de ${normalizedSymbol}: ${error.message}`);
+      }
     }
   }
 };
