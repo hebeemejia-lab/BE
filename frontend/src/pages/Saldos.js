@@ -35,6 +35,25 @@ import SouthWestRoundedIcon from '@mui/icons-material/SouthWestRounded';
 import { AuthContext } from '../context/AuthContext';
 import { bankAccountAPI, depositoAPI, inversionesAPI, transferAPI } from '../services/api';
 
+// Diálogo de confirmación para venta cripto
+function ConfirmSellDialog({ open, onClose, onConfirm, holding }) {
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle>Confirmar venta</DialogTitle>
+      <DialogContent>
+        <Typography>¿Deseas vender <b>{holding?.cantidad} {holding?.symbol}</b> por USD {holding ? holding.valorActual : ''}?</Typography>
+        <Typography sx={{ mt: 1, color: 'warning.main', fontSize: '0.95rem' }}>
+          Esta operación es real y se ejecutará en Bybit. El saldo se sumará a tu saldo CHAIN.
+        </Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="inherit">Cancelar</Button>
+        <Button onClick={onConfirm} color="error" variant="contained">Vender</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 const CRYPTO_COINS = [
   { value: 'BTC',  label: 'Bitcoin (BTC)',  networks: ['Bitcoin Network'] },
   { value: 'ETH',  label: 'Ethereum (ETH)', networks: ['ERC-20 (Ethereum)', 'Arbitrum', 'Optimism'] },
@@ -184,6 +203,34 @@ function Saldos() {
   const [buyQuoteLoading, setBuyQuoteLoading] = useState(false);
   const [feedback, setFeedback] = useState({ open: false, severity: 'success', message: '' });
   const [recibo, setRecibo] = useState(null); // receipt after buy/sell
+  const [sellDialog, setSellDialog] = useState({ open: false, holding: null });
+  // Acción de venta cripto
+  const handleSellCrypto = async (holding) => {
+    setSellDialog({ open: true, holding });
+  };
+
+  const confirmSellCrypto = async () => {
+    const { holding } = sellDialog;
+    if (!holding) return;
+    setProcessing(true);
+    try {
+      // Buscar la posición exacta (por symbol y cantidad)
+      const posiciones = await inversionesAPI.listarPosicionesCriptoWallet();
+      const pos = (posiciones.data?.posiciones || []).find(
+        (p) => p.symbol === holding.pair && Number(p.cantidad) === Number(holding.cantidad)
+      );
+      if (!pos) throw new Error('No se encontró la posición cripto para vender');
+      const res = await inversionesAPI.venderCriptoWallet({ inversionId: pos.id });
+      setRecibo(res.data?.recibo || null);
+      openFeedback('success', res.data?.mensaje || 'Venta ejecutada');
+      setSellDialog({ open: false, holding: null });
+      loadWalletStats();
+    } catch (error) {
+      openFeedback('error', error?.response?.data?.mensaje || error.message || 'Error al vender cripto');
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   const isPositiveAmount = (value) => {
     const numericValue = Number(value);
@@ -958,7 +1005,6 @@ function Saldos() {
             <Grid container spacing={2} sx={{ mt: 0.5 }}>
               {cryptoHoldings.map((holding) => {
                 const isPNLPositive = holding.ganancia >= 0;
-                
                 return (
                   <Grid item xs={12} md={6} lg={4} key={holding.symbol}>
                     <Card 
@@ -1025,17 +1071,35 @@ function Saldos() {
                             </Typography>
                           </Grid>
                         </Grid>
-                        
                         <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                           <Typography sx={{ fontSize: '0.75rem', color: 'rgba(226,232,240,0.6)' }}>
                             💰 Costo inicial: USD {formatUsd(holding.costoTotal)}
                           </Typography>
+                        </Box>
+                        <Box sx={{ mt: 2 }}>
+                          <Button
+                            variant="contained"
+                            color="error"
+                            size="small"
+                            disabled={processing}
+                            onClick={() => handleSellCrypto(holding)}
+                            sx={{ borderRadius: '12px', fontWeight: 700 }}
+                          >
+                            Vender
+                          </Button>
                         </Box>
                       </CardContent>
                     </Card>
                   </Grid>
                 );
               })}
+                  {/* Diálogo de confirmación de venta cripto */}
+                  <ConfirmSellDialog
+                    open={sellDialog.open}
+                    onClose={() => setSellDialog({ open: false, holding: null })}
+                    onConfirm={confirmSellCrypto}
+                    holding={sellDialog.holding}
+                  />
             </Grid>
           )}
         </Paper>

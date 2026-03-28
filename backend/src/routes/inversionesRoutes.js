@@ -11,6 +11,8 @@ const {
   obtenerHistorialPrecios,
   obtenerPNLActualizado,
   obtenerComisiones,
+  listarPosicionesCriptoWallet,
+  venderCriptoWallet,
 } = require('../controllers/inversionesController');
 
 // Todas las rutas requieren autenticación
@@ -21,6 +23,12 @@ router.post('/comprar', comprarAccion);
 
 // Vender acción
 router.post('/vender', venderAccion);
+
+// Listar posiciones cripto reales en wallet
+router.get('/wallet/posiciones-cripto', listarPosicionesCriptoWallet);
+
+// Vender cripto desde wallet
+router.post('/wallet/vender-cripto', venderCriptoWallet);
 
 // Listar posiciones abiertas
 router.get('/posiciones', listarPosicionesAbiertas);
