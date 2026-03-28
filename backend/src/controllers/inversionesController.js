@@ -2,12 +2,25 @@
 // Listar posiciones cripto reales en wallet (solo Bybit)
 const listarPosicionesCriptoWallet = async (req, res) => {
   try {
-    // Aquí deberías consultar las posiciones reales del usuario en Bybit
-    // Por ejemplo, usando bybitService.getSpotPositions(usuarioId) o similar
-    // Simulación: devolver array vacío y mensaje aclaratorio
+    const usuarioId = req.usuario.id;
+    // Consultar posiciones reales abiertas en Bybit
+    const posiciones = await bybitService.getSpotPositions(usuarioId);
+
+    // Calcular resumen
+    let valorTotal = 0;
+    let gananciaTotal = 0;
+    posiciones.forEach(pos => {
+      valorTotal += Number(pos.valorActual || 0);
+      gananciaTotal += Number(pos.gananciaNoRealizada || 0);
+    });
+
     return res.json({
-      posiciones: [],
-      resumen: { totalPosiciones: 0, valorTotal: 0, gananciaTotal: 0 },
+      posiciones,
+      resumen: {
+        totalPosiciones: posiciones.length,
+        valorTotal: Number(valorTotal.toFixed(2)),
+        gananciaTotal: Number(gananciaTotal.toFixed(2)),
+      },
       source: 'bybit',
       nota: 'Las posiciones y P&L se gestionan y calculan únicamente en Bybit.'
     });
