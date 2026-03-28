@@ -3,5 +3,8 @@
     "axios": "^1.13.3",
     "cors": "^2.8.6",
     "recharts": "^3.7.0"
+  },
+  "devDependencies": {
+    "sequelize-cli": "^6.6.5"
   }
 }

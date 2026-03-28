@@ -19,7 +19,7 @@ const Comision = sequelize.define('Comision', {
     type: DataTypes.INTEGER,
     allowNull: true,
     references: {
-      model: 'Inversions',
+      model: 'inversiones',
       key: 'id',
     },
   },
