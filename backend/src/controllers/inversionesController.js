@@ -523,10 +523,11 @@ const venderAccion = async (req, res) => {
     await inversion.save();
 
     const usuarioAccion = await User.findByPk(usuarioId);
-    usuarioAccion.saldo = parseFloat((parseFloat(usuarioAccion.saldo) + ingresoTotal).toFixed(2));
+
+    usuarioAccion.saldoChain = parseFloat((parseFloat(usuarioAccion.saldoChain || 0) + ingresoTotal).toFixed(2));
     await usuarioAccion.save();
 
-    console.log(`✅ Venta REAL Alpaca ejecutada - Nuevo saldo BE: $${usuarioAccion.saldo}`);
+    console.log(`✅ Venta REAL Alpaca ejecutada - Nuevo saldoChain: $${usuarioAccion.saldoChain}`);
 
     res.json({
       mensaje: `✅ VENTA REAL EJECUTADA EN ALPACA: ${cantidadEjecutada} ${inversion.symbol}`,
