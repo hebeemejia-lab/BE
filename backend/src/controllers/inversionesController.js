@@ -595,8 +595,13 @@ const listarPosicionesAbiertas = async (req, res) => {
 
     const { validPositions: posiciones, repairedIds, invalidIds } = await reconcileOpenPositions(posicionesRaw);
 
-    // Filtrar solo posiciones cripto (symbol contiene '/')
-    const posicionesCripto = posiciones.filter(p => typeof p.symbol === 'string' && p.symbol.includes('/'));
+    // Filtrar solo posiciones cripto (symbol contiene '/') y fondeadas con PayPal
+    // Suponiendo que existe un campo p.fuenteFondeo o p.origenFondeo que indica el origen del fondeo
+    // Si no existe, reemplaza 'p.fuenteFondeo' por el campo correcto
+    const posicionesCripto = posiciones.filter(
+      p => typeof p.symbol === 'string' && p.symbol.includes('/') &&
+      (p.fuenteFondeo === 'paypal' || p.origenFondeo === 'paypal')
+    );
 
     if (repairedIds.length > 0) {
       console.log(`🛠️ Posiciones abiertas reparadas al listar: ${repairedIds.join(', ')}`);
