@@ -595,6 +595,9 @@ const listarPosicionesAbiertas = async (req, res) => {
 
     const { validPositions: posiciones, repairedIds, invalidIds } = await reconcileOpenPositions(posicionesRaw);
 
+    // Filtrar solo posiciones cripto (symbol contiene '/')
+    const posicionesCripto = posiciones.filter(p => typeof p.symbol === 'string' && p.symbol.includes('/'));
+
     if (repairedIds.length > 0) {
       console.log(`🛠️ Posiciones abiertas reparadas al listar: ${repairedIds.join(', ')}`);
     }
@@ -603,28 +606,21 @@ const listarPosicionesAbiertas = async (req, res) => {
       console.warn(`⚠️ Posiciones abiertas ocultadas por cantidad inválida: ${invalidIds.join(', ')}`);
     }
 
-    if (posiciones.length === 0 && usuario?.alpacaAccountId) {
-      const posicionesBroker = await alpacaService.listarPosicionesCuentaBroker(usuario.alpacaAccountId);
-      const valorTotalBroker = posicionesBroker.reduce((sum, pos) => sum + parseFloat(pos.market_value || 0), 0);
-      const gananciaTotalBroker = posicionesBroker.reduce((sum, pos) => sum + parseFloat(pos.unrealized_pl || 0), 0);
-
+    if (posicionesCripto.length === 0) {
       return res.json({
-        posiciones: posicionesBroker,
-        resumen: {
-          totalPosiciones: posicionesBroker.length,
-          valorTotal: parseFloat(valorTotalBroker.toFixed(2)),
-          gananciaTotal: parseFloat(gananciaTotalBroker.toFixed(2)),
-        },
-        source: 'alpaca',
+        posiciones: [],
+        resumen: { totalPosiciones: 0, valorTotal: 0, gananciaTotal: 0 },
+        source: 'local',
+        nota: 'No hay posiciones cripto abiertas para este usuario.'
       });
     }
 
     // Obtener precios actuales
-    const symbols = [...new Set(posiciones.map(p => p.symbol))];
+    const symbols = [...new Set(posicionesCripto.map(p => p.symbol))];
     const cotizaciones = await obtenerCotizacionesResilientes(symbols);
 
     // Calcular valores actuales
-    const posicionesConValor = posiciones.map(pos => {
+    const posicionesConValor = posicionesCripto.map(pos => {
       const cotizacion = cotizaciones[pos.symbol];
       const precioActual = cotizacion?.precio || pos.precioCompra;
       const valorActual = parseFloat((precioActual * pos.cantidad).toFixed(2));
