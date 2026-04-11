@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: banco_exclusivo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: tu_contraseña
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./backend
+    restart: always
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - db
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build: ./frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    # Asume que el Dockerfile del frontend sirve el build en el puerto 80
+
+# Para iniciar todo: docker-compose up -d
+# Para detener: docker-compose down
