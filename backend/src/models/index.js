@@ -1,62 +1,49 @@
-// Definir relaciones entre modelos
 const { sequelize } = require('../config/database');
-const User = require('./User');
-const Loan = require('./Loan');
-const BankAccount = require('./BankAccount');
-const CuotaPrestamo = require('./CuotaPrestamo');
-const Inversion = require('./Inversion');
-const Comision = require('./Comision');
-const FundingTransfer = require('./FundingTransfer');
-const Transaction = require('./Transaction');
-const Budget = require('./Budget');
-const ForumTopic = require('./ForumTopic');
-const ForumReply = require('./ForumReply');
+const User = require('./User')(sequelize);
+const Loan = require('./Loan')(sequelize);
+const BankAccount = require('./BankAccount')(sequelize);
+const CuotaPrestamo = require('./CuotaPrestamo')(sequelize);
+const Inversion = require('./Inversion')(sequelize);
+const Comision = require('./Comision')(sequelize);
+const FundingTransfer = require('./FundingTransfer')(sequelize);
+const Transaction = require('./Transaction')(sequelize);
+const Budget = require('./Budget')(sequelize);
+const ForumTopic = require('./ForumTopic')(sequelize);
+const ForumReply = require('./ForumReply')(sequelize);
 
-// Usuario tiene muchos préstamos
+// Definir relaciones entre modelos
 User.hasMany(Loan, {
   foreignKey: 'usuarioId',
   as: 'prestamos'
 });
-
 Loan.belongsTo(User, {
   foreignKey: 'usuarioId'
 });
-
-// Usuario tiene muchas cuentas bancarias
 User.hasMany(BankAccount, {
   foreignKey: 'usuarioId',
   as: 'cuentasBancarias',
   onDelete: 'CASCADE',
   onUpdate: 'CASCADE'
 });
-
 BankAccount.belongsTo(User, {
   foreignKey: 'usuarioId',
   onDelete: 'CASCADE',
   onUpdate: 'CASCADE'
 });
-
-// Préstamo tiene muchas cuotas
 Loan.hasMany(CuotaPrestamo, {
   foreignKey: 'prestamoId',
   as: 'cuotasPrestamo'
 });
-
 CuotaPrestamo.belongsTo(Loan, {
   foreignKey: 'prestamoId'
 });
-
-// Usuario tiene muchas inversiones
 User.hasMany(Inversion, {
   foreignKey: 'usuarioId',
   as: 'inversiones'
 });
-
 Inversion.belongsTo(User, {
   foreignKey: 'usuarioId'
 });
-
-// Usuario tiene muchas comisiones cobradas
 User.hasMany(Comision, {
   foreignKey: 'usuarioId',
   as: 'comisiones'

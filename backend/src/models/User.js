@@ -1,63 +1,70 @@
 const { DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
-const { sequelize } = require('../config/database');
 
-const User = sequelize.define('User', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  nombre: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  apellido: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    defaultValue: '',
-  },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-    lowercase: true,
-  },
-  emailVerificado: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-  emailVerificationToken: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  emailVerificationExpires: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
-  password: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  cedula: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-  },
-  telefono: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  direccion: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  saldo: {
-    type: DataTypes.DECIMAL(15, 2),
-    defaultValue: 0,
-  },
-  saldoChain: {
-    type: DataTypes.DECIMAL(15, 2),
+module.exports = (sequelize) => {
+  const User = sequelize.define('User', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    nombre: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    apellido: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: '',
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+      lowercase: true,
+    },
+    emailVerificado: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    emailVerificationToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    emailVerificationExpires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    cedula: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    telefono: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    direccion: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    saldo: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    saldoChain: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    // ...otros campos...
+  });
+  // Aquí puedes agregar hooks/metodos si es necesario
+  return User;
+};
     defaultValue: 0,
   },
   saldoEnTransitoAlpaca: {
