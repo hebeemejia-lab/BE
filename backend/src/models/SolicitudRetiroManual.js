@@ -26,11 +26,11 @@ const SolicitudRetiroManual = sequelize.define(
         defaultValue: 'USD',
       },
       metodo: {
-        type: DataTypes.ENUM('paypal_payout', 'transferencia_manual'),
+        type: DataTypes.ENUM('paypal_payout', 'transferencia_manual', 'crypto_bybit'),
         defaultValue: 'paypal_payout',
       },
       estado: {
-        type: DataTypes.ENUM('pendiente', 'aprobada', 'rechazada', 'procesada'),
+        type: DataTypes.ENUM('pendiente', 'aprobada', 'enviada', 'completada', 'rechazada', 'fallida', 'procesada'),
         defaultValue: 'pendiente',
       },
       // Información del usuario que solicita
@@ -62,6 +62,42 @@ const SolicitudRetiroManual = sequelize.define(
       },
       numeroReferencia: {
         type: DataTypes.STRING(255),
+      },
+      proveedorRetiro: {
+        type: DataTypes.STRING(50),
+        allowNull: true,
+      },
+      withdrawalIdExterno: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+      },
+      txHash: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+      },
+      monedaActiva: {
+        type: DataTypes.STRING(20),
+        allowNull: true,
+      },
+      redRetiro: {
+        type: DataTypes.STRING(50),
+        allowNull: true,
+      },
+      walletAddress: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+      },
+      montoActivo: {
+        type: DataTypes.DECIMAL(24, 8),
+        allowNull: true,
+      },
+      precioReferenciaUsd: {
+        type: DataTypes.DECIMAL(24, 8),
+        allowNull: true,
+      },
+      feeActivo: {
+        type: DataTypes.DECIMAL(24, 8),
+        allowNull: true,
       },
       // Notas del admin
       notasAdmin: {

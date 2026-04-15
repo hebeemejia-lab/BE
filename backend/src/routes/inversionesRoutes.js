@@ -3,11 +3,15 @@ const router = express.Router();
 const verificarToken = require('../middleware/authMiddleware');
 const {
   comprarAccion,
+  venderAccion,
   listarPosicionesAbiertas,
   obtenerPortfolio,
   obtenerCotizacionAccion,
   buscarAcciones,
   obtenerHistorialPrecios,
+  obtenerPNLActualizado,
+  obtenerComisiones,
+  listarPosicionesCriptoWallet,
 } = require('../controllers/inversionesController');
 
 // Todas las rutas requieren autenticación
@@ -15,6 +19,15 @@ router.use(verificarToken);
 
 // Comprar acción
 router.post('/comprar', comprarAccion);
+
+// Vender acción
+router.post('/vender', venderAccion);
+
+// Listar posiciones cripto reales en wallet
+router.get('/wallet/posiciones-cripto', listarPosicionesCriptoWallet);
+
+// Vender cripto desde wallet
+
 
 // Listar posiciones abiertas
 router.get('/posiciones', listarPosicionesAbiertas);
@@ -30,5 +43,11 @@ router.get('/buscar', buscarAcciones);
 
 // Obtener historial de precios (para gráficos)
 router.get('/historial/:symbol', obtenerHistorialPrecios);
+
+// Obtener P&L actualizado
+router.get('/pnl/actualizado', obtenerPNLActualizado);
+
+// Historial de comisiones cobradas al usuario
+router.get('/comisiones', obtenerComisiones);
 
 module.exports = router;

@@ -7,10 +7,21 @@ const EXCHANGE_RATE_ENDPOINTS = [
   'https://api.exchangerate-api.com/v4/latest/USD',
   'https://open.er-api.com/v6/latest/USD',
 ];
-const GEOLOCATION_ENDPOINTS = [
-  'https://ipapi.co/json/',
-  'https://ipwho.is/',
-];
+const TIMEZONE_COUNTRY_FALLBACKS = {
+  'America/Santo_Domingo': 'DO',
+  'Europe/London': 'GB',
+  'Europe/Madrid': 'ES',
+  'Europe/Paris': 'FR',
+  'Europe/Berlin': 'DE',
+  'Europe/Rome': 'IT',
+  'Europe/Lisbon': 'PT',
+  'Europe/Amsterdam': 'NL',
+  'Europe/Brussels': 'BE',
+  'Europe/Vienna': 'AT',
+  'Europe/Dublin': 'IE',
+  'Europe/Helsinki': 'FI',
+  'Europe/Athens': 'GR',
+};
 
 const fetchJsonWithTimeout = async (url, timeoutMs = 8000) => {
   const controller = new AbortController();
@@ -29,12 +40,31 @@ const fetchJsonWithTimeout = async (url, timeoutMs = 8000) => {
 
 const extraerRates = (data) => data?.rates || null;
 
-const extraerCountryCode = (data) => {
-  if (!data || typeof data !== 'object') {
-    return null;
+const detectarPaisDesdeNavegador = () => {
+  if (typeof navigator !== 'undefined') {
+    const locales = [
+      ...(Array.isArray(navigator.languages) ? navigator.languages : []),
+      navigator.language,
+      navigator.userLanguage,
+    ].filter(Boolean);
+
+    for (const locale of locales) {
+      const partes = String(locale).split(/[-_]/);
+      const region = partes.find((parte, index) => index > 0 && /^[A-Za-z]{2}$/.test(parte));
+      if (region) {
+        return region.toUpperCase();
+      }
+    }
   }
 
-  return data.country_code || data.country_code_iso3 || data.country_code_iso2 || data.country || null;
+  if (typeof Intl !== 'undefined' && typeof Intl.DateTimeFormat === 'function') {
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (timeZone && TIMEZONE_COUNTRY_FALLBACKS[timeZone]) {
+      return TIMEZONE_COUNTRY_FALLBACKS[timeZone];
+    }
+  }
+
+  return null;
 };
 
 const CURRENCY_SYMBOLS = {
@@ -147,26 +177,9 @@ export const CurrencyProvider = ({ children }) => {
     return 'DOP'; // Por defecto peso dominicano
   };
 
-  // Obtener ubicación del usuario usando API de geolocalización
+  // Detectar país preferido del usuario usando locale y zona horaria del navegador
   const getUserLocation = useCallback(async () => {
-    try {
-      for (const endpoint of GEOLOCATION_ENDPOINTS) {
-        try {
-          const data = await fetchJsonWithTimeout(endpoint, 5000);
-          const countryCode = extraerCountryCode(data);
-          if (countryCode) {
-            return String(countryCode).slice(0, 2);
-          }
-        } catch (locationError) {
-          // Probar siguiente endpoint.
-        }
-      }
-
-      throw new Error('Error al obtener ubicación');
-    } catch (error) {
-      console.warn('No se pudo detectar ubicación automáticamente.');
-      return null;
-    }
+    return detectarPaisDesdeNavegador();
   }, []);
 
   // Cambiar divisa seleccionada

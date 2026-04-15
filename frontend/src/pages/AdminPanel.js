@@ -51,23 +51,20 @@ const AdminPanel = () => {
   const [vistaActual, setVistaActual] = useState('dashboard');
   const [cuotasVencidas, setCuotasVencidas] = useState([]);
   const [mostrarNotificaciones, setMostrarNotificaciones] = useState(false);
-    // Script para obtener cuotas vencidas (placeholder, debe ajustarse a la API real)
-    const cargarCuotasVencidas = useCallback(async () => {
-      try {
-        // Suponiendo endpoint /admin/cuotas-vencidas
-        const response = await api.get('/admin/cuotas-vencidas');
-        setCuotasVencidas(response.data.cuotas || []);
-      } catch (error) {
-        setCuotasVencidas([]);
-      }
-    }, []);
+  const cargarCuotasVencidas = useCallback(async () => {
+    try {
+      const response = await api.get('/admin/cuotas-vencidas', { params: { limit: 25 } });
+      setCuotasVencidas(response.data.cuotas || []);
+    } catch (error) {
+      setCuotasVencidas([]);
+    }
+  }, []);
 
-    useEffect(() => {
-      cargarCuotasVencidas();
-      // Opcional: refrescar cada 5 minutos
-      const interval = setInterval(cargarCuotasVencidas, 5 * 60 * 1000);
-      return () => clearInterval(interval);
-    }, [cargarCuotasVencidas]);
+  useEffect(() => {
+    cargarCuotasVencidas();
+    const interval = setInterval(cargarCuotasVencidas, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [cargarCuotasVencidas]);
   const [dashboard, setDashboard] = useState(null);
   const [prestamos, setPrestamos] = useState([]);
   const [usuariosAdmin, setUsuariosAdmin] = useState([]);
@@ -278,7 +275,11 @@ const AdminPanel = () => {
       });
 
       alert(response.data.mensaje);
-      cargarPrestamos(); // Recargar lista
+      await Promise.all([
+        cargarPrestamos(),
+        cargarDashboard(),
+        api.get('/admin/usuarios').then((usuariosRes) => setUsuariosAdmin(usuariosRes.data.usuarios || [])),
+      ]);
     } catch (error) {
       console.error('❌ Error completo registrando pago:', error);
       console.error('❌ Respuesta del servidor:', error.response?.data);
@@ -296,10 +297,17 @@ const AdminPanel = () => {
       };
       const response = await api.post('/admin/prestamos', payload);
       alert(response.data.mensaje || 'Préstamo creado');
-      await cargarPrestamos();
+      await Promise.all([
+        cargarPrestamos(),
+        cargarDashboard(),
+        api.get('/admin/usuarios').then((usuariosRes) => setUsuariosAdmin(usuariosRes.data.usuarios || [])),
+      ]);
+      return response.data;
     } catch (error) {
       console.error('Error creando préstamo:', error);
-      alert('Error al crear préstamo');
+      const detalle = error.response?.data?.error ? `\nDetalle: ${error.response.data.error}` : '';
+      alert((error.response?.data?.mensaje || 'Error al crear préstamo') + detalle);
+      throw error;
     } finally {
       setCargando(false);
     }
@@ -1784,30 +1792,93 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
     monto: '',
     plazo: '',
     tasaInteres: '5',
-    fechaPrimerVencimiento: ''
+    fechaPrimerVencimiento: '',
+    usarDeudaActual: false,
   });
   const [creandoPrestamo, setCreandoPrestamo] = useState(false);
   const [busquedaId, setBusquedaId] = useState('');
   const [buscando, setBuscando] = useState(false);
+  const [resumenDeuda, setResumenDeuda] = useState(null);
+  const [cargandoResumen, setCargandoResumen] = useState(false);
+  const [depurandoSandbox, setDepurandoSandbox] = useState(false);
+  const usuarioSeleccionado = usuariosAdmin.find((u) => String(u.id) === String(nuevoPrestamo.usuarioId));
+  const deudaActualUsuario = Number(resumenDeuda?.deudaSaldoNegativo || 0);
+  const deudaPrestamosUsuario = Number(resumenDeuda?.deudaPrestamos || 0);
+  const deudaPlanesPagoUsuario = Number(resumenDeuda?.deudaPlanesPago || 0);
+  const deudaTotalPlanPago = Number(resumenDeuda?.deudaConsolidable || 0);
+  const planPagoDisponible = Boolean(resumenDeuda?.puedeCrearPlanPago);
+
+  useEffect(() => {
+    const cargarResumen = async () => {
+      if (!nuevoPrestamo.usuarioId) {
+        setResumenDeuda(null);
+        return;
+      }
+
+      try {
+        setCargandoResumen(true);
+        const response = await api.get(`/admin/usuarios/${nuevoPrestamo.usuarioId}/resumen-deuda`);
+        setResumenDeuda(response.data?.resumen || null);
+      } catch (error) {
+        console.error('Error cargando resumen de deuda:', error);
+        setResumenDeuda(null);
+      } finally {
+        setCargandoResumen(false);
+      }
+    };
+
+    cargarResumen();
+  }, [nuevoPrestamo.usuarioId, prestamos]);
+
+  const depurarSandboxUsuario = async () => {
+    if (!nuevoPrestamo.usuarioId) return;
+    try {
+      setDepurandoSandbox(true);
+      const response = await api.post(`/admin/usuarios/${nuevoPrestamo.usuarioId}/depurar-sandbox`);
+      alert(response.data?.mensaje || 'Préstamos sandbox depurados');
+      setResumenDeuda(response.data?.resumen || null);
+      await onRecargarPrestamos();
+    } catch (error) {
+      alert(error.response?.data?.mensaje || 'Error depurando préstamos sandbox');
+    } finally {
+      setDepurandoSandbox(false);
+    }
+  };
 
   const handleCrearPrestamo = async (e) => {
     e.preventDefault();
+    if (nuevoPrestamo.usarDeudaActual && !planPagoDisponible) {
+      alert('El usuario seleccionado no tiene deuda pendiente para crear un plan de pago.');
+      return;
+    }
     setCreandoPrestamo(true);
-    await onCrearPrestamo({
-      usuarioId: nuevoPrestamo.usuarioId,
-      monto: nuevoPrestamo.monto,
-      plazo: nuevoPrestamo.plazo,
-      tasaInteres: nuevoPrestamo.tasaInteres,
-      fechaPrimerVencimiento: nuevoPrestamo.fechaPrimerVencimiento || null
-    });
-    setNuevoPrestamo({
-      usuarioId: '',
-      monto: '',
-      plazo: '',
-      tasaInteres: '5',
-      fechaPrimerVencimiento: ''
-    });
-    setCreandoPrestamo(false);
+    try {
+      const response = await onCrearPrestamo({
+        usuarioId: nuevoPrestamo.usuarioId,
+        monto: nuevoPrestamo.monto,
+        plazo: nuevoPrestamo.plazo,
+        tasaInteres: nuevoPrestamo.tasaInteres,
+        fechaPrimerVencimiento: nuevoPrestamo.fechaPrimerVencimiento || null,
+        usarDeudaActual: nuevoPrestamo.usarDeudaActual,
+      });
+
+      if (response?.resumenActualizado) {
+        setResumenDeuda(response.resumenActualizado);
+      } else if (nuevoPrestamo.usuarioId) {
+        const resumenResponse = await api.get(`/admin/usuarios/${nuevoPrestamo.usuarioId}/resumen-deuda`);
+        setResumenDeuda(resumenResponse.data?.resumen || null);
+      }
+    } finally {
+      setNuevoPrestamo({
+        usuarioId: nuevoPrestamo.usuarioId,
+        monto: '',
+        plazo: '',
+        tasaInteres: '5',
+        fechaPrimerVencimiento: '',
+        usarDeudaActual: nuevoPrestamo.usarDeudaActual,
+      });
+      setCreandoPrestamo(false);
+    }
   };
 
   return (
@@ -1857,52 +1928,227 @@ const PrestamosView = ({ prestamos, onRegistrarPago, onImprimirRecibo, onCrearPr
       </div>
 
       <div className="prestamo-crear">
-        <h3>Crear nuevo préstamo</h3>
-        <form className="prestamo-form" onSubmit={handleCrearPrestamo}>
-          <select
-            value={nuevoPrestamo.usuarioId}
-            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, usuarioId: e.target.value })}
-            required
+        <div className="prestamo-tabs">
+          <button
+            className={`prestamo-tab ${!nuevoPrestamo.usarDeudaActual ? 'activo' : ''}`}
+            onClick={() => setNuevoPrestamo({
+              ...nuevoPrestamo,
+              usarDeudaActual: false,
+              monto: '',
+            })}
           >
-            <option value="">Selecciona usuario</option>
-            {usuariosAdmin.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.nombre} {u.apellido} - {u.email}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            step="0.01"
-            placeholder="Monto"
-            value={nuevoPrestamo.monto}
-            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, monto: e.target.value })}
-            required
-          />
-          <input
-            type="number"
-            placeholder="Número de cuotas"
-            value={nuevoPrestamo.plazo}
-            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, plazo: e.target.value })}
-            required
-          />
-          <input
-            type="number"
-            step="0.01"
-            placeholder="Tasa (%)"
-            value={nuevoPrestamo.tasaInteres}
-            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, tasaInteres: e.target.value })}
-          />
-          <input
-            type="date"
-            placeholder="Primer vencimiento"
-            value={nuevoPrestamo.fechaPrimerVencimiento}
-            onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, fechaPrimerVencimiento: e.target.value })}
-          />
-          <button type="submit" className="btn-crear" disabled={creandoPrestamo}>
-            {creandoPrestamo ? 'Creando...' : '➕ Crear préstamo'}
+            ➕ Crear Préstamo Nuevo
           </button>
-        </form>
+          <button
+            className={`prestamo-tab ${nuevoPrestamo.usarDeudaActual ? 'activo' : ''} ${!planPagoDisponible ? 'deshabilitado' : ''}`}
+            onClick={() => {
+              if (planPagoDisponible) {
+                setNuevoPrestamo({
+                  ...nuevoPrestamo,
+                  usarDeudaActual: true,
+                  monto: String(deudaTotalPlanPago.toFixed(2)),
+                });
+              }
+            }}
+            disabled={!planPagoDisponible}
+            title={!planPagoDisponible ? (deudaPlanesPagoUsuario > 0 ? 'Ya existe un plan activo' : 'No hay deuda consolidable') : ''}
+          >
+            🧾 Crear Plan de Pago
+          </button>
+        </div>
+
+        {!nuevoPrestamo.usarDeudaActual ? (
+          // SECCIÓN: CREAR PRÉSTAMO NUEVO
+          <div className="prestamo-seccion prestamo-seccion-nuevo">
+            <h3>Crear Préstamo Nuevo</h3>
+            <p className="prestamo-seccion-desc">Crea un nuevo préstamo con monto, tasa y plazo personalizados. Este prestamo SUMA deuda al usuario.</p>
+            
+            <form className="prestamo-form" onSubmit={handleCrearPrestamo}>
+              <select
+                value={nuevoPrestamo.usuarioId}
+                onChange={(e) => setNuevoPrestamo({
+                  ...nuevoPrestamo,
+                  usuarioId: e.target.value,
+                  monto: '',
+                })}
+                required
+              >
+                <option value="">Selecciona usuario</option>
+                {usuariosAdmin.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.nombre} {u.apellido} - {u.email}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Monto del préstamo"
+                value={nuevoPrestamo.monto}
+                onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, monto: e.target.value })}
+                required
+              />
+
+              <input
+                type="number"
+                placeholder="Número de cuotas"
+                value={nuevoPrestamo.plazo}
+                onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, plazo: e.target.value })}
+                required
+              />
+
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Tasa de interés (%)"
+                value={nuevoPrestamo.tasaInteres}
+                onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, tasaInteres: e.target.value })}
+              />
+
+              <input
+                type="date"
+                placeholder="Primer vencimiento"
+                value={nuevoPrestamo.fechaPrimerVencimiento}
+                onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, fechaPrimerVencimiento: e.target.value })}
+              />
+
+              <button type="submit" className="btn-crear" disabled={creandoPrestamo}>
+                {creandoPrestamo ? 'Creando...' : '➕ Crear Préstamo'}
+              </button>
+            </form>
+
+            {usuarioSeleccionado && resumenDeuda && (
+              <div className="prestamo-info-box">
+                <h4>Estado actual del usuario</h4>
+                <div className="prestamo-estado-grid">
+                  <div className="estado-item">
+                    <label>Wallet:</label>
+                    <span>${Number(resumenDeuda.saldoWallet || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="estado-item">
+                    <label>Saldo negativo:</label>
+                    <span>${deudaActualUsuario.toFixed(2)}</span>
+                  </div>
+                  <div className="estado-item">
+                    <label>Préstamos activos:</label>
+                    <span>${deudaPrestamosUsuario.toFixed(2)}</span>
+                  </div>
+                  <div className="estado-item">
+                    <label>Planes activos:</label>
+                    <span>${deudaPlanesPagoUsuario.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          // SECCIÓN: CREAR PLAN DE PAGO
+          <div className="prestamo-seccion prestamo-seccion-plan">
+            <h3>Crear Plan de Pago</h3>
+            <p className="prestamo-seccion-desc">Consolida la deuda actual del usuario (saldo negativo + préstamos pendientes) en un único plan de pago. NO crea deuda nueva, reorganiza la existente.</p>
+            
+            <form className="prestamo-form" onSubmit={handleCrearPrestamo}>
+              <select
+                value={nuevoPrestamo.usuarioId}
+                onChange={(e) => {
+                  setNuevoPrestamo({
+                    ...nuevoPrestamo,
+                    usuarioId: e.target.value,
+                  });
+                  setCargandoResumen(true);
+                }}
+                required
+              >
+                <option value="">Selecciona usuario</option>
+                {usuariosAdmin.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.nombre} {u.apellido} - {u.email}
+                  </option>
+                ))}
+              </select>
+
+              {cargandoResumen ? (
+                <div className="loading-spinner">Calculando deuda actual...</div>
+              ) : (
+                <>
+                  <div className="prestamo-deuda-breakdown">
+                    <div className="deuda-item">
+                      <label>Saldo negativo:</label>
+                      <span>${deudaActualUsuario.toFixed(2)}</span>
+                    </div>
+                    <div className="deuda-item">
+                      <label>Préstamos pendientes:</label>
+                      <span>${deudaPrestamosUsuario.toFixed(2)}</span>
+                    </div>
+                    <div className="deuda-item deuda-total">
+                      <label>Total a consolidar:</label>
+                      <span>${deudaTotalPlanPago.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Monto del plan"
+                    value={deudaTotalPlanPago.toFixed(2)}
+                    disabled
+                    readOnly
+                  />
+
+                  <input
+                    type="number"
+                    placeholder="Número de cuotas"
+                    value={nuevoPrestamo.plazo}
+                    onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, plazo: e.target.value })}
+                    required
+                  />
+
+                  <input
+                    type="date"
+                    placeholder="Primer vencimiento"
+                    value={nuevoPrestamo.fechaPrimerVencimiento}
+                    onChange={(e) => setNuevoPrestamo({ ...nuevoPrestamo, fechaPrimerVencimiento: e.target.value })}
+                  />
+
+                  <button type="submit" className="btn-crear btn-plan-pago" disabled={creandoPrestamo}>
+                    {creandoPrestamo ? 'Creando plan...' : '🧾 Consolidar Deuda'}
+                  </button>
+                </>
+              )}
+            </form>
+
+            {usuarioSeleccionado && resumenDeuda && (
+              <>
+                <div className="prestamo-info-box prestamo-info-plan">
+                  <h4>Resumen de deuda consolidable</h4>
+                  <div className="prestamo-plan-breakdown prestamo-plan-breakdown--full">
+                    <span>Wallet: ${Number(resumenDeuda.saldoWallet || 0).toFixed(2)}</span>
+                    <span>Saldo disponible: ${Number(resumenDeuda.saldoDisponible || 0).toFixed(2)}</span>
+                    <span>Saldo de préstamos: ${Number(resumenDeuda.saldoPrestamo || 0).toFixed(2)}</span>
+                    <span className="deuda-total">Deuda total actual: ${Number(resumenDeuda.deudaTotalActual || 0).toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {Number(resumenDeuda.sandboxPrestamosSinCuotas || 0) > 0 && (
+                  <div className="prestamo-sandbox-warning">
+                    <p>
+                      ⚠️ Hay {resumenDeuda.sandboxPrestamosSinCuotas} préstamo(s) sandbox que pueden inflar la deuda. Considera depurarlos primero.
+                    </p>
+                    <button
+                      type="button"
+                      className="btn-secundario"
+                      onClick={depurarSandboxUsuario}
+                      disabled={depurandoSandbox}
+                    >
+                      {depurandoSandbox ? 'Depurando...' : '🧹 Depurar Sandbox'}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
       
       {prestamos.length === 0 ? (
@@ -1936,6 +2182,8 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [referencia, setReferencia] = useState('');
   const [notas, setNotas] = useState('');
+  const esPlanDePago = String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO');
+  const checkoutPlan = prestamo.planPagoCheckout;
 
   const handlePagar = (cuotaId) => {
     onRegistrarPago(cuotaId, metodoPago, referencia, notas);
@@ -1952,6 +2200,9 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
           <h3>
             {prestamo.User?.nombre} {prestamo.User?.apellido}
             <span className="prestamo-id">#{prestamo.id}</span>
+            <span className={`prestamo-tipo ${esPlanDePago ? 'plan-pago' : 'prestamo-normal'}`}>
+              {esPlanDePago ? 'Plan de pago' : 'Préstamo'}
+            </span>
           </h3>
           <p>{prestamo.User?.email || prestamo.User?.correo}</p>
         </div>
@@ -2007,6 +2258,33 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
               🧾 Factura 88mm
             </button>
           </div>
+          {esPlanDePago && checkoutPlan && (
+            <div className="plan-checkout-box">
+              <h4>Checkout del plan de pago</h4>
+              <div className={`plan-checkout-row ${checkoutPlan.saldoNegativoSaldado ? 'saldado' : ''}`}>
+                <span>Saldo disponible en negativo</span>
+                <span>
+                  {checkoutPlan.saldoNegativoSaldado
+                    ? 'Deuda saldada'
+                    : `Restante: $${checkoutPlan.saldoNegativoRestante.toFixed(2)}`}
+                </span>
+              </div>
+              {Number(checkoutPlan.deudaPrestamosInicial || 0) > 0 && (
+                <div className={`plan-checkout-row ${checkoutPlan.saldoPrestamoSaldado ? 'saldado' : ''}`}>
+                  <span>Saldo de préstamos pendiente</span>
+                  <span>
+                    {checkoutPlan.saldoPrestamoSaldado
+                      ? 'Deuda saldada'
+                      : `Restante: $${checkoutPlan.saldoPrestamoRestante.toFixed(2)}`}
+                  </span>
+                </div>
+              )}
+              <div className="plan-checkout-total">
+                <span>Total pendiente del plan</span>
+                <strong>${checkoutPlan.deudaTotalRestante.toFixed(2)}</strong>
+              </div>
+            </div>
+          )}
           <h4>Cuotas:</h4>
           <div className="cuotas-lista">
             {prestamo.cuotas.map(cuota => (
@@ -2080,7 +2358,9 @@ const PrestamoCard = ({ prestamo, expandido, onToggle, onRegistrarPago, onImprim
                           </button>
                           <button 
                             className="btn-cancelar"
-                            onClick={() => setMostrarFormularioPago(null)}
+                            onClick={() => {
+                              setMostrarFormularioPago(null);
+                            }}
                           >
                             ✕
                           </button>

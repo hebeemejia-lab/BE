@@ -21,9 +21,9 @@ const Inversion = sequelize.define('Inversion', {
     comment: 'Ticker de la acción (AAPL, TSLA, etc.)',
   },
   cantidad: {
-    type: DataTypes.DECIMAL(10, 4),
+    type: DataTypes.DECIMAL(24, 8),
     allowNull: false,
-    comment: 'Cantidad de acciones',
+    comment: 'Cantidad de acciones o unidades crypto',
   },
   precioCompra: {
     type: DataTypes.DECIMAL(10, 2),

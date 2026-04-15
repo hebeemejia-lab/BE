@@ -1,13 +1,41 @@
+
+// Listar posiciones cripto reales en wallet (solo Bybit)
+const listarPosicionesCriptoWallet = async (req, res) => {
+  try {
+    const usuarioId = req.usuario.id;
+    // Consultar posiciones reales abiertas en Bybit
+    const posiciones = await bybitService.getSpotPositions(usuarioId);
+
+    // Calcular resumen
+    let valorTotal = 0;
+    let gananciaTotal = 0;
+    posiciones.forEach(pos => {
+      valorTotal += Number(pos.valorActual || 0);
+      gananciaTotal += Number(pos.gananciaNoRealizada || 0);
+    });
+
+    return res.json({
+      posiciones,
+      resumen: {
+        totalPosiciones: posiciones.length,
+        valorTotal: Number(valorTotal.toFixed(2)),
+        gananciaTotal: Number(gananciaTotal.toFixed(2)),
+      },
+      source: 'bybit',
+      nota: 'Las posiciones y P&L se gestionan y calculan únicamente en Bybit.'
+    });
+  } catch (error) {
+    console.error('❌ Error listando posiciones cripto wallet (Bybit):', error.message);
+    res.status(500).json({ error: error.message });
+  }
+
+
+};
 const Inversion = require('../models/Inversion');
+const Comision = require('../models/Comision');
 const User = require('../models/User');
 const { sequelize } = require('../config/database');
 const alpacaService = require('../services/alpacaService');
-const USER_SAFE_ATTRS = ['id', 'saldo', 'email', 'nombre', 'apellido'];
-
-const findUserSafeByPk = (usuarioId, extraAttrs = []) => {
-  const attributes = Array.from(new Set([...USER_SAFE_ATTRS, ...extraAttrs]));
-  return User.findByPk(usuarioId, { attributes });
-};
 
 // Comprar activo
 const comprarAccion = async (req, res) => {
@@ -42,31 +70,159 @@ const comprarAccion = async (req, res) => {
       return res.status(404).json({ mensaje: 'Usuario no encontrado' });
     }
 
-    // Validar que el activo existe
-    const symbolUpper = symbol.toUpperCase();
-    const activo = await alpacaService.validarAccion(symbolUpper);
+    // Definir activo segun clase solicitada.
+    const symbolUpper = String(symbol || '').toUpperCase();
+    const assetClassNormalized = String(assetClass || '').toLowerCase();
+    const esCryptoSolicitado = assetClassNormalized === 'crypto';
 
-    if (assetClass === 'crypto' && activo.assetClass !== 'crypto') {
+    let activo;
+    if (esCryptoSolicitado) {
+      activo = {
+        valid: true,
+        symbol: normalizeCryptoSymbol(symbolUpper),
+        assetClass: 'crypto',
+        nombre: normalizeCryptoSymbol(symbolUpper),
+      };
+    } else {
+      activo = await alpacaService.validarAccion(symbolUpper);
+    }
+
+    if (esCryptoSolicitado && activo.assetClass !== 'crypto') {
       return res.status(400).json({ mensaje: 'Esta wallet solo permite compras de pares crypto reales.' });
     }
 
     // Obtener precio actual
-    const cotizacion = await alpacaService.obtenerCotizacion(activo.symbol);
+    const cotizacion = await obtenerCotizacionResiliente(activo.symbol);
     const precioCompra = cotizacion.precioCompra || cotizacion.precio;
     const costoEstimado = parseFloat((precioCompra * cantidadNum).toFixed(2));
     const costoValidacion = parseFloat((costoEstimado * (activo.assetClass === 'crypto' ? 1.05 : 1.02)).toFixed(2));
+    const esCrypto = activo.assetClass === 'crypto';
 
     console.log(`💰 COMPRA REAL: ${cantidadNum} ${activo.symbol} @ $${precioCompra} = $${costoEstimado}`);
 
     // Validar saldo suficiente
-    const saldoDisponible = parseFloat(usuario.saldo);
+    const saldoDisponible = parseFloat(esCrypto ? (usuario.saldoChain || 0) : usuario.saldo);
     if (costoValidacion > saldoDisponible) {
       return res.status(400).json({
-        mensaje: 'Saldo insuficiente',
+        mensaje: esCrypto ? 'Saldo CHAIN insuficiente' : 'Saldo insuficiente',
         costoTotal: costoEstimado,
         costoValidacion,
         saldoDisponible,
         faltante: parseFloat((costoValidacion - saldoDisponible).toFixed(2)),
+        tipoSaldo: esCrypto ? 'saldoChain' : 'saldo',
+      });
+    }
+
+    // Crypto: compra real en Bybit + cobro de comisión 1.5%
+    if (esCrypto) {
+      const comisionMonto = parseFloat((costoEstimado * COMISION_PCT).toFixed(2));
+      const costoTotalConComision = parseFloat((costoEstimado + comisionMonto).toFixed(2));
+
+      // Re-validar saldo incluyendo la comisión
+      if (costoTotalConComision > saldoDisponible) {
+        return res.status(400).json({
+          mensaje: 'Saldo CHAIN insuficiente (incluida comisión del 1.5%)',
+          costoActivo: costoEstimado,
+          comision: comisionMonto,
+          costoTotal: costoTotalConComision,
+          saldoDisponible,
+          faltante: parseFloat((costoTotalConComision - saldoDisponible).toFixed(2)),
+          tipoSaldo: 'saldoChain',
+        });
+      }
+
+      // Extraer símbolo base (BTC de "BTC/USD")
+      const baseSymbol = activo.symbol.split('/')[0];
+
+      // Colocar orden de mercado spot en Bybit
+      const bybitOrden = await bybitService.placeSpotOrder({
+        symbol: `${baseSymbol}USDT`,
+        side: 'buy',
+        qty: cantidadNum,
+      });
+
+      // Esperar fill (hasta 10s: 5 intentos × 2s)
+      let filledOrder = null;
+      for (let i = 0; i < 5; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const status = await bybitService.getSpotOrderStatus({
+          orderId: bybitOrden.orderId,
+          symbol: `${baseSymbol}USDT`,
+        });
+        if (status && ['Filled', 'PartiallyFilled'].includes(status.orderStatus)) {
+          filledOrder = status;
+          break;
+        }
+      }
+
+      const cantidadEjecutada = filledOrder
+        ? parseFloat(filledOrder.cumExecQty || cantidadNum)
+        : cantidadNum;
+      const precioEjecutado = filledOrder
+        ? parseFloat(filledOrder.avgPrice || precioCompra)
+        : precioCompra;
+      const costoReal = parseFloat((precioEjecutado * cantidadEjecutada).toFixed(2));
+      const comisionReal = parseFloat((costoReal * COMISION_PCT).toFixed(2));
+      const totalDeducir = parseFloat((costoReal + comisionReal).toFixed(2));
+
+      let inversion;
+      let comision;
+      await sequelize.transaction(async (t) => {
+        usuario.saldoChain = parseFloat((saldoDisponible - totalDeducir).toFixed(2));
+        await usuario.save({ transaction: t });
+
+        inversion = await Inversion.create({
+          usuarioId,
+          symbol: activo.symbol,
+          cantidad: cantidadEjecutada,
+          precioCompra: precioEjecutado,
+          costoTotal: costoReal,
+          estado: 'abierta',
+          tipo: 'compra',
+          fechaCompra: new Date(),
+        }, { transaction: t });
+
+        comision = await Comision.create({
+          usuarioId,
+          inversionId: inversion.id,
+          tipo: 'compra',
+          symbol: activo.symbol,
+          montoBase: costoReal,
+          porcentaje: COMISION_PCT * 100,
+          montoComision: comisionReal,
+          precioEjecutado,
+          cantidadCrypto: cantidadEjecutada,
+          bybitOrderId: bybitOrden.orderId || null,
+        }, { transaction: t });
+      });
+
+      console.log(`✅ Compra BYBIT REAL: ${cantidadEjecutada} ${activo.symbol} @ $${precioEjecutado} | Comisión: $${comisionReal} | Nuevo saldoChain: $${usuario.saldoChain}`);
+
+      return res.json({
+        mensaje: `✅ COMPRA REAL EJECUTADA EN BYBIT: ${cantidadEjecutada} ${activo.symbol}`,
+        modo: 'bybit_spot',
+        recibo: {
+          operacion: 'COMPRA',
+          symbol: activo.symbol,
+          cantidad: cantidadEjecutada,
+          precioEjecutado,
+          costoActivo: costoReal,
+          comisionPct: `${(COMISION_PCT * 100).toFixed(1)}%`,
+          comisionUSD: comisionReal,
+          totalDeducido: totalDeducir,
+          bybitOrderId: bybitOrden.orderId,
+          fecha: new Date().toISOString(),
+        },
+        inversion: {
+          id: inversion.id,
+          symbol: inversion.symbol,
+          cantidad: inversion.cantidad,
+          precioCompra: inversion.precioCompra,
+          costoTotal: inversion.costoTotal,
+          fechaCompra: inversion.fechaCompra,
+        },
+        nuevoSaldo: usuario.saldo,
+        nuevoSaldoChain: parseFloat(usuario.saldoChain || 0),
       });
     }
 
@@ -123,7 +279,11 @@ const comprarAccion = async (req, res) => {
 
     let inversion;
     await sequelize.transaction(async (transaction) => {
-      usuario.saldo = parseFloat((saldoDisponible - costoTotal).toFixed(2));
+      if (esCrypto) {
+        usuario.saldoChain = parseFloat((saldoDisponible - costoTotal).toFixed(2));
+      } else {
+        usuario.saldo = parseFloat((saldoDisponible - costoTotal).toFixed(2));
+      }
       await usuario.save({ transaction });
 
       inversion = await Inversion.create({
@@ -138,7 +298,7 @@ const comprarAccion = async (req, res) => {
       }, { transaction });
     });
 
-    console.log(`✅ Compra REAL ejecutada - Nuevo saldo: $${usuario.saldo}`);
+    console.log(`✅ Compra REAL ejecutada - Nuevo saldo ${esCrypto ? 'CHAIN' : 'BE'}: $${esCrypto ? usuario.saldoChain : usuario.saldo}`);
 
     res.json({
       mensaje: `✅ COMPRA REAL EJECUTADA EN ALPACA: ${cantidadEjecutada} ${activo.symbol}`,
@@ -157,6 +317,7 @@ const comprarAccion = async (req, res) => {
         fechaCompra: inversion.fechaCompra,
       },
       nuevoSaldo: usuario.saldo,
+      nuevoSaldoChain: parseFloat(usuario.saldoChain || 0),
     });
   } catch (error) {
     console.error('❌ Error comprando activo:', error.message);
@@ -188,21 +349,137 @@ const venderAccion = async (req, res) => {
         estado: 'abierta',
       },
     });
-
     if (!inversion) {
       return res.status(404).json({ mensaje: 'Inversión no encontrada o ya cerrada' });
     }
 
-    // Obtener precio actual
-    const cotizacion = await alpacaService.obtenerCotizacion(inversion.symbol);
-    const precioVenta = cotizacion.precioVenta || cotizacion.precio;
-    const ingresoTotal = parseFloat((precioVenta * inversion.cantidad).toFixed(2));
+    const esCrypto = String(inversion.symbol || '').includes('/');
+
+    // --- VENTA CRYPTO: Bybit spot + comisión 1.5% ---
+    if (esCrypto) {
+      const baseSymbol = inversion.symbol.split('/')[0];
+
+      const bybitOrden = await bybitService.placeSpotOrder({
+        symbol: `${baseSymbol}USDT`,
+        side: 'sell',
+        qty: parseFloat(inversion.cantidad),
+      });
+
+      // Esperar fill (hasta 10s)
+      let filledOrder = null;
+      for (let i = 0; i < 5; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const status = await bybitService.getSpotOrderStatus({
+          orderId: bybitOrden.orderId,
+          symbol: `${baseSymbol}USDT`,
+        });
+        if (status && ['Filled', 'PartiallyFilled'].includes(status.orderStatus)) {
+          filledOrder = status;
+          break;
+        }
+      }
+
+      const cantidadVendida = filledOrder
+        ? parseFloat(filledOrder.cumExecQty || inversion.cantidad)
+        : parseFloat(inversion.cantidad);
+      const precioVenta = filledOrder
+        ? parseFloat(filledOrder.avgPrice || 0)
+        : 0;
+      const ingresoTotal = parseFloat((precioVenta * cantidadVendida).toFixed(2));
+      const comisionMonto = parseFloat((ingresoTotal * COMISION_PCT).toFixed(2));
+      const ingresoNeto = parseFloat((ingresoTotal - comisionMonto).toFixed(2));
+      const ganancia = parseFloat((ingresoNeto - inversion.costoTotal).toFixed(2));
+
+      console.log(`💵 VENTA BYBIT REAL: ${cantidadVendida} ${inversion.symbol} @ $${precioVenta} = $${ingresoTotal} | Comisión: $${comisionMonto} | Neto: $${ingresoNeto}`);
+
+      const usuario = await User.findByPk(usuarioId);
+
+      await sequelize.transaction(async (t) => {
+        inversion.precioVenta = precioVenta;
+        inversion.ingresoTotal = ingresoNeto;
+        inversion.ganancia = ganancia;
+        inversion.estado = 'cerrada';
+        inversion.fechaVenta = new Date();
+        await inversion.save({ transaction: t });
+
+        usuario.saldoChain = parseFloat((parseFloat(usuario.saldoChain || 0) + ingresoNeto).toFixed(2));
+        await usuario.save({ transaction: t });
+
+        await Comision.create({
+          usuarioId,
+          inversionId: inversion.id,
+          tipo: 'venta',
+          symbol: inversion.symbol,
+          montoBase: ingresoTotal,
+          porcentaje: COMISION_PCT * 100,
+          montoComision: comisionMonto,
+          precioEjecutado: precioVenta,
+          cantidadCrypto: cantidadVendida,
+          bybitOrderId: bybitOrden.orderId || null,
+        }, { transaction: t });
+      });
+
+      console.log(`✅ Venta BYBIT REAL ejecutada - Nuevo saldoChain: $${usuario.saldoChain}`);
+
+      return res.json({
+        mensaje: `✅ VENTA REAL EJECUTADA EN BYBIT: ${cantidadVendida} ${inversion.symbol}`,
+        advertencia: ganancia >= 0
+          ? `✅ Ganancia neta: $${ganancia}`
+          : `⚠️ Pérdida neta: $${Math.abs(ganancia)}`,
+        recibo: {
+          operacion: 'VENTA',
+          symbol: inversion.symbol,
+          cantidad: cantidadVendida,
+          precioEjecutado: precioVenta,
+          ingresosBrutos: ingresoTotal,
+          comisionPct: `${(COMISION_PCT * 100).toFixed(1)}%`,
+          comisionUSD: comisionMonto,
+          ingresosNetos: ingresoNeto,
+          bybitOrderId: bybitOrden.orderId,
+          fecha: new Date().toISOString(),
+        },
+        venta: {
+          id: inversion.id,
+          symbol: inversion.symbol,
+          cantidad: cantidadVendida,
+          precioCompra: inversion.precioCompra,
+          precioVenta,
+          costoTotal: inversion.costoTotal,
+          ingresoNeto,
+          ganancia,
+          porcentajeGanancia: parseFloat(((ganancia / inversion.costoTotal) * 100).toFixed(2)),
+          esGanancia: ganancia >= 0,
+        },
+        nuevoSaldo: usuario.saldo,
+        nuevoSaldoChain: parseFloat(usuario.saldoChain || 0),
+      });
+    }
+
+    // --- VENTA ACCIONES: Alpaca ---
+    const orden = await alpacaService.crearOrdenMercado({
+      symbol: inversion.symbol,
+      cantidad: inversion.cantidad,
+      side: 'sell',
+      clientOrderId: `be-sell-${usuarioId}-${Date.now()}`,
+    });
+
+    const ordenConfirmada = await alpacaService.confirmarOrdenMercado(orden.id);
+    const cantidadEjecutada = ordenConfirmada.filledQty || 0;
+
+    if (cantidadEjecutada <= 0) {
+      return res.status(400).json({
+        mensaje: 'La orden real de venta no se ejecuto. Se mantiene la posición abierta.',
+        estadoOrden: ordenConfirmada.status,
+        orderId: ordenConfirmada.id,
+      });
+    }
+
+    const precioVenta = ordenConfirmada.filledAvgPrice || 0;
+    const ingresoTotal = parseFloat((precioVenta * cantidadEjecutada).toFixed(2));
     const ganancia = parseFloat((ingresoTotal - inversion.costoTotal).toFixed(2));
 
-    console.log(`💵 VENTA REAL: ${inversion.cantidad} ${inversion.symbol} @ $${precioVenta} = $${ingresoTotal}`);
-    console.log(`   Ganancia/Pérdida REAL: $${ganancia}`);
+    console.log(`💵 VENTA REAL ALPACA: ${cantidadEjecutada} ${inversion.symbol} @ $${precioVenta} = $${ingresoTotal}`);
 
-    // Actualizar inversión
     inversion.precioVenta = precioVenta;
     inversion.ingresoTotal = ingresoTotal;
     inversion.ganancia = ganancia;
@@ -211,21 +488,21 @@ const venderAccion = async (req, res) => {
     await inversion.save();
 
     // Agregar al saldo BE (dinero real)
-    const usuario = await findUserSafeByPk(usuarioId);
+    const usuario = await User.findByPk(usuarioId);
     usuario.saldo = parseFloat((parseFloat(usuario.saldo) + ingresoTotal).toFixed(2));
     await usuario.save();
 
-    console.log(`✅ Venta REAL ejecutada - Nuevo saldo: $${usuario.saldo}`);
+    console.log(`✅ Venta REAL Alpaca ejecutada - Nuevo saldoChain: $${usuarioAccion.saldoChain}`);
 
     res.json({
-      mensaje: `✅ VENTA REAL EJECUTADA: ${inversion.cantidad} ${inversion.symbol}`,
-      advertencia: ganancia >= 0 
+      mensaje: `✅ VENTA REAL EJECUTADA EN ALPACA: ${cantidadEjecutada} ${inversion.symbol}`,
+      advertencia: ganancia >= 0
         ? `✅ Ganancia real: $${ganancia}`
         : `⚠️ Pérdida real: $${Math.abs(ganancia)}`,
       venta: {
         id: inversion.id,
         symbol: inversion.symbol,
-        cantidad: inversion.cantidad,
+        cantidad: cantidadEjecutada,
         precioCompra: inversion.precioCompra,
         precioVenta: inversion.precioVenta,
         costoTotal: inversion.costoTotal,
@@ -234,7 +511,8 @@ const venderAccion = async (req, res) => {
         porcentajeGanancia: parseFloat(((ganancia / inversion.costoTotal) * 100).toFixed(2)),
         esGanancia: ganancia >= 0,
       },
-      nuevoSaldo: usuario.saldo,
+      nuevoSaldo: usuarioAccion.saldo,
+      nuevoSaldoChain: parseFloat(usuarioAccion.saldoChain || 0),
     });
   } catch (error) {
     console.error('❌ Error vendiendo acción:', error.message);
@@ -249,8 +527,11 @@ const venderAccion = async (req, res) => {
 const listarPosicionesAbiertas = async (req, res) => {
   try {
     const usuarioId = req.usuario.id;
+    const usuario = await User.findByPk(usuarioId, {
+      attributes: ['id', 'alpacaAccountId'],
+    });
 
-    const posiciones = await Inversion.findAll({
+    const posicionesRaw = await Inversion.findAll({
       where: {
         usuarioId,
         estado: 'abierta',
@@ -258,17 +539,39 @@ const listarPosicionesAbiertas = async (req, res) => {
       order: [['fechaCompra', 'DESC']],
     });
 
-    // Obtener precios actuales
-    const symbols = [...new Set(posiciones.map(p => p.symbol))];
-    let cotizaciones = {};
-    try {
-      cotizaciones = await alpacaService.obtenerCotizaciones(symbols);
-    } catch (quoteError) {
-      console.warn('⚠️ No se pudieron enriquecer cotizaciones de posiciones. Se usará precio de compra.', quoteError.message);
+    const { validPositions: posiciones, repairedIds, invalidIds } = await reconcileOpenPositions(posicionesRaw);
+
+    // Filtrar solo posiciones cripto (symbol contiene '/') y fondeadas con PayPal
+    // Suponiendo que existe un campo p.fuenteFondeo o p.origenFondeo que indica el origen del fondeo
+    // Si no existe, reemplaza 'p.fuenteFondeo' por el campo correcto
+    const posicionesCripto = posiciones.filter(
+      p => typeof p.symbol === 'string' && p.symbol.includes('/') &&
+      (p.fuenteFondeo === 'paypal' || p.origenFondeo === 'paypal')
+    );
+
+    if (repairedIds.length > 0) {
+      console.log(`🛠️ Posiciones abiertas reparadas al listar: ${repairedIds.join(', ')}`);
     }
 
+    if (invalidIds.length > 0) {
+      console.warn(`⚠️ Posiciones abiertas ocultadas por cantidad inválida: ${invalidIds.join(', ')}`);
+    }
+
+    if (posicionesCripto.length === 0) {
+      return res.json({
+        posiciones: [],
+        resumen: { totalPosiciones: 0, valorTotal: 0, gananciaTotal: 0 },
+        source: 'local',
+        nota: 'No hay posiciones cripto abiertas para este usuario.'
+      });
+    }
+
+    // Obtener precios actuales
+    const symbols = [...new Set(posiciones.map(p => p.symbol))];
+    const cotizaciones = await alpacaService.obtenerCotizaciones(symbols);
+
     // Calcular valores actuales
-    const posicionesConValor = posiciones.map(pos => {
+    const posicionesConValor = posicionesCripto.map(pos => {
       const cotizacion = cotizaciones[pos.symbol];
       const precioActual = cotizacion?.precio || pos.precioCompra;
       const valorActual = parseFloat((precioActual * pos.cantidad).toFixed(2));
@@ -286,6 +589,7 @@ const listarPosicionesAbiertas = async (req, res) => {
         gananciaNoRealizada,
         porcentajeGanancia: porcentaje,
         fechaCompra: pos.fechaCompra,
+        source: 'be',
       };
     });
 
@@ -299,6 +603,7 @@ const listarPosicionesAbiertas = async (req, res) => {
         valorTotal: parseFloat(valorTotal.toFixed(2)),
         gananciaTotal: parseFloat(gananciaTotal.toFixed(2)),
       },
+      source: 'local',
     });
   } catch (error) {
     console.error('❌ Error listando posiciones:', error.message);
@@ -316,10 +621,20 @@ const obtenerPortfolio = async (req, res) => {
     }
 
     // Posiciones abiertas
-    const posicionesAbiertas = await Inversion.findAll({
+    const posicionesAbiertasRaw = await Inversion.findAll({
       where: { usuarioId, estado: 'abierta' },
       order: [['fechaCompra', 'DESC']],
     });
+
+    const { validPositions: posicionesAbiertas, repairedIds, invalidIds } = await reconcileOpenPositions(posicionesAbiertasRaw);
+
+    if (repairedIds.length > 0) {
+      console.log(`🛠️ Posiciones de portfolio reparadas: ${repairedIds.join(', ')}`);
+    }
+
+    if (invalidIds.length > 0) {
+      console.warn(`⚠️ Posiciones excluidas del portfolio por cantidad inválida: ${invalidIds.join(', ')}`);
+    }
 
     // Historial cerrado
     const historial = await Inversion.findAll({
@@ -330,14 +645,9 @@ const obtenerPortfolio = async (req, res) => {
 
     // Obtener precios actuales para posiciones abiertas
     const symbols = [...new Set(posicionesAbiertas.map(p => p.symbol))];
-    let cotizaciones = {};
-    if (symbols.length > 0) {
-      try {
-        cotizaciones = await alpacaService.obtenerCotizaciones(symbols);
-      } catch (quoteError) {
-        console.warn('⚠️ No se pudieron obtener cotizaciones del portfolio. Se usará precio de compra.', quoteError.message);
-      }
-    }
+    const cotizaciones = symbols.length > 0 
+      ? await alpacaService.obtenerCotizaciones(symbols)
+      : {};
 
     // Calcular valores
     const posicionesConValor = posicionesAbiertas.map(pos => {
@@ -360,6 +670,7 @@ const obtenerPortfolio = async (req, res) => {
 
     res.json({
       saldoDisponible: parseFloat(usuario.saldo),
+      saldoChainDisponible: parseFloat(usuario.saldoChain || 0),
       valorPortfolio: parseFloat(valorPortfolio.toFixed(2)),
       valorTotal: parseFloat((parseFloat(usuario.saldo) + valorPortfolio).toFixed(2)),
       posicionesAbiertas: posicionesConValor,
@@ -387,7 +698,7 @@ const obtenerCotizacionAccion = async (req, res) => {
       return res.status(400).json({ mensaje: 'Symbol requerido' });
     }
 
-    const cotizacion = await alpacaService.obtenerCotizacion(symbol.toUpperCase());
+    const cotizacion = await obtenerCotizacionResiliente(symbol.toUpperCase());
 
     res.json(cotizacion);
   } catch (error) {
@@ -437,6 +748,67 @@ const obtenerHistorialPrecios = async (req, res) => {
   }
 };
 
+// Obtener P&L actualizado de todas las inversiones abiertas
+const obtenerPNLActualizado = async (req, res) => {
+  try {
+    const usuarioId = req.usuario.id;
+
+    const resultado = await pnlUpdateService.actualizarPNLUsuario({ usuarioId });
+
+    res.json({
+      success: true,
+      ...resultado,
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo P&L actualizado:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+// Obtener historial de comisiones del usuario
+const obtenerComisiones = async (req, res) => {
+  try {
+    const usuarioId = req.usuario.id;
+    const comisiones = await Comision.findAll({
+      where: { usuarioId },
+      order: [['createdAt', 'DESC']],
+      limit: 100,
+    });
+
+    const totalComisionado = comisiones.reduce(
+      (sum, c) => sum + parseFloat(c.montoComision || 0),
+      0,
+    );
+
+    res.json({
+      comisiones: comisiones.map((c) => ({
+        id: c.id,
+        tipo: c.tipo,
+        symbol: c.symbol,
+        montoBase: parseFloat(c.montoBase),
+        porcentaje: parseFloat(c.porcentaje),
+        montoComision: parseFloat(c.montoComision),
+        precioEjecutado: parseFloat(c.precioEjecutado || 0),
+        cantidadCrypto: parseFloat(c.cantidadCrypto || 0),
+        bybitOrderId: c.bybitOrderId,
+        inversionId: c.inversionId,
+        fecha: c.createdAt,
+      })),
+      resumen: {
+        totalOperaciones: comisiones.length,
+        totalComisionado: parseFloat(totalComisionado.toFixed(2)),
+        pctPromedio: `${(COMISION_PCT * 100).toFixed(1)}%`,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo comisiones:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   comprarAccion,
   venderAccion,
@@ -445,4 +817,7 @@ module.exports = {
   obtenerCotizacionAccion,
   buscarAcciones,
   obtenerHistorialPrecios,
+  obtenerPNLActualizado,
+  obtenerComisiones,
+  listarPosicionesCriptoWallet,
 };

@@ -104,8 +104,8 @@ export default function Deposita() {
             { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
           );
           const orderId = response.data.orderId;
-          recargaIdRef.current = response.data.recargaId;
-          if (!orderId || !recargaIdRef.current) {
+          depositoIdRef.current = response.data.depositoId;
+          if (!orderId || !depositoIdRef.current) {
             setError('No se pudo iniciar el pago. Intenta de nuevo.');
             throw new Error('Orden inválida');
           }
@@ -126,8 +126,8 @@ export default function Deposita() {
             ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
             : { 'Content-Type': 'application/json' };
           const response = await axios.post(
-            `${API_URL}/recargas/paypal/capturar`,
-            { recargaId: recargaIdRef.current, token: data.orderID },
+            `${API_URL}/depositos/paypal/capturar`,
+            { depositoId: depositoIdRef.current, paypalOrderId: data.orderID },
             { headers }
           );
           setSuccess(`✅ ¡Pago completado! Saldo actualizado: $${response.data.nuevoSaldo || 'N/A'}`);
@@ -207,8 +207,8 @@ export default function Deposita() {
         }
 
         const response = await axios.post(
-          `${API_URL}/recargas/paypal/capturar`,
-          { recargaId: recargaId },
+          `${API_URL}/depositos/paypal/capturar`,
+          { depositoId: depositoId },
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -237,7 +237,7 @@ export default function Deposita() {
 
   const verificarBackend = async () => {
     try {
-      const response = await axios.get(`${API_URL}/recargas/test`);
+      const response = await axios.get(`${API_URL}/depositos/test`);
       console.log('✅ Backend response:', response.data);
       setBackendStatus('ok');
     } catch (err) {

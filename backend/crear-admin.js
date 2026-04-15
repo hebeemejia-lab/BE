@@ -8,9 +8,14 @@ async function crearUsuarioAdmin() {
     await sequelize.authenticate();
     console.log('✅ Conexión a base de datos exitosa');
 
-    // Sincronizar modelos (agregar columna rol si no existe)
-    await sequelize.sync({ alter: true });
-    console.log('✅ Modelos sincronizados');
+    // Solo sincronizar modelos con alter en desarrollo
+    if (process.env.NODE_ENV !== 'production') {
+      await sequelize.sync({ alter: true });
+      console.log('✅ Modelos sincronizados (alter)');
+    } else {
+      // En producción, NO hacer alter ni sync automático
+      console.log('⚠️ En producción: NO se ejecuta sync ni alter. Haz migraciones manualmente.');
+    }
 
     // Verificar si ya existe el admin
     const adminExistente = await User.findOne({ 

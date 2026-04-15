@@ -13,6 +13,212 @@ const emailService = require('../services/emailService');
 // Forzar que las relaciones se inicialicen
 require('../models');
 
+const formatearFechaCorta = (valor) => {
+  if (!valor) {
+    return null;
+  }
+
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) {
+    return null;
+  }
+
+  const anio = fecha.getFullYear();
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
+};
+
+const toNumberOrZero = (value) => {
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const redondearDinero = (value) => parseFloat(toNumberOrZero(value).toFixed(2));
+
+const calcularSaldoPrestamoPendiente = (prestamo, cuotas = []) => {
+  const estado = String(prestamo?.estado || '').toLowerCase();
+  if (estado === 'completado' || estado === 'rechazado' || estado === 'pagado' || estado === 'cerrado') {
+    return 0;
+  }
+
+  if (Array.isArray(cuotas) && cuotas.length > 0) {
+    return redondearDinero(
+      cuotas
+        .filter((cuota) => !cuota.pagado)
+        .reduce((sum, cuota) => sum + toNumberOrZero(cuota.montoCuota), 0),
+    );
+  }
+
+  return redondearDinero(prestamo?.montoAprobado ?? prestamo?.montoSolicitado ?? 0);
+};
+
+const construirResumenDeudaUsuario = async (usuarioId) => {
+  const usuario = await User.findByPk(usuarioId, {
+    attributes: ['id', 'nombre', 'apellido', 'email', 'saldo'],
+  });
+
+  if (!usuario) {
+    return null;
+  }
+
+  const prestamosUsuario = await Loan.findAll({
+    where: {
+      usuarioId,
+      estado: { [Op.notIn]: ['completado', 'rechazado'] },
+    },
+    include: [{
+      model: CuotaPrestamo,
+      as: 'cuotasPrestamo',
+      required: false,
+    }],
+    order: [['createdAt', 'DESC']],
+  });
+
+  const prestamosNoPlan = prestamosUsuario.filter(
+    (prestamo) => !String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO'),
+  );
+  const planesPagoActivos = prestamosUsuario.filter(
+    (prestamo) => String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO'),
+  );
+
+  // Deuda de préstamos normales activos (solo los que NO son planes de pago)
+  const deudaPrestamos = redondearDinero(
+    prestamosNoPlan.reduce((sum, prestamo) => {
+      return sum + calcularSaldoPrestamoPendiente(prestamo, prestamo.cuotasPrestamo || []);
+    }, 0),
+  );
+
+  // Deuda de planes de pago activos (cuotas pendientes de pago)
+  const deudaPlanesPago = redondearDinero(
+    planesPagoActivos.reduce((sum, prestamo) => {
+      return sum + calcularSaldoPrestamoPendiente(prestamo, prestamo.cuotasPrestamo || []);
+    }, 0),
+  );
+
+  const sandboxPrestamosSinCuotas = prestamosNoPlan.filter((prestamo) => {
+    const referencia = String(prestamo.numeroReferencia || '');
+    const cuotas = Array.isArray(prestamo.cuotasPrestamo) ? prestamo.cuotasPrestamo : [];
+    return referencia.startsWith('SANDBOX-') && cuotas.length === 0 && String(prestamo.estado || '').toLowerCase() === 'aprobado';
+  });
+
+  const saldoWallet = redondearDinero(usuario.saldo || 0);
+
+  // Deuda consolidable = solo los préstamos normales (no los planes)
+  // porque un plan ya es la reorganización de esa deuda
+  const deudaConsolidable = deudaPrestamos;
+  const deudaTotalActual = redondearDinero(deudaPrestamos + deudaPlanesPago);
+  const saldoDisponible = redondearDinero(saldoWallet - deudaTotalActual);
+
+  return {
+    usuarioId: usuario.id,
+    nombre: usuario.nombre,
+    apellido: usuario.apellido,
+    email: usuario.email,
+    saldoWallet,
+    deudaSaldoNegativo: saldoWallet < 0 ? Math.abs(saldoWallet) : 0,
+    deudaPrestamos,
+    deudaPlanesPago,
+    deudaConsolidable,
+    deudaTotalActual,
+    saldoDisponible,
+    prestamosActivos: prestamosNoPlan.length,
+    planesPagoActivos: planesPagoActivos.length,
+    // Se puede crear plan si hay préstamos con deuda y no hay plan activo todavía
+    puedeCrearPlanPago: deudaPrestamos > 0 && planesPagoActivos.length === 0,
+    sandboxPrestamosSinCuotas: sandboxPrestamosSinCuotas.length,
+    sandboxPrestamosSinCuotasIds: sandboxPrestamosSinCuotas.map((prestamo) => prestamo.id),
+  };
+};
+
+exports.obtenerResumenDeudaUsuario = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const resumen = await construirResumenDeudaUsuario(id);
+
+    if (!resumen) {
+      return res.status(404).json({ exito: false, mensaje: 'Usuario no encontrado' });
+    }
+
+    res.json({ exito: true, resumen });
+  } catch (error) {
+    console.error('❌ Error obteniendo resumen de deuda del usuario:', error);
+    res.status(500).json({ exito: false, mensaje: 'Error al obtener resumen de deuda', error: error.message });
+  }
+};
+
+exports.depurarPrestamosSandboxUsuario = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const resumen = await construirResumenDeudaUsuario(id);
+
+    if (!resumen) {
+      return res.status(404).json({ exito: false, mensaje: 'Usuario no encontrado' });
+    }
+
+    const ids = resumen.sandboxPrestamosSinCuotasIds || [];
+    if (ids.length === 0) {
+      return res.json({ exito: true, mensaje: 'No hay préstamos sandbox sin cuotas para depurar', actualizados: 0, resumen });
+    }
+
+    const [actualizados] = await Loan.update(
+      { estado: 'completado' },
+      { where: { id: { [Op.in]: ids } } },
+    );
+
+    const resumenActualizado = await construirResumenDeudaUsuario(id);
+
+    res.json({
+      exito: true,
+      mensaje: 'Préstamos sandbox sin cuotas depurados correctamente',
+      actualizados,
+      resumen: resumenActualizado,
+    });
+  } catch (error) {
+    console.error('❌ Error depurando préstamos sandbox del usuario:', error);
+    res.status(500).json({ exito: false, mensaje: 'Error al depurar préstamos sandbox', error: error.message });
+  }
+};
+
+const construirCheckoutPlanPago = (prestamo, cuotas = [], saldoUsuarioActual = null) => {
+  const esPlanDePago = String(prestamo?.numeroReferencia || '').startsWith('PLAN-PAGO');
+  if (!esPlanDePago) {
+    return null;
+  }
+
+  const deudaSaldoNegativoInicial = toNumberOrZero(prestamo.deudaSaldoNegativoInicial);
+  const deudaPrestamosInicial = toNumberOrZero(prestamo.deudaPrestamosInicial);
+  const deudaTotalInicial = deudaSaldoNegativoInicial + deudaPrestamosInicial;
+
+  const totalPagado = cuotas
+    .filter((cuota) => Boolean(cuota.pagado))
+    .reduce((sum, cuota) => sum + toNumberOrZero(cuota.montoCuota ?? cuota.monto), 0);
+
+  const pagoAplicable = Math.min(totalPagado, deudaTotalInicial);
+  const saldoNegativoRestantePorPagos = Math.max(0, deudaSaldoNegativoInicial - pagoAplicable);
+  const saldoActualNumerico = toNumberOrZero(saldoUsuarioActual);
+  // Si el plan no incluyo saldo negativo inicial, el wallet no debe afectar este checkout.
+  const saldoNegativoRestante = deudaSaldoNegativoInicial > 0
+    ? (Number.isFinite(saldoActualNumerico)
+      ? Math.max(0, -saldoActualNumerico)
+      : saldoNegativoRestantePorPagos)
+    : 0;
+  const remanenteTrasSaldo = Math.max(0, pagoAplicable - deudaSaldoNegativoInicial);
+  const saldoPrestamoRestante = Math.max(0, deudaPrestamosInicial - remanenteTrasSaldo);
+
+  return {
+    deudaSaldoNegativoInicial: parseFloat(deudaSaldoNegativoInicial.toFixed(2)),
+    deudaPrestamosInicial: parseFloat(deudaPrestamosInicial.toFixed(2)),
+    deudaTotalInicial: parseFloat(deudaTotalInicial.toFixed(2)),
+    totalPagado: parseFloat(totalPagado.toFixed(2)),
+    saldoNegativoRestante: parseFloat(saldoNegativoRestante.toFixed(2)),
+    saldoPrestamoRestante: parseFloat(saldoPrestamoRestante.toFixed(2)),
+    deudaTotalRestante: parseFloat((saldoNegativoRestante + saldoPrestamoRestante).toFixed(2)),
+    saldoNegativoSaldado: saldoNegativoRestante <= 0,
+    saldoPrestamoSaldado: saldoPrestamoRestante <= 0,
+  };
+};
+
 // Dashboard: Estadísticas generales
 exports.obtenerDashboard = async (req, res) => {
   try {
@@ -375,6 +581,7 @@ exports.listarPrestamos = async (req, res) => {
             fechaVencimiento: c.fechaVencimiento,
             fechaPago: c.fechaPago
           })),
+          planPagoCheckout: construirCheckoutPlanPago(prestamo, cuotas, usuario?.saldo),
           totalCuotas,
           cuotasPagadas,
           cuotasPendientes: totalCuotas - cuotasPagadas,
@@ -399,27 +606,100 @@ exports.listarPrestamos = async (req, res) => {
   }
 };
 
-// Crear préstamo desde admin (con cuotas)
-exports.crearPrestamoAdmin = async (req, res) => {
+exports.listarCuotasVencidas = async (req, res) => {
   try {
-    const { usuarioEmail, usuarioId, monto, plazo, tasaInteres, fechaPrimerVencimiento, sandbox } = req.body;
+    const limiteSolicitado = parseInt(req.query.limit, 10);
+    const limite = Number.isFinite(limiteSolicitado)
+      ? Math.min(Math.max(limiteSolicitado, 1), 50)
+      : 20;
 
-    if ((!usuarioEmail && !usuarioId) || !monto || !plazo) {
-      return res.status(400).json({
-        exito: false,
-        mensaje: 'Faltan datos obligatorios (usuario, monto, plazo)'
+    const cuotas = await CuotaPrestamo.findAll({
+      where: {
+        pagado: false,
+        fechaVencimiento: { [Op.lt]: new Date() }
+      },
+      order: [['fechaVencimiento', 'ASC']],
+      limit: limite,
+    });
+
+    if (cuotas.length === 0) {
+      return res.json({
+        exito: true,
+        total: 0,
+        cuotas: []
       });
     }
 
-    const montoNumero = parseFloat(monto);
+    const prestamoIds = [...new Set(cuotas.map((cuota) => cuota.prestamoId))];
+    const prestamos = await Loan.findAll({
+      where: { id: { [Op.in]: prestamoIds } }
+    });
+
+    const usuarioIds = [...new Set(prestamos.map((prestamo) => prestamo.usuarioId))];
+    const usuarios = usuarioIds.length > 0
+      ? await User.findAll({
+          where: { id: { [Op.in]: usuarioIds } },
+          attributes: ['id', 'nombre', 'apellido', 'email']
+        })
+      : [];
+
+    const prestamosMap = new Map(prestamos.map((prestamo) => [prestamo.id, prestamo]));
+    const usuariosMap = new Map(usuarios.map((usuario) => [usuario.id, usuario]));
+    const ahora = Date.now();
+
+    const cuotasFormateadas = cuotas.map((cuota) => {
+      const prestamo = prestamosMap.get(cuota.prestamoId);
+      const usuario = prestamo ? usuariosMap.get(prestamo.usuarioId) : null;
+      const fechaVencimiento = cuota.fechaVencimiento ? new Date(cuota.fechaVencimiento) : null;
+      const diasVencida = fechaVencimiento
+        ? Math.max(0, Math.floor((ahora - fechaVencimiento.getTime()) / (1000 * 60 * 60 * 24)))
+        : 0;
+      const clienteNombre = [usuario?.nombre, usuario?.apellido].filter(Boolean).join(' ').trim()
+        || usuario?.email
+        || 'Cliente';
+
+      return {
+        id: cuota.id,
+        prestamoId: cuota.prestamoId,
+        numeroCuota: cuota.numeroCuota,
+        monto: parseFloat(cuota.montoCuota || 0),
+        fechaVencimiento: formatearFechaCorta(cuota.fechaVencimiento),
+        diasVencida,
+        clienteNombre,
+        clienteEmail: usuario?.email || null,
+      };
+    });
+
+    res.json({
+      exito: true,
+      total: cuotasFormateadas.length,
+      cuotas: cuotasFormateadas,
+    });
+  } catch (error) {
+    console.error('❌ Error listando cuotas vencidas:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al obtener cuotas vencidas',
+      error: error.message
+    });
+  }
+};
+
+// Crear préstamo desde admin (con cuotas)
+exports.crearPrestamoAdmin = async (req, res) => {
+  try {
+    const { usuarioEmail, usuarioId, monto, plazo, tasaInteres, fechaPrimerVencimiento, sandbox, usarDeudaActual } = req.body;
+
+    if ((!usuarioEmail && !usuarioId) || !plazo || (!usarDeudaActual && !monto)) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'Faltan datos obligatorios (usuario, plazo y monto si no es plan de pago)'
+      });
+    }
     const plazoNumero = parseInt(plazo, 10);
     const tasaNumero = tasaInteres !== undefined && tasaInteres !== null && tasaInteres !== ''
       ? parseFloat(tasaInteres)
       : 5;
-
-    if (!Number.isFinite(montoNumero) || montoNumero <= 0) {
-      return res.status(400).json({ exito: false, mensaje: 'Monto inválido' });
-    }
 
     if (!Number.isFinite(plazoNumero) || plazoNumero <= 0) {
       return res.status(400).json({ exito: false, mensaje: 'Plazo inválido' });
@@ -433,21 +713,94 @@ exports.crearPrestamoAdmin = async (req, res) => {
       return res.status(404).json({ exito: false, mensaje: 'Usuario no encontrado' });
     }
 
+    const saldoActualUsuario = redondearDinero(usuario.saldo || 0);
+    const deudaActualUsuario = saldoActualUsuario < 0 ? redondearDinero(Math.abs(saldoActualUsuario)) : 0;
+
+    // Calcular préstamos activos NO plan que tienen cuotas pendientes (la deuda real)
+    let prestamosAConsolidar = [];
+    let deudaPrestamosPendiente = 0;
+
+    if (usarDeudaActual) {
+      prestamosAConsolidar = await Loan.findAll({
+        where: {
+          usuarioId: usuario.id,
+          estado: { [Op.notIn]: ['completado', 'rechazado'] },
+        },
+        include: [{ model: CuotaPrestamo, as: 'cuotasPrestamo', required: false }],
+      });
+
+      // Solo los préstamos que NO son planes de pago
+      prestamosAConsolidar = prestamosAConsolidar.filter(
+        (prestamo) => !String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO'),
+      );
+
+      // Sumar cuotas pendientes de cada préstamo
+      deudaPrestamosPendiente = redondearDinero(
+        prestamosAConsolidar.reduce((sum, prestamo) => {
+          return sum + calcularSaldoPrestamoPendiente(prestamo, prestamo.cuotasPrestamo || []);
+        }, 0),
+      );
+    }
+
+    const deudaTotalConsolidada = usarDeudaActual ? deudaPrestamosPendiente : 0;
+
+    if (usarDeudaActual) {
+      // No permitir duplicar planes activos
+      const planesActivos = await Loan.findAll({
+        where: {
+          usuarioId: usuario.id,
+          estado: { [Op.notIn]: ['completado', 'rechazado'] },
+          numeroReferencia: { [Op.like]: 'PLAN-PAGO-%' },
+        },
+      });
+
+      if (planesActivos.length > 0) {
+        return res.status(400).json({
+          exito: false,
+          mensaje: 'El usuario ya tiene un plan de pago activo. Debe completarlo antes de crear otro.'
+        });
+      }
+    }
+
+    const montoNumero = usarDeudaActual
+      ? deudaTotalConsolidada
+      : parseFloat(monto);
+
+    // Plan de pago = reestructuracion de deuda existente, sin interes adicional.
+    const tasaAplicable = usarDeudaActual ? 0 : tasaNumero;
+
+    if (usarDeudaActual && montoNumero <= 0) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'El usuario no tiene deuda pendiente para convertir en plan de pago'
+      });
+    }
+
+    if (!Number.isFinite(montoNumero) || montoNumero <= 0) {
+      return res.status(400).json({ exito: false, mensaje: 'Monto inválido' });
+    }
+
+    const prefijoReferencia = usarDeudaActual
+      ? (sandbox ? 'PLAN-PAGO-SANDBOX' : 'PLAN-PAGO')
+      : (sandbox ? 'SANDBOX' : 'PREST-ADMIN');
+
     const prestamo = await Loan.create({
       usuarioId: usuario.id,
       montoSolicitado: montoNumero,
       montoAprobado: montoNumero,
-      tasaInteres: tasaNumero,
+      deudaSaldoNegativoInicial: 0,
+      deudaPrestamosInicial: usarDeudaActual ? deudaPrestamosPendiente : 0,
+      tasaInteres: tasaAplicable,
       plazo: plazoNumero,
       estado: 'aprobado',
       bancoDespositante: process.env.BANCO_NOMBRE,
       cuentaBancaria: process.env.BANCO_CUENTA,
       emailAprobacion: process.env.ADMIN_EMAIL,
       fechaAprobacion: new Date(),
-      numeroReferencia: `${sandbox ? 'SANDBOX' : 'PREST-ADMIN'}-${Date.now().toString().slice(-8)}`
+      numeroReferencia: `${prefijoReferencia}-${Date.now().toString().slice(-8)}`
     });
 
-    const tasaMensual = tasaNumero > 0 ? (tasaNumero / 12 / 100) : 0;
+    const tasaMensual = tasaAplicable > 0 ? (tasaAplicable / 12 / 100) : 0;
     let cuotaMensual = 0;
     if (tasaMensual > 0) {
       cuotaMensual = (montoNumero * tasaMensual * Math.pow(1 + tasaMensual, plazoNumero)) /
@@ -475,17 +828,52 @@ exports.crearPrestamoAdmin = async (req, res) => {
       cuotas.push(cuota);
     }
 
-    if (!sandbox) {
-      usuario.saldo = parseFloat(usuario.saldo || 0) + montoNumero;
+    if (usarDeudaActual && prestamosAConsolidar.length > 0) {
+      const idsPrestamos = prestamosAConsolidar.map((prestamo) => prestamo.id);
+
+      await Loan.update(
+        { estado: 'completado' },
+        { where: { id: { [Op.in]: idsPrestamos } } },
+      );
+
+      await CuotaPrestamo.update(
+        {
+          pagado: true,
+          fechaPago: new Date(),
+          metodoPago: 'Consolidación',
+          notas: `Consolidado en plan de pago ${prestamo.numeroReferencia}`,
+        },
+        {
+          where: {
+            prestamoId: { [Op.in]: idsPrestamos },
+            pagado: false,
+          },
+        },
+      );
+
+    }
+
+    if (!sandbox && !usarDeudaActual) {
+      // Préstamo nuevo: acreditar el monto al wallet del usuario
+      usuario.saldo = redondearDinero(parseFloat(usuario.saldo || 0) + montoNumero);
       await usuario.save();
     }
 
+    const resumenActualizado = await construirResumenDeudaUsuario(usuario.id);
+
     res.json({
       exito: true,
-      mensaje: '✅ Préstamo creado con cuotas',
+      mensaje: usarDeudaActual
+        ? '✅ Plan de pago creado como reestructuracion de deuda existente'
+        : '✅ Préstamo creado con cuotas',
       prestamo: prestamo.toJSON(),
       sandbox: !!sandbox,
-      cuotas: cuotas.map(c => c.toJSON())
+      usarDeudaActual: !!usarDeudaActual,
+      deudaActualUsuario: parseFloat(deudaActualUsuario.toFixed(2)),
+      deudaPrestamosPendiente: parseFloat(deudaPrestamosPendiente.toFixed(2)),
+      deudaConsolidadaTotal: parseFloat(montoNumero.toFixed(2)),
+      cuotas: cuotas.map(c => c.toJSON()),
+      resumenActualizado
     });
   } catch (error) {
     console.error('❌ Error creando préstamo admin:', error);
@@ -513,7 +901,7 @@ exports.obtenerPrestamo = async (req, res) => {
 
     // Obtener usuario manualmente
     const usuario = await User.findByPk(prestamo.usuarioId, {
-      attributes: ['id', 'nombre', 'apellido', 'email', 'telefono']
+      attributes: ['id', 'nombre', 'apellido', 'email', 'telefono', 'saldo']
     });
 
     const cuotas = await CuotaPrestamo.findAll({
@@ -526,7 +914,8 @@ exports.obtenerPrestamo = async (req, res) => {
       prestamo: {
         ...prestamo.toJSON(),
         User: usuario ? usuario.toJSON() : null,
-        cuotas
+        cuotas,
+        planPagoCheckout: construirCheckoutPlanPago(prestamo, cuotas, usuario?.saldo),
       }
     });
   } catch (error) {
@@ -568,6 +957,31 @@ exports.registrarPagoCuota = async (req, res) => {
       });
     }
 
+    const prestamo = await Loan.findByPk(cuota.prestamoId);
+    const esPlanDePago = Boolean(prestamo && String(prestamo.numeroReferencia || '').startsWith('PLAN-PAGO'));
+    let abonoSaldo = 0;
+    let nuevoSaldoUsuario = null;
+    let planAutoCerradoPorSaldo = false;
+
+    // El pago de cuota siempre es completo.
+    const montoCuotaOriginal = redondearDinero(cuota.montoCuota || 0);
+    const montoPago = montoCuotaOriginal;
+
+    if (montoPago <= 0) {
+      return res.status(400).json({
+        exito: false,
+        mensaje: 'Monto de cuota inválido'
+      });
+    }
+
+    if (esPlanDePago && prestamo) {
+      const usuario = await User.findByPk(prestamo.usuarioId);
+      if (usuario) {
+        abonoSaldo = montoPago;
+        nuevoSaldoUsuario = redondearDinero(usuario.saldo || 0);
+      }
+    }
+
     // Actualizar cuota
     cuota.pagado = true;
     cuota.fechaPago = new Date();
@@ -584,23 +998,58 @@ exports.registrarPagoCuota = async (req, res) => {
       where: { prestamoId: cuota.prestamoId }
     });
 
-    const todasPagadas = todasCuotas.every(c => c.pagado);
+    let todasPagadas = todasCuotas.every(c => c.pagado);
+
+    if (esPlanDePago && prestamo) {
+      const usuarioPlan = await User.findByPk(prestamo.usuarioId);
+      const saldoPlan = usuarioPlan ? redondearDinero(usuarioPlan.saldo || 0) : null;
+      const checkoutPlan = construirCheckoutPlanPago(prestamo, todasCuotas, saldoPlan);
+
+      // Regla de negocio: el plan se cierra cuando la deuda consolidada total llega a 0.
+      if (checkoutPlan && checkoutPlan.deudaTotalRestante <= 0) {
+        await CuotaPrestamo.update(
+          {
+            pagado: true,
+            fechaPago: new Date(),
+            metodoPago: 'Liquidación',
+            notas: 'Cierre automático de plan: saldo del usuario llegó a 0',
+          },
+          {
+            where: {
+              prestamoId: cuota.prestamoId,
+              pagado: false,
+            },
+          },
+        );
+
+        todasPagadas = true;
+        planAutoCerradoPorSaldo = true;
+      }
+    }
 
     if (todasPagadas) {
-      // Actualizar estado del préstamo a "pagado"
-      const prestamo = await Loan.findByPk(cuota.prestamoId);
+      // Actualizar estado del préstamo a "completado" (valor válido del ENUM)
       if (prestamo) {
-        prestamo.estado = 'pagado';
+        prestamo.estado = 'completado';
         await prestamo.save();
         console.log('✅ Préstamo marcado como pagado');
       }
     }
 
+    const resumenUsuario = prestamo
+      ? await construirResumenDeudaUsuario(prestamo.usuarioId)
+      : null;
+
     res.json({
       exito: true,
       mensaje: '✅ Pago registrado exitosamente',
       cuota,
-      prestamoCompletado: todasPagadas
+      prestamoCompletado: todasPagadas,
+      esPlanDePago,
+      abonoSaldo,
+      nuevoSaldoUsuario,
+      planAutoCerradoPorSaldo,
+      dashboardUsuario: resumenUsuario,
     });
   } catch (error) {
     console.error('❌ Error registrando pago:', error);
@@ -866,6 +1315,14 @@ exports.obtenerEstadoMercantil = async (req, res) => {
       error: error.message,
     });
   }
+};
+
+// Agregar una cuota individual a un préstamo existente
+exports.agregarCuotaIndividual = async (req, res) => {
+  return res.status(403).json({
+    exito: false,
+    mensaje: 'No está permitido agregar cuotas manualmente. Solo se crean al crear el préstamo.'
+  });
 };
 
 // Crear cuotas para un préstamo

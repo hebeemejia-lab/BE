@@ -26,7 +26,7 @@
     "body-parser": "^1.20.2",
     "braintree": "^3.36.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
+    "dotenv": "^16.6.1",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.6.3",
@@ -34,6 +34,7 @@
     "pg": "^8.11.3",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.7",
+    "serverless-http": "^4.0.0",
     "sqlite3": "^5.1.7",
     "stripe": "^20.2.0",
     "validator": "^13.11.0"

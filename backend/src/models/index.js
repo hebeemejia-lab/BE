@@ -5,9 +5,12 @@ const Loan = require('./Loan');
 const BankAccount = require('./BankAccount');
 const CuotaPrestamo = require('./CuotaPrestamo');
 const Inversion = require('./Inversion');
+const Comision = require('./Comision');
 const FundingTransfer = require('./FundingTransfer');
 const Transaction = require('./Transaction');
 const Budget = require('./Budget');
+const ForumTopic = require('./ForumTopic');
+const ForumReply = require('./ForumReply');
 
 // Usuario tiene muchos préstamos
 User.hasMany(Loan, {
@@ -51,6 +54,26 @@ User.hasMany(Inversion, {
 
 Inversion.belongsTo(User, {
   foreignKey: 'usuarioId'
+});
+
+// Usuario tiene muchas comisiones cobradas
+User.hasMany(Comision, {
+  foreignKey: 'usuarioId',
+  as: 'comisiones'
+});
+
+Comision.belongsTo(User, {
+  foreignKey: 'usuarioId'
+});
+
+// Inversion puede tener comisiones asociadas
+Inversion.hasMany(Comision, {
+  foreignKey: 'inversionId',
+  as: 'comisiones'
+});
+
+Comision.belongsTo(Inversion, {
+  foreignKey: 'inversionId'
 });
 
 // Usuario tiene muchas transferencias de fondeo (BE -> Alpaca)
@@ -101,6 +124,51 @@ Budget.belongsTo(User, {
   foreignKey: 'userId'
 });
 
+// Foro: usuario crea temas
+User.hasMany(ForumTopic, {
+  foreignKey: 'usuarioId',
+  as: 'temasForo',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+});
+
+ForumTopic.belongsTo(User, {
+  foreignKey: 'usuarioId',
+  as: 'autorTema',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+});
+
+// Foro: tema tiene respuestas
+ForumTopic.hasMany(ForumReply, {
+  foreignKey: 'temaId',
+  as: 'respuestas',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+});
+
+ForumReply.belongsTo(ForumTopic, {
+  foreignKey: 'temaId',
+  as: 'tema',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+});
+
+// Foro: usuario crea respuestas
+User.hasMany(ForumReply, {
+  foreignKey: 'usuarioId',
+  as: 'respuestasForo',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+});
+
+ForumReply.belongsTo(User, {
+  foreignKey: 'usuarioId',
+  as: 'autorRespuesta',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+});
+
 module.exports = {
   sequelize,
   User,
@@ -108,7 +176,10 @@ module.exports = {
   BankAccount,
   CuotaPrestamo,
   Inversion,
+  Comision,
   FundingTransfer,
   Transaction,
-  Budget
+  Budget,
+  ForumTopic,
+  ForumReply
 };

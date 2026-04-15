@@ -1,6 +1,7 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
+  Autocomplete,
   Alert,
   Box,
   Button,
@@ -32,7 +33,26 @@ import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
 import SouthWestRoundedIcon from '@mui/icons-material/SouthWestRounded';
 import { AuthContext } from '../context/AuthContext';
-import { depositoAPI, inversionesAPI, transferAPI } from '../services/api';
+import { bankAccountAPI, depositoAPI, inversionesAPI, transferAPI } from '../services/api';
+
+// Diálogo de confirmación para venta cripto
+function ConfirmSellDialog({ open, onClose, onConfirm, holding }) {
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle>Confirmar venta</DialogTitle>
+      <DialogContent>
+        <Typography>¿Deseas vender <b>{holding?.cantidad} {holding?.symbol}</b> por USD {holding ? holding.valorActual : ''}?</Typography>
+        <Typography sx={{ mt: 1, color: 'warning.main', fontSize: '0.95rem' }}>
+          Esta operación es real y se ejecutará en Bybit. El saldo se sumará a tu saldo CHAIN.
+        </Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="inherit">Cancelar</Button>
+        <Button onClick={onConfirm} color="error" variant="contained">Vender</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
 
 const CRYPTO_COINS = [
   { value: 'BTC',  label: 'Bitcoin (BTC)',  networks: ['Bitcoin Network'] },
@@ -44,6 +64,22 @@ const CRYPTO_COINS = [
   { value: 'USDT', label: 'USDT',           networks: ['ERC-20 (Ethereum)', 'TRC-20 (TRON)', 'BEP-20 (BSC)'] },
   { value: 'USDC', label: 'USDC',           networks: ['ERC-20 (Ethereum)', 'Solana', 'Arbitrum'] },
 ];
+
+const CRYPTO_SYMBOL_ICONS = {
+  BTC: '₿',
+  ETH: 'Ξ',
+  SOL: '◎',
+  BNB: 'B',
+  DOGE: 'Ð',
+  ADA: '₳',
+  USDT: '₮',
+  USDC: '◉',
+};
+
+const getCryptoIcon = (symbol) => {
+  const root = String(symbol || '').split('/')[0].toUpperCase();
+  return CRYPTO_SYMBOL_ICONS[root] || '◈';
+};
 
 const panelSx = {
   borderRadius: '24px',
@@ -74,40 +110,127 @@ const formatUsd = (value) =>
     maximumFractionDigits: 2,
   });
 
+const formatQuantity = (value) =>
+  toNumber(value).toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  });
+
+const getPositionSymbol = (position) => String(position?.symbol || '').toUpperCase();
+
+const getPositionRootSymbol = (position) => getPositionSymbol(position).split('/')[0];
+
+const isCryptoPosition = (position) => getPositionSymbol(position).includes('/');
+
+const isRenderableCryptoPosition = (position) => {
+  if (!isCryptoPosition(position)) return false;
+
+  const quantity = getPositionQuantity(position);
+  const cost = getPositionCost(position);
+
+  // Posiciones crypto con cantidad 0 y costo > 0 son registros dañados.
+  if (quantity <= 0 && cost > 0) return false;
+
+  return quantity > 0;
+};
+
+const getPositionQuantity = (position) =>
+  toNumber(position?.cantidad ?? position?.qty ?? position?.quantity);
+
+const getPositionValue = (position) =>
+  toNumber(position?.valorActual ?? position?.market_value);
+
+const getPositionCost = (position) =>
+  toNumber(position?.costoTotal ?? position?.cost_basis);
+
+const getPositionPnl = (position) =>
+  toNumber(position?.gananciaNoRealizada ?? position?.unrealized_pl);
+
+const getPositionCurrentPrice = (position) =>
+  toNumber(position?.precioActual ?? position?.current_price ?? position?.currentPrice);
+
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.mensaje
   || error?.response?.data?.error
   || error?.message
   || fallback;
 
+const isBrokerFundsInsufficient = (error) =>
+  String(getErrorMessage(error, '') || '').toLowerCase().includes('fondos insuficientes en la cuenta real de trading');
+
+const getFundingAmountFromError = (error) => {
+  const costoValidacion = Number(error?.response?.data?.costoValidacion);
+  return Number.isFinite(costoValidacion) && costoValidacion > 0 ? costoValidacion : 0;
+};
+
 function Saldos() {
-  const { usuario } = useContext(AuthContext);
+  const { usuario, refrescarPerfil } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
   const fullScreenDialog = useMediaQuery(theme.breakpoints.down('sm'));
   const nombreCompleto = [usuario?.nombre, usuario?.apellido].filter(Boolean).join(' ') || 'Usuario';
+  const initialWalletLoadRef = useRef(true);
+  const [, startTransition] = useTransition();
 
   const [activeFlow, setActiveFlow] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [statsLoading, setStatsLoading] = useState(true);
   const [walletStats, setWalletStats] = useState({
-    saldoDisponible: toNumber(usuario?.saldo),
+    saldoDisponible: toNumber(usuario?.saldoChain),
     recargasExitosas: 0,
     totalRecargado: 0,
     transferencias: 0,
     comprasActivas: 0,
   });
+  const [walletPositions, setWalletPositions] = useState([]);
+  const [positionsSummary, setPositionsSummary] = useState({
+    totalPosiciones: 0,
+    valorTotal: 0,
+    gananciaTotal: 0,
+  });
+  const [positionsSource, setPositionsSource] = useState('local');
 
   const [depositForm, setDepositForm] = useState({ method: 'paypal', amount: '', code: '' });
-  const [buyForm, setBuyForm] = useState({ symbol: '', cantidad: '' });
+  const [buyForm, setBuyForm] = useState({ assetClass: 'crypto', symbol: '', cantidad: '' });
   const [transferForm, setTransferForm] = useState({ modo: 'cedula', cedula: '', walletId: '', monto: '', concepto: 'Transferencia crypto' });
   const [withdrawForm, setWithdrawForm] = useState({ coin: 'BTC', network: 'Bitcoin Network', walletAddress: '', monto: '' });
   const [availableNetworks, setAvailableNetworks] = useState(CRYPTO_COINS[0].networks);
   const [assetQuery, setAssetQuery] = useState('');
   const [assetOptions, setAssetOptions] = useState([]);
   const [assetsLoading, setAssetsLoading] = useState(false);
+  const [buyQuote, setBuyQuote] = useState(null);
+  const [buyQuoteLoading, setBuyQuoteLoading] = useState(false);
   const [feedback, setFeedback] = useState({ open: false, severity: 'success', message: '' });
+  const [recibo, setRecibo] = useState(null); // receipt after buy/sell
+  const [sellDialog, setSellDialog] = useState({ open: false, holding: null });
+  // Acción de venta cripto
+  const handleSellCrypto = async (holding) => {
+    setSellDialog({ open: true, holding });
+  };
+
+  const confirmSellCrypto = async () => {
+    const { holding } = sellDialog;
+    if (!holding) return;
+    setProcessing(true);
+    try {
+      // Buscar la posición exacta (por symbol y cantidad)
+      const posiciones = await inversionesAPI.listarPosicionesCriptoWallet();
+      const pos = (posiciones.data?.posiciones || []).find(
+        (p) => p.symbol === holding.pair && Number(p.cantidad) === Number(holding.cantidad)
+      );
+      if (!pos) throw new Error('No se encontró la posición cripto para vender');
+      const res = await inversionesAPI.venderCriptoWallet({ inversionId: pos.id });
+      setRecibo(res.data?.recibo || null);
+      openFeedback('success', res.data?.mensaje || 'Venta ejecutada');
+      setSellDialog({ open: false, holding: null });
+      loadWalletStats();
+    } catch (error) {
+      openFeedback('error', error?.response?.data?.mensaje || error.message || 'Error al vender cripto');
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   const isPositiveAmount = (value) => {
     const numericValue = Number(value);
@@ -122,46 +245,153 @@ function Saldos() {
     setFeedback((prev) => ({ ...prev, open: false }));
   };
 
-  const loadWalletStats = useCallback(async () => {
-    setStatsLoading(true);
+  const cryptoHoldings = useMemo(() => {
+    const grouped = walletPositions
+      .filter(isRenderableCryptoPosition)
+      .reduce((accumulator, position) => {
+        const rootSymbol = getPositionRootSymbol(position);
+        if (!rootSymbol) return accumulator;
 
-    const [recargasResult, transferenciasResult, posicionesResult] = await Promise.allSettled([
-      depositoAPI.obtenerDepositos(),
-      transferAPI.obtenerHistorial(),
-      inversionesAPI.obtenerPosiciones(),
-    ]);
+        if (!accumulator[rootSymbol]) {
+          accumulator[rootSymbol] = {
+            symbol: rootSymbol,
+            pair: getPositionSymbol(position),
+            cantidad: 0,
+            valorActual: 0,
+            costoTotal: 0,
+            ganancia: 0,
+            precioActual: 0,
+          };
+        }
 
-    const recargas = recargasResult.status === 'fulfilled' ? asArray(recargasResult.value?.data) : [];
-    const recargasExitosas = recargas.filter((recarga) => String(recarga.estado || '').toLowerCase() === 'exitosa');
-    const totalRecargado = recargasExitosas.reduce(
-      (sum, recarga) => sum + toNumber(recarga.montoNeto ?? recarga.monto),
-      0,
-    );
+        accumulator[rootSymbol].cantidad += getPositionQuantity(position);
+        accumulator[rootSymbol].valorActual += getPositionValue(position);
+        accumulator[rootSymbol].costoTotal += getPositionCost(position);
+        accumulator[rootSymbol].ganancia += getPositionPnl(position);
+        accumulator[rootSymbol].precioActual = getPositionCurrentPrice(position) || accumulator[rootSymbol].precioActual;
 
-    const transferencias = transferenciasResult.status === 'fulfilled'
-      ? asArray(transferenciasResult.value?.data)
-      : [];
+        return accumulator;
+      }, {});
 
-    let comprasActivas = 0;
-    if (posicionesResult.status === 'fulfilled') {
-      const payload = posicionesResult.value?.data;
-      if (Array.isArray(payload)) {
-        comprasActivas = payload.length;
-      } else if (Array.isArray(payload?.posiciones)) {
-        comprasActivas = payload.posiciones.length;
-      }
+    return Object.values(grouped)
+      .map((holding) => ({
+        ...holding,
+        valorActual: Number(holding.valorActual.toFixed(2)),
+        costoTotal: Number(holding.costoTotal.toFixed(2)),
+        ganancia: Number(holding.ganancia.toFixed(2)),
+        precioActual: Number(holding.precioActual.toFixed(2)),
+        rendimiento: holding.costoTotal > 0
+          ? Number(((holding.ganancia / holding.costoTotal) * 100).toFixed(2))
+          : 0,
+      }))
+      .sort((left, right) => right.valorActual - left.valorActual);
+  }, [walletPositions]);
+
+  const cryptoHoldingsSummary = useMemo(() => ({
+    monedas: cryptoHoldings.length,
+    cantidadTotal: cryptoHoldings.reduce((sum, holding) => sum + holding.cantidad, 0),
+    valorTotal: cryptoHoldings.reduce((sum, holding) => sum + holding.valorActual, 0),
+    gananciaTotal: cryptoHoldings.reduce((sum, holding) => sum + holding.ganancia, 0),
+  }), [cryptoHoldings]);
+
+  const selectedWithdrawHolding = useMemo(() => {
+    const selectedCoin = String(withdrawForm.coin || '').toUpperCase();
+    return cryptoHoldings.find((holding) => holding.symbol === selectedCoin) || null;
+  }, [cryptoHoldings, withdrawForm.coin]);
+
+  const loadWalletStats = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setStatsLoading(true);
     }
 
-    setWalletStats({
-      saldoDisponible: toNumber(usuario?.saldo),
-      recargasExitosas: recargasExitosas.length,
-      totalRecargado,
-      transferencias: transferencias.length,
-      comprasActivas,
-    });
+    try {
+      const [perfilResult, recargasResult, transferenciasResult, posicionesResult, pnlResult] = await Promise.allSettled([
+        typeof refrescarPerfil === 'function' ? refrescarPerfil() : Promise.resolve(usuario),
+        depositoAPI.obtenerDepositos(),
+        transferAPI.obtenerHistorial(),
+        inversionesAPI.obtenerPosiciones(),
+        inversionesAPI.obtenerPNLActualizado?.(),
+      ]);
 
-    setStatsLoading(false);
-  }, [usuario?.saldo]);
+      const perfilActual = perfilResult.status === 'fulfilled' ? perfilResult.value : usuario;
+      const saldoChainBase = toNumber(perfilActual?.saldoChain);
+
+      // Obtener P&L actualizado si está disponible
+      let pnlData = { pnlTotalActual: 0, detallesPNL: {}, inversionesAbiertas: [] };
+      if (pnlResult.status === 'fulfilled' && pnlResult.value?.success) {
+        pnlData = pnlResult.value;
+      }
+
+      // saldoChainDisplay = saldoChainBase + PNLActual (así el cliente ve la ganancia/pérdida en tiempo real)
+      const saldoChainDisplay = parseFloat((saldoChainBase + pnlData.pnlTotalActual).toFixed(2));
+
+      const recargas = recargasResult.status === 'fulfilled' ? asArray(recargasResult.value?.data) : [];
+      const recargasExitosas = recargas.filter((recarga) => String(recarga.estado || '').toLowerCase() === 'exitosa');
+      const totalRecargado = recargasExitosas.reduce(
+        (sum, recarga) => sum + toNumber(recarga.montoNeto ?? recarga.monto),
+        0,
+      );
+
+      const transferencias = transferenciasResult.status === 'fulfilled'
+        ? asArray(transferenciasResult.value?.data)
+        : [];
+
+      let comprasActivas = 0;
+      let posiciones = [];
+      let resumen = { totalPosiciones: 0, valorTotal: 0, gananciaTotal: 0 };
+      let source = 'local';
+
+      if (posicionesResult.status === 'fulfilled') {
+        const payload = posicionesResult.value?.data;
+        posiciones = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.posiciones)
+            ? payload.posiciones
+            : [];
+
+        resumen = {
+          totalPosiciones: toNumber(payload?.resumen?.totalPosiciones ?? posiciones.length),
+          valorTotal: toNumber(payload?.resumen?.valorTotal),
+          gananciaTotal: toNumber(payload?.resumen?.gananciaTotal),
+        };
+        source = payload?.source || 'local';
+
+        if (Array.isArray(payload)) {
+          comprasActivas = payload.length;
+        } else if (Array.isArray(payload?.posiciones)) {
+          comprasActivas = payload.posiciones.length;
+        }
+      }
+
+      const newStats = {
+        saldoDisponible: saldoChainDisplay,
+        saldoChainBase,
+        pnlTotalActual: pnlData.pnlTotalActual,
+        detallesPNL: pnlData.detallesPNL,
+        recargasExitosas: recargasExitosas.length,
+        totalRecargado,
+        transferencias: transferencias.length,
+        comprasActivas,
+      };
+
+      const updateState = () => {
+        setWalletStats(newStats);
+        setWalletPositions(posiciones);
+        setPositionsSummary(resumen);
+        setPositionsSource(source);
+      };
+
+      if (silent) {
+        startTransition(updateState);
+      } else {
+        updateState();
+      }
+    } finally {
+      if (!silent) {
+        setStatsLoading(false);
+      }
+    }
+  }, [refrescarPerfil, usuario?.id, startTransition]);
 
   useEffect(() => {
     const state = location.state || {};
@@ -193,7 +423,20 @@ function Saldos() {
   }, [location.state]);
 
   useEffect(() => {
-    loadWalletStats();
+    const isFirstLoad = initialWalletLoadRef.current;
+    initialWalletLoadRef.current = false;
+    if (isFirstLoad) {
+      loadWalletStats({ silent: false });
+    } else {
+      loadWalletStats({ silent: true });
+    }
+  }, [loadWalletStats]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      loadWalletStats({ silent: true });
+    }, 15000); // Refresco cada 15s para ver P&L en tiempo real
+    return () => clearInterval(timer);
   }, [loadWalletStats]);
 
   useEffect(() => {
@@ -208,7 +451,7 @@ function Saldos() {
     const timer = setTimeout(async () => {
       try {
         setAssetsLoading(true);
-        const response = await inversionesAPI.buscarActivos(query, { assetClass: 'crypto' });
+        const response = await inversionesAPI.buscarActivos(query, { assetClass: buyForm.assetClass });
         const resultados = asArray(response?.data?.resultados);
         setAssetOptions(resultados);
         setBuyForm((prev) => {
@@ -227,10 +470,51 @@ function Saldos() {
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [activeFlow, assetQuery]);
+  }, [activeFlow, assetQuery, buyForm.assetClass]);
+
+  useEffect(() => {
+    if (activeFlow !== 'buy' || !buyForm.symbol) {
+      setBuyQuote(null);
+      return;
+    }
+
+    let cancelled = false;
+    const cargarCotizacion = async () => {
+      try {
+        setBuyQuoteLoading(true);
+        const response = await inversionesAPI.obtenerCotizacion(buyForm.symbol);
+        if (cancelled) return;
+        const data = response?.data || {};
+        const precio = Number(data.precio ?? data.precioCompra ?? data.price ?? 0);
+        const cambio = Number(data.cambio24h ?? data.cambio ?? NaN);
+        setBuyQuote({
+          precio: Number.isFinite(precio) ? precio : null,
+          cambio: Number.isFinite(cambio) ? cambio : null,
+          symbol: data.symbol || buyForm.symbol,
+        });
+      } catch (_) {
+        if (!cancelled) setBuyQuote(null);
+      } finally {
+        if (!cancelled) setBuyQuoteLoading(false);
+      }
+    };
+
+    cargarCotizacion();
+    const timer = setInterval(cargarCotizacion, 10000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [activeFlow, buyForm.symbol]);
 
   const resetDeposit = () => setDepositForm({ method: 'paypal', amount: '', code: '' });
-  const resetBuy = () => setBuyForm({ symbol: '', cantidad: '' });
+  const resetBuy = () => {
+    setBuyForm({ assetClass: 'crypto', symbol: '', cantidad: '' });
+    setAssetQuery('');
+    setAssetOptions([]);
+    setBuyQuote(null);
+  };
   const resetTransfer = () => setTransferForm({ modo: 'cedula', cedula: '', walletId: '', monto: '', concepto: 'Transferencia crypto' });
   const resetWithdraw = () => {
     setAvailableNetworks(CRYPTO_COINS[0].networks);
@@ -293,13 +577,54 @@ function Saldos() {
       }
 
       setProcessing(true);
-      const response = await inversionesAPI.comprar({
+      const buyPayload = {
         symbol: buyForm.symbol.trim().toUpperCase(),
         cantidad: Number(buyForm.cantidad),
-        assetClass: 'crypto',
-      });
+        assetClass: buyForm.assetClass,
+      };
 
-      openFeedback('success', response?.data?.mensaje || 'Compra ejecutada correctamente.');
+      let response;
+      try {
+        response = await inversionesAPI.comprar(buyPayload);
+      } catch (buyError) {
+        const puedeAutoFunding = buyForm.assetClass === 'crypto' && isBrokerFundsInsufficient(buyError);
+        if (!puedeAutoFunding) {
+          throw buyError;
+        }
+
+        const montoFunding = getFundingAmountFromError(buyError);
+        if (!isPositiveAmount(montoFunding)) {
+          throw buyError;
+        }
+
+        const cuentaDefaultResponse = await bankAccountAPI.obtenerDefault();
+        const cuentaDefaultId = cuentaDefaultResponse?.data?.id;
+
+        if (!cuentaDefaultId) {
+          openFeedback('error', 'No tienes cuenta bancaria default para fondear Alpaca automaticamente.');
+          return;
+        }
+
+        const fundingResponse = await bankAccountAPI.depositarEnAlpaca({
+          cuentaId: cuentaDefaultId,
+          monto: montoFunding,
+          sourceBalance: 'saldoChain',
+        });
+
+        const fundingStatus = String(fundingResponse?.data?.estado || '').toLowerCase();
+        if (fundingStatus && fundingStatus !== 'settled') {
+          openFeedback('warning', 'Funding enviado a Alpaca. Espera settlement y vuelve a intentar la compra.');
+          return;
+        }
+
+        response = await inversionesAPI.comprar(buyPayload);
+      }
+
+      if (response?.data?.recibo) {
+        setRecibo(response.data.recibo);
+      } else {
+        openFeedback('success', response?.data?.mensaje || 'Compra ejecutada correctamente.');
+      }
       setActiveFlow(null);
       resetBuy();
       await loadWalletStats();
@@ -364,12 +689,20 @@ function Saldos() {
         return;
       }
 
+      // ✅ Validar contra saldoChain (USD) desde el perfil
+      const montoUsd = Number(withdrawForm.monto);
+      const saldoChainDisponible = toNumber(usuario?.saldoChain);
+      if (montoUsd > saldoChainDisponible) {
+        openFeedback('error', `Saldo CHAIN insuficiente. Necesitas USD ${montoUsd.toFixed(2)}, tienes USD ${saldoChainDisponible.toFixed(2)}.`);
+        return;
+      }
+
       setProcessing(true);
       const response = await transferAPI.retiroCryptoWallet({
         walletAddress: addr,
         coin:          withdrawForm.coin,
         network:       withdrawForm.network,
-        monto:         Number(withdrawForm.monto),
+        monto:         montoUsd,
       });
 
       openFeedback('success', response?.data?.mensaje || 'Retiro solicitado correctamente.');
@@ -397,10 +730,12 @@ function Saldos() {
     {
       id: 'buy',
       title: 'Comprar crypto',
-      subtitle: 'Orden real Alpaca Crypto',
+      subtitle: 'Crypto y acciones en vivo',
       icon: <ShoppingBagOutlinedIcon sx={{ fontSize: 28 }} />,
       onClick: () => {
         setAssetQuery('');
+        setBuyForm((prev) => ({ ...prev, assetClass: 'crypto', symbol: '' }));
+        setBuyQuote(null);
         setActiveFlow('buy');
       },
     },
@@ -448,7 +783,12 @@ function Saldos() {
     {
       label: 'Saldo Chain',
       value: `USD ${formatUsd(walletStats.saldoDisponible)}`,
-      helper: 'Saldo disponible en tu cuenta',
+      helper: `Base: USD ${formatUsd(walletStats.saldoChainBase || 0)} ${
+        walletStats.pnlTotalActual !== 0
+          ? ` | P&L: ${walletStats.pnlTotalActual >= 0 ? '+' : ''}USD ${formatUsd(walletStats.pnlTotalActual)}`
+          : ''
+      } (actualizado cada 15s)`,
+      pnl: walletStats.pnlTotalActual,
     },
     {
       label: 'Depósitos exitosos',
@@ -520,47 +860,248 @@ function Saldos() {
             </Stack>
 
             <Alert severity="warning" sx={{ borderRadius: '14px' }}>
-              Las compras crypto se envían como ordenes reales a Alpaca Crypto. Usa pares validos como BTC/USD o ETH/USD.
+              Las compras se envían como órdenes reales a Alpaca. Crypto usa pares como BTC/USD y acciones usan símbolos como AAPL o TSLA.
             </Alert>
 
             <Grid container spacing={2}>
-              {walletMetrics.map((metric) => (
-                <Grid item xs={12} sm={6} md={3} key={metric.label}>
-                  <Card
-                    sx={{
-                      height: '100%',
-                      borderRadius: '20px',
-                      bgcolor: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(167,216,255,0.12)',
-                      boxShadow: 'none',
-                      color: '#f8fafc',
-                    }}
-                  >
-                    <CardContent sx={{ p: 2.25 }}>
-                      <Typography sx={sectionTitleSx}>{metric.label}</Typography>
-                      {statsLoading ? (
-                        <Stack direction="row" alignItems="center" sx={{ mt: 1.4 }}>
-                          <CircularProgress size={20} sx={{ color: '#bfdbfe' }} />
-                          <Typography sx={{ ml: 1.2, fontSize: '0.9rem', color: 'rgba(226,232,240,0.7)' }}>
-                            Cargando...
-                          </Typography>
-                        </Stack>
-                      ) : (
-                        <>
-                          <Typography sx={{ mt: 1.2, fontSize: { xs: '1.3rem', md: '1.55rem' }, fontWeight: 800 }}>
-                            {metric.value}
-                          </Typography>
-                          <Typography sx={{ mt: 0.7, fontSize: '0.9rem', color: 'rgba(226,232,240,0.68)' }}>
-                            {metric.helper}
-                          </Typography>
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
+              {walletMetrics.map((metric) => {
+                const isSaldoMetric = metric.label === 'Saldo Chain';
+                const hasPNL = isSaldoMetric && metric.pnl !== undefined && metric.pnl !== 0;
+                const isPNLPositive = hasPNL && metric.pnl > 0;
+                
+                return (
+                  <Grid item xs={12} sm={6} md={3} key={metric.label}>
+                    <Card
+                      sx={{
+                        height: '100%',
+                        borderRadius: '20px',
+                        bgcolor: hasPNL 
+                          ? (isPNLPositive ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)')
+                          : 'rgba(255,255,255,0.05)',
+                        border: hasPNL
+                          ? `1.5px solid ${isPNLPositive ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)'}`
+                          : '1px solid rgba(167,216,255,0.12)',
+                        boxShadow: hasPNL
+                          ? `0 0 20px ${isPNLPositive ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}`
+                          : 'none',
+                        color: '#f8fafc',
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      <CardContent sx={{ p: 2.25 }}>
+                        <Typography sx={sectionTitleSx}>{metric.label}</Typography>
+                        {statsLoading ? (
+                          <Stack direction="row" alignItems="center" sx={{ mt: 1.4 }}>
+                            <CircularProgress size={20} sx={{ color: '#bfdbfe' }} />
+                            <Typography sx={{ ml: 1.2, fontSize: '0.9rem', color: 'rgba(226,232,240,0.7)' }}>
+                              Cargando...
+                            </Typography>
+                          </Stack>
+                        ) : (
+                          <>
+                            <Typography 
+                              sx={{ 
+                                mt: 1.2, 
+                                fontSize: { xs: '1.3rem', md: '1.55rem' },
+                                fontWeight: 800,
+                                color: hasPNL ? (isPNLPositive ? '#10b981' : '#ef4444') : 'inherit'
+                              }}
+                            >
+                              {metric.value}
+                            </Typography>
+                            <Typography sx={{ mt: 0.7, fontSize: '0.9rem', color: 'rgba(226,232,240,0.68)' }}>
+                              {metric.helper}
+                            </Typography>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
             </Grid>
           </Stack>
+        </Paper>
+
+        <Paper sx={{ ...panelSx, mt: 2.5, p: { xs: 2.25, md: 3 } }}>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            justifyContent="space-between"
+            spacing={1.5}
+            alignItems={{ xs: 'flex-start', md: 'center' }}
+          >
+            <Box>
+              <Typography sx={sectionTitleSx}>Tus criptomonedas</Typography>
+              <Typography sx={{ mt: 0.8, color: 'rgba(226,232,240,0.76)', maxWidth: '68ch' }}>
+                Aquí ves cuántas monedas tienes por activo, cuánto valen ahora y la ganancia o pérdida abierta según el precio actual.
+              </Typography>
+            </Box>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Chip
+                label={`Fuente: ${positionsSource === 'alpaca' ? 'Alpaca' : 'Banco Exclusivo'}`}
+                sx={{ bgcolor: 'rgba(59,130,246,0.18)', color: '#bfdbfe', fontWeight: 700 }}
+              />
+              <Chip
+                label={`${cryptoHoldingsSummary.monedas} monedas`}
+                sx={{ bgcolor: 'rgba(148,163,184,0.14)', color: '#e2e8f0', fontWeight: 700 }}
+              />
+            </Stack>
+          </Stack>
+
+          <Grid container spacing={2} sx={{ mt: 0.5, mb: 0.5 }}>
+            <Grid item xs={12} md={4}>
+              <Card sx={{ borderRadius: '20px', bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(167,216,255,0.12)', color: '#f8fafc', boxShadow: 'none' }}>
+                <CardContent>
+                  <Typography sx={sectionTitleSx}>Valor actual cripto</Typography>
+                  <Typography sx={{ mt: 1.2, fontSize: { xs: '1.35rem', md: '1.55rem' }, fontWeight: 800 }}>
+                    USD {formatUsd(cryptoHoldingsSummary.valorTotal)}
+                  </Typography>
+                  <Typography sx={{ mt: 0.7, color: 'rgba(226,232,240,0.68)', fontSize: '0.9rem' }}>
+                    Total marcado a mercado de tus posiciones crypto.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Card sx={{ borderRadius: '20px', bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(167,216,255,0.12)', color: '#f8fafc', boxShadow: 'none' }}>
+                <CardContent>
+                  <Typography sx={sectionTitleSx}>Ganancia abierta</Typography>
+                  <Typography sx={{ mt: 1.2, fontSize: { xs: '1.35rem', md: '1.55rem' }, fontWeight: 800, color: cryptoHoldingsSummary.gananciaTotal >= 0 ? '#86efac' : '#fca5a5' }}>
+                    {cryptoHoldingsSummary.gananciaTotal >= 0 ? '+' : '-'}USD {formatUsd(Math.abs(cryptoHoldingsSummary.gananciaTotal))}
+                  </Typography>
+                  <Typography sx={{ mt: 0.7, color: 'rgba(226,232,240,0.68)', fontSize: '0.9rem' }}>
+                    Se actualiza silenciosamente cada 45 segundos mientras estás en la wallet.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Card sx={{ borderRadius: '20px', bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(167,216,255,0.12)', color: '#f8fafc', boxShadow: 'none' }}>
+                <CardContent>
+                  <Typography sx={sectionTitleSx}>Posiciones abiertas</Typography>
+                  <Typography sx={{ mt: 1.2, fontSize: { xs: '1.35rem', md: '1.55rem' }, fontWeight: 800 }}>
+                    {positionsSummary.totalPosiciones}
+                  </Typography>
+                  <Typography sx={{ mt: 0.7, color: 'rgba(226,232,240,0.68)', fontSize: '0.9rem' }}>
+                    {cryptoHoldingsSummary.cantidadTotal > 0
+                      ? `${formatQuantity(cryptoHoldingsSummary.cantidadTotal)} unidades crypto acumuladas.`
+                      : 'Todavía no tienes compras crypto abiertas.'}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          {statsLoading ? (
+            <Stack direction="row" alignItems="center" spacing={1.2} sx={{ py: 2.5 }}>
+              <CircularProgress size={20} sx={{ color: '#bfdbfe' }} />
+              <Typography sx={{ color: 'rgba(226,232,240,0.72)' }}>Cargando posiciones crypto...</Typography>
+            </Stack>
+          ) : cryptoHoldings.length === 0 ? (
+            <Alert severity="info" sx={{ mt: 1.5, borderRadius: '16px' }}>
+              Cuando compres BTC, ETH, SOL u otra moneda, aquí verás la cantidad, el valor actual y tu ganancia en vivo.
+            </Alert>
+          ) : (
+            <Grid container spacing={2} sx={{ mt: 0.5 }}>
+              {cryptoHoldings.map((holding) => {
+                const isPNLPositive = holding.ganancia >= 0;
+                return (
+                  <Grid item xs={12} md={6} lg={4} key={holding.symbol}>
+                    <Card 
+                      sx={{ 
+                        height: '100%', 
+                        borderRadius: '22px', 
+                        bgcolor: isPNLPositive ? 'rgba(34,197,94,0.06)' : 'rgba(239,68,68,0.06)',
+                        border: isPNLPositive 
+                          ? '1.5px solid rgba(34,197,94,0.25)' 
+                          : '1.5px solid rgba(239,68,68,0.25)',
+                        color: '#f8fafc', 
+                        boxShadow: isPNLPositive
+                          ? '0 0 16px rgba(34,197,94,0.1)'
+                          : '0 0 16px rgba(239,68,68,0.1)',
+                        transition: 'all 0.3s ease',
+                        _hover: {
+                          boxShadow: isPNLPositive
+                            ? '0 0 24px rgba(34,197,94,0.2)'
+                            : '0 0 24px rgba(239,68,68,0.2)',
+                        }
+                      }}>
+                      <CardContent sx={{ p: 2.25 }}>
+                        <Stack direction="row" justifyContent="space-between" spacing={1.5} alignItems="flex-start">
+                          <Stack direction="row" spacing={1.25} alignItems="center">
+                            <Box sx={{ width: 42, height: 42, borderRadius: '14px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', bgcolor: isPNLPositive ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)', color: isPNLPositive ? '#10b981' : '#ef4444', fontSize: '1.25rem', fontWeight: 800 }}>
+                              {getCryptoIcon(holding.pair)}
+                            </Box>
+                            <Box>
+                              <Typography sx={{ fontWeight: 800, fontSize: '1rem' }}>{holding.symbol}</Typography>
+                              <Typography sx={{ color: 'rgba(226,232,240,0.68)', fontSize: '0.86rem' }}>{holding.pair}</Typography>
+                            </Box>
+                          </Stack>
+                          <Chip
+                            size="small"
+                            label={`${holding.rendimiento >= 0 ? '+' : ''}${holding.rendimiento.toFixed(2)}%`}
+                            sx={{
+                              bgcolor: holding.rendimiento >= 0 ? 'rgba(34,197,94,0.16)' : 'rgba(239,68,68,0.16)',
+                              color: holding.rendimiento >= 0 ? '#86efac' : '#fca5a5',
+                              fontWeight: 700,
+                              fontSize: '0.75rem',
+                            }}
+                          />
+                        </Stack>
+
+                        <Grid container spacing={1.5} sx={{ mt: 1 }}>
+                          <Grid item xs={6}>
+                            <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Cantidad</Typography>
+                            <Typography sx={{ mt: 0.55, fontWeight: 700 }}>{formatQuantity(holding.cantidad)}</Typography>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Precio actual</Typography>
+                            <Typography sx={{ mt: 0.55, fontWeight: 700 }}>USD {formatUsd(holding.precioActual)}</Typography>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Valor actual</Typography>
+                            <Typography sx={{ mt: 0.55, fontWeight: 700, color: isPNLPositive ? '#86efac' : '#fca5a5' }}>
+                              USD {formatUsd(holding.valorActual)}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography sx={{ ...sectionTitleSx, fontSize: '0.68rem' }}>Ganancia/Pérdida</Typography>
+                            <Typography sx={{ mt: 0.55, fontWeight: 700, color: isPNLPositive ? '#86efac' : '#fca5a5', fontSize: '1.05rem' }}>
+                              {isPNLPositive ? '🔺' : '🔻'} {holding.ganancia >= 0 ? '+' : '-'}USD {formatUsd(Math.abs(holding.ganancia))}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                          <Typography sx={{ fontSize: '0.75rem', color: 'rgba(226,232,240,0.6)' }}>
+                            💰 Costo inicial: USD {formatUsd(holding.costoTotal)}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ mt: 2 }}>
+                          <Button
+                            variant="contained"
+                            color="error"
+                            size="small"
+                            disabled={processing}
+                            onClick={() => handleSellCrypto(holding)}
+                            sx={{ borderRadius: '12px', fontWeight: 700 }}
+                          >
+                            Vender
+                          </Button>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
+                  {/* Diálogo de confirmación de venta cripto */}
+                  <ConfirmSellDialog
+                    open={sellDialog.open}
+                    onClose={() => setSellDialog({ open: false, holding: null })}
+                    onConfirm={confirmSellCrypto}
+                    holding={sellDialog.holding}
+                  />
+            </Grid>
+          )}
         </Paper>
 
         <Paper sx={{ ...panelSx, mt: 2.5, p: { xs: 2.25, md: 3 } }}>
@@ -718,34 +1259,104 @@ function Saldos() {
       </Dialog>
 
       <Dialog open={activeFlow === 'buy'} onClose={() => setActiveFlow(null)} fullWidth maxWidth="sm" fullScreen={fullScreenDialog}>
-        <DialogTitle sx={{ fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Compra crypto</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Compra de activos</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ pt: 0.5 }}>
-            <Alert severity="info">Busca BTC o ETH y selecciona un par real de crypto como BTC/USD. Esta vista ya no lista acciones.</Alert>
-            <TextField
-              fullWidth
-              label="Buscar símbolo"
-              value={assetQuery}
-              onChange={(event) => setAssetQuery(event.target.value)}
-              inputProps={{ 'aria-label': 'Buscar símbolo para compra' }}
-              placeholder="Ej: BTC, ETH, SOL"
-            />
+            <Alert severity="info">Selecciona tipo de activo, busca símbolo y ejecuta orden real en Alpaca.</Alert>
             <FormControl fullWidth>
-              <InputLabel id="buy-symbol-label">Símbolo</InputLabel>
+              <InputLabel id="buy-asset-class-label">Tipo de activo</InputLabel>
               <Select
-                labelId="buy-symbol-label"
-                label="Símbolo"
-                value={buyForm.symbol}
-                onChange={(event) => setBuyForm((prev) => ({ ...prev, symbol: event.target.value }))}
-                inputProps={{ 'aria-label': 'Símbolo a comprar' }}
+                labelId="buy-asset-class-label"
+                label="Tipo de activo"
+                value={buyForm.assetClass}
+                onChange={(event) => {
+                  const nextClass = event.target.value;
+                  setBuyForm((prev) => ({ ...prev, assetClass: nextClass, symbol: '' }));
+                  setAssetQuery('');
+                  setAssetOptions([]);
+                  setBuyQuote(null);
+                }}
+                inputProps={{ 'aria-label': 'Tipo de activo a comprar' }}
               >
-                {assetOptions.map((asset) => (
-                  <MenuItem key={asset.symbol} value={asset.symbol}>
-                    {asset.symbol} · {asset.nombre || asset.name || 'Activo'}
-                  </MenuItem>
-                ))}
+                <MenuItem value="crypto">Crypto</MenuItem>
+                <MenuItem value="stock">Acciones</MenuItem>
               </Select>
             </FormControl>
+            <Autocomplete
+              fullWidth
+              options={assetOptions}
+              loading={assetsLoading}
+              value={assetOptions.find((asset) => asset.symbol === buyForm.symbol) || null}
+              inputValue={assetQuery}
+              onInputChange={(_, newInputValue) => setAssetQuery(newInputValue)}
+              onChange={(_, selectedOption) => {
+                setBuyForm((prev) => ({ ...prev, symbol: selectedOption?.symbol || '' }));
+              }}
+              getOptionLabel={(option) => {
+                if (typeof option === 'string') return option;
+                return option?.symbol || '';
+              }}
+              isOptionEqualToValue={(option, value) => option.symbol === value.symbol}
+              noOptionsText={assetQuery.trim().length < 1 ? 'Escribe para buscar' : 'No hay resultados'}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Buscar y seleccionar símbolo"
+                  placeholder={buyForm.assetClass === 'crypto' ? 'Ej: BTC, ETH, SOL' : 'Ej: AAPL, MSFT, TSLA'}
+                  inputProps={{
+                    ...params.inputProps,
+                    'aria-label': 'Buscar símbolo para compra',
+                  }}
+                />
+              )}
+              renderOption={(props, option) => (
+                <Box component="li" {...props} sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                  <Box sx={{ width: 24, textAlign: 'center', fontSize: '1.1rem', lineHeight: 1 }} aria-hidden="true">
+                    {getCryptoIcon(option.symbol)}
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.2 }}>
+                      {option.symbol}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
+                      {option.nombre || option.name || 'Activo'}
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
+            />
+
+            {buyForm.symbol && (
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ color: 'text.secondary' }}>
+                <Box sx={{ fontSize: '1.2rem', lineHeight: 1 }} aria-hidden="true">{getCryptoIcon(buyForm.symbol)}</Box>
+                <Typography sx={{ fontSize: '0.9rem' }}>
+                  Símbolo seleccionado: <strong>{buyForm.symbol}</strong>
+                </Typography>
+              </Stack>
+            )}
+
+            {(buyQuoteLoading || buyQuote) && (
+              <Stack direction="row" alignItems="center" spacing={1.2}>
+                {buyQuoteLoading ? (
+                  <CircularProgress size={16} />
+                ) : (
+                  <>
+                    <Typography sx={{ fontSize: '0.9rem' }}>
+                      Precio en vivo {buyQuote?.symbol || buyForm.symbol}: <strong>{buyQuote?.precio != null ? `USD ${formatUsd(buyQuote.precio)}` : 'N/D'}</strong>
+                    </Typography>
+                    {buyQuote?.cambio != null && (
+                      <Chip
+                        size="small"
+                        label={`${buyQuote.cambio >= 0 ? '+' : ''}${buyQuote.cambio.toFixed(2)}%`}
+                        color={buyQuote.cambio >= 0 ? 'success' : 'error'}
+                        variant="outlined"
+                      />
+                    )}
+                  </>
+                )}
+              </Stack>
+            )}
+
             {assetsLoading && (
               <Stack direction="row" alignItems="center">
                 <CircularProgress size={18} sx={{ mr: 1.2 }} />
@@ -905,13 +1516,13 @@ function Saldos() {
 
             <TextField
               fullWidth
-              label="Monto a retirar"
+              label="Monto a retirar (USD)"
               type="number"
               value={withdrawForm.monto}
               onChange={(e) => setWithdrawForm((prev) => ({ ...prev, monto: e.target.value }))}
-              inputProps={{ min: 0.01, step: '0.01', 'aria-label': 'Monto a retirar' }}
+              inputProps={{ min: 0.01, step: '0.01', 'aria-label': 'Monto a retirar en USD' }}
               InputProps={{ startAdornment: <InputAdornment position="start">USD</InputAdornment> }}
-              helperText={`Saldo Chain disponible: USD ${formatUsd(walletStats.saldoDisponible)}`}
+              helperText={`Saldo disponible (CHAIN): USD ${formatUsd(toNumber(usuario?.saldoChain))}`}
             />
           </Stack>
         </DialogContent>
@@ -922,6 +1533,35 @@ function Saldos() {
           </Button>
         </DialogActions>
       </Dialog>
+
+        <Dialog open={Boolean(recibo)} onClose={() => setRecibo(null)} fullWidth maxWidth="xs">
+          <DialogTitle>Recibo de comisión</DialogTitle>
+          <DialogContent dividers>
+            <Stack spacing={1}>
+              <Typography variant="body2"><strong>Operación:</strong> {recibo?.operacion || 'N/A'}</Typography>
+              <Typography variant="body2"><strong>Activo:</strong> {recibo?.symbol || 'N/A'}</Typography>
+              <Typography variant="body2"><strong>Cantidad:</strong> {recibo?.cantidad ?? 'N/A'}</Typography>
+              <Typography variant="body2"><strong>Precio:</strong> USD {formatUsd(toNumber(recibo?.precioEjecutado))}</Typography>
+              <Typography variant="body2"><strong>Comisión:</strong> {recibo?.comisionPct || '1.5%'} (USD {formatUsd(toNumber(recibo?.comisionUSD))})</Typography>
+              {recibo?.costoActivo != null && (
+                <Typography variant="body2"><strong>Costo activo:</strong> USD {formatUsd(toNumber(recibo.costoActivo))}</Typography>
+              )}
+              {recibo?.totalDeducido != null && (
+                <Typography variant="body2"><strong>Total debitado:</strong> USD {formatUsd(toNumber(recibo.totalDeducido))}</Typography>
+              )}
+              {recibo?.ingresosBrutos != null && (
+                <Typography variant="body2"><strong>Ingresos brutos:</strong> USD {formatUsd(toNumber(recibo.ingresosBrutos))}</Typography>
+              )}
+              {recibo?.ingresosNetos != null && (
+                <Typography variant="body2"><strong>Ingresos netos:</strong> USD {formatUsd(toNumber(recibo.ingresosNetos))}</Typography>
+              )}
+              <Typography variant="caption" color="text.secondary">Orden Bybit: {recibo?.bybitOrderId || 'N/A'}</Typography>
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button variant="contained" onClick={() => setRecibo(null)}>Entendido</Button>
+          </DialogActions>
+        </Dialog>
 
       <Snackbar open={feedback.open} autoHideDuration={4200} onClose={closeFeedback} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert

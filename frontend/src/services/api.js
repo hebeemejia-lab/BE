@@ -75,11 +75,19 @@ export const depositoAPI = {
 // Inversiones (trading en vivo)
 export const inversionesAPI = {
   comprar: (datos) => API.post('/inversiones/comprar', datos),
+  vender: (datos) => API.post('/inversiones/vender', datos),
   obtenerPosiciones: () => API.get('/inversiones/posiciones'),
   obtenerPortfolio: () => API.get('/inversiones/portfolio'),
   buscarActivos: (query, options = {}) => API.get('/inversiones/buscar', { params: { q: query, ...options } }),
   obtenerCotizacion: (symbol) => API.get(`/inversiones/cotizacion/${encodeURIComponent(symbol)}`),
+<<<<<<< HEAD
   obtenerHistorial: (symbol, params = {}) => API.get(`/inversiones/historial/${encodeURIComponent(symbol)}`, { params }),
+=======
+  obtenerPNLActualizado: () => API.get('/inversiones/pnl/actualizado'),
+  obtenerComisiones: () => API.get('/inversiones/comisiones'),
+  listarPosicionesCriptoWallet: () => API.get('/inversiones/wallet/posiciones-cripto'),
+  venderCriptoWallet: (datos) => API.post('/inversiones/wallet/vender-cripto', datos),
+>>>>>>> (key)
 };
 
 // Cuentas Bancarias
@@ -95,6 +103,14 @@ export const bankAccountAPI = {
   obtenerFundingHistorial: (limit = 20) => API.get('/funding/alpaca/historial', { params: { limit } }),
   sincronizarFundingTransfer: (fundingTransferId) => API.post('/funding/alpaca/sincronizar', { fundingTransferId }),
   sincronizarFundingPendientes: () => API.post('/funding/alpaca/sincronizar-pendientes'),
+};
+
+// Foro
+export const forumAPI = {
+  listarTemas: () => API.get('/foro/temas'),
+  crearTema: (datos) => API.post('/foro/temas', datos),
+  obtenerTema: (temaId) => API.get(`/foro/temas/${temaId}`),
+  crearRespuesta: (temaId, datos) => API.post(`/foro/temas/${temaId}/respuestas`, datos),
 };
 
 export default API;
