@@ -46,7 +46,10 @@ const bybitService = require('./services/bybitService');
 console.log('🟢 [Express] bybitService cargado');
 
 
+
+console.log('🟢 [Express] Inicializando app Express...');
 const app = express();
+console.log('🟢 [Express] App Express inicializada');
 
 console.log('🚦 Iniciando backend Express...');
 console.log('🌐 NODE_ENV:', process.env.NODE_ENV);
