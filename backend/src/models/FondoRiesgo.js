@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
 
-const FondoRiesgo = sequelize.define('FondoRiesgo', {
+module.exports = (sequelize) => {
+  const FondoRiesgo = sequelize.define('FondoRiesgo', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -32,6 +32,7 @@ const FondoRiesgo = sequelize.define('FondoRiesgo', {
   },
   fechaGanancia: {
     type: DataTypes.DATE,
+  return FondoRiesgo;
     allowNull: true,
     comment: 'Fecha de registro de ganancias',
   },
