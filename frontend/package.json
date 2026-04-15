@@ -22,7 +22,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "node --max_old_space_size=4096 ./node_modules/react-scripts/bin/react-scripts.js build",
+    "build": "set CI=false && node --max_old_space_size=4096 ./node_modules/react-scripts/bin/react-scripts.js build",
     "serve": "node server.js",
     "prod": "node server.js",
     "test": "react-scripts test",

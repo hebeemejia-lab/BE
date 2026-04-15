@@ -87,23 +87,17 @@ module.exports = {
         allowNull: false,
       },
       createdAt: {
-        type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW'),
+        type: Sequelize.DATE,
       },
       updatedAt: {
-        type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW'),
+        type: Sequelize.DATE,
       },
     });
-    await queryInterface.addIndex('Users', ['email']);
-    await queryInterface.addIndex('Users', ['cedula']);
-    await queryInterface.addIndex('Users', ['alpacaAccountId']);
   },
 
   down: async (queryInterface, Sequelize) => {
     await queryInterface.dropTable('Users');
-    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_Users_rol";');
-  }
+  },
 };
