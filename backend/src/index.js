@@ -8,42 +8,66 @@ const { connectDB } = require('./config/database');
 const models = require('./models');
 const { spawn } = require('child_process');
 
-// Rutas - v2.3 with PayPal Payouts (automatic withdrawals)
+
+console.log('🟢 [Express] Cargando rutas...');
 const authRoutes = require('./routes/authRoutes');
+console.log('🟢 [Express] authRoutes cargado');
 const transferRoutes = require('./routes/transferRoutes');
+console.log('🟢 [Express] transferRoutes cargado');
 const loanRoutes = require('./routes/loanRoutes');
+console.log('🟢 [Express] loanRoutes cargado');
 const carterCardRoutes = require('./routes/carterCardRoutes');
+console.log('🟢 [Express] carterCardRoutes cargado');
 const recargaRoutes = require('./routes/recargaRoutes');
+console.log('🟢 [Express] recargaRoutes cargado');
 const retiroRoutes = require('./routes/retiroRoutes');
+console.log('🟢 [Express] retiroRoutes cargado');
 const bankAccountRoutes = require('./routes/bankAccountRoutes');
+console.log('🟢 [Express] bankAccountRoutes cargado');
 const transferenciaInternacionalRoutes = require('./routes/transferenciaInternacionalRoutes');
+console.log('🟢 [Express] transferenciaInternacionalRoutes cargado');
 const faqRoutes = require('./routes/faqRoutes');
+console.log('🟢 [Express] faqRoutes cargado');
 const faqFeedbackRoutes = require('./routes/faqFeedbackRoutes');
+console.log('🟢 [Express] faqFeedbackRoutes cargado');
 const adminRoutes = require('./routes/adminRoutes');
+console.log('🟢 [Express] adminRoutes cargado');
 const adminRetiroRoutes = require('./routes/adminRetiroRoutes');
+console.log('🟢 [Express] adminRetiroRoutes cargado');
 const inversionesRoutes = require('./routes/inversionesRoutes');
+console.log('🟢 [Express] inversionesRoutes cargado');
 const fundingAlpacaRoutes = require('./routes/fundingAlpacaRoutes');
+console.log('🟢 [Express] fundingAlpacaRoutes cargado');
 const expensesRoutes = require('./routes/expenses');
+console.log('🟢 [Express] expensesRoutes cargado');
 const forumRoutes = require('./routes/forumRoutes');
+console.log('🟢 [Express] forumRoutes cargado');
 const bybitService = require('./services/bybitService');
+console.log('🟢 [Express] bybitService cargado');
+
 
 const app = express();
 
-// Conectar a SQLite
-connectDB();
+console.log('🚦 Iniciando backend Express...');
+console.log('🌐 NODE_ENV:', process.env.NODE_ENV);
+console.log('🔗 DATABASE_URL:', process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 60) + '...' : 'NO DEFINIDA');
+console.log('⏳ Conectando a la base de datos...');
+connectDB()
+  .then(() => {
+    console.log('✅ Conexión a base de datos exitosa (connectDB)');
+  })
+  .catch((err) => {
+    console.error('❌ Error al conectar a la base de datos:', err);
+  });
 
 // Middlewares
 const frontendUrl = (process.env.FRONTEND_URL || '').trim();
+
 const allowedOrigins = [
+  'https://bancoexclusivo.lat',
+  'https://www.bancoexclusivo.lat',
   'http://localhost:3000',
   'http://localhost:3001',
-  'https://www.bancoexclusivo.lat',
-  'https://bancoexclusivo.lat',
-  'http://www.bancoexclusivo.lat',
-  'http://bancoexclusivo.lat',
-  'https://be-2-3wc8.onrender.com',
-  'https://be-backend-hfib.onrender.com',
-  'https://bancoexclusivo.lat', // Asegurado para CORS
 ];
 
 // Agregar FRONTEND_URL si está configurado y no está vacío
@@ -53,9 +77,8 @@ if (frontendUrl && !allowedOrigins.includes(frontendUrl)) {
 
 console.log('🔐 CORS Origins permitidos:', allowedOrigins);
 
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
-    // Permitir peticiones sin origin (como Postman) o si está en la lista
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -66,32 +89,35 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-
-// Permitir preflight para todas las rutas
-app.options('*', cors());
+};
+app.use(cors(corsOptions));
+// Permitir preflight para todas las rutas con la misma config
+app.options('*', cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Rutas
-app.use('/auth', authRoutes);
-app.use('/transferencias', transferRoutes);
-app.use('/transferencias-internacionales', transferenciaInternacionalRoutes);
-app.use('/prestamos', loanRoutes);
-app.use('/carter-card', carterCardRoutes);
-app.use('/recargas', recargaRoutes);
-app.use('/retiros', retiroRoutes);
-app.use('/cuentas-bancarias', bankAccountRoutes);
-app.use('/faq', faqRoutes);
-app.use('/faq-feedback', faqFeedbackRoutes);
-app.use('/admin', adminRoutes);
-app.use('/admin', adminRetiroRoutes);
-app.use('/inversiones', inversionesRoutes);
-app.use('/funding/alpaca', fundingAlpacaRoutes);
-app.use('/foro', forumRoutes);
+
+console.log('🟢 [Express] Montando rutas en app...');
+app.use('/auth', authRoutes); console.log('🟢 [Express] /auth montado');
+app.use('/transferencias', transferRoutes); console.log('🟢 [Express] /transferencias montado');
+app.use('/transferencias-internacionales', transferenciaInternacionalRoutes); console.log('🟢 [Express] /transferencias-internacionales montado');
+app.use('/prestamos', loanRoutes); console.log('🟢 [Express] /prestamos montado');
+app.use('/carter-card', carterCardRoutes); console.log('🟢 [Express] /carter-card montado');
+app.use('/recargas', recargaRoutes); console.log('🟢 [Express] /recargas montado');
+app.use('/retiros', retiroRoutes); console.log('🟢 [Express] /retiros montado');
+app.use('/cuentas-bancarias', bankAccountRoutes); console.log('🟢 [Express] /cuentas-bancarias montado');
+app.use('/faq', faqRoutes); console.log('🟢 [Express] /faq montado');
+app.use('/faq-feedback', faqFeedbackRoutes); console.log('🟢 [Express] /faq-feedback montado');
+app.use('/admin', adminRoutes); console.log('🟢 [Express] /admin montado');
+app.use('/admin', adminRetiroRoutes); console.log('🟢 [Express] /admin (retiro) montado');
+app.use('/inversiones', inversionesRoutes); console.log('🟢 [Express] /inversiones montado');
+app.use('/funding/alpaca', fundingAlpacaRoutes); console.log('🟢 [Express] /funding/alpaca montado');
+app.use('/foro', forumRoutes); console.log('🟢 [Express] /foro montado');
 const fondoRiesgoRoutes = require('./routes/fondoRiesgoRoutes'); // Importar las rutas de fondoRiesgo
-app.use('/fondo-riesgo', fondoRiesgoRoutes); // Agregar fondoRiesgoRoutes a las rutas principales
-app.use('/', expensesRoutes); // Montar rutas de gastos personales
+console.log('🟢 [Express] fondoRiesgoRoutes cargado');
+app.use('/fondo-riesgo', fondoRiesgoRoutes); console.log('🟢 [Express] /fondo-riesgo montado');
+app.use('/', expensesRoutes); console.log('🟢 [Express] / (expenses) montado');
 
 
 // Ruta de prueba
@@ -188,47 +214,10 @@ app.get('/recargas/test', (req, res) => {
 
 // Manejo de errores 404
 app.use((req, res) => {
+  console.log('🟠 [Express] Petición llegó al middleware 404:', req.method, req.originalUrl);
   res.status(404).json({ mensaje: 'Ruta no encontrada' });
 });
 
 // Iniciar servidor
-const PORT = process.env.PORT || 5000;
-const HOST = '0.0.0.0'; // Escuchar en todas las interfaces, no solo localhost
-
-const server = app.listen(PORT, HOST, () => {
-  console.log(`\n╔════════════════════════════════════╗`);
-  console.log(`║   BANCO EXCLUSIVO - BACKEND        ║`);
-  console.log(`║   Servidor corriendo en:           ║`);
-  console.log(`║   Puerto: ${PORT}                    ║`);
-  console.log(`║   Host: ${HOST}                      ║`);
-  console.log(`╚════════════════════════════════════╝\n`);
-
-  // Ejecutar migraciones en background después de que el servidor esté listo
-  console.log('⏳ Ejecutando migraciones en background...');
-  const migrate = spawn('node', [path.join(__dirname, '..', 'migrate.js')], {
-    cwd: path.join(__dirname, '..'),
-    stdio: ['ignore', 'pipe', 'pipe']
-  });
-
-  migrate.stdout.on('data', (data) => {
-    console.log(`[MIGRATE] ${data.toString().trim()}`);
-  });
-
-  migrate.stderr.on('data', (data) => {
-    console.log(`[MIGRATE] ⚠️  ${data.toString().trim()}`);
-  });
-
-  migrate.on('close', (code) => {
-    if (code === 0) {
-      console.log('✅ Migraciones completadas exitosamente');
-    } else {
-      console.log(`⚠️  Migraciones completadas con código ${code} (no crítico)`);
-    }
-  });
-});
-
-// Manejo de errores del servidor
-server.on('error', (err) => {
-  console.error('❌ Error del servidor:', err);
-  process.exit(1);
-});
+// Para serverless: solo exportar app, no levantar servidor ni migraciones aquí
+module.exports = app;
