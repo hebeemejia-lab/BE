@@ -1,4 +1,5 @@
-const { sequelize } = require('../config/database');
+const { getSequelize } = require('../config/database');
+const sequelize = getSequelize();
 const User = require('./User')(sequelize);
 const Loan = require('./Loan')(sequelize);
 const BankAccount = require('./BankAccount')(sequelize);
