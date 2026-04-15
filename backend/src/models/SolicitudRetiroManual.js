@@ -1,9 +1,9 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
 
-const SolicitudRetiroManual = sequelize.define(
-  'SolicitudRetiroManual',
-  {
+module.exports = (sequelize) => {
+  const SolicitudRetiroManual = sequelize.define(
+    'SolicitudRetiroManual',
+    {
       id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -33,7 +33,6 @@ const SolicitudRetiroManual = sequelize.define(
         type: DataTypes.ENUM('pendiente', 'aprobada', 'enviada', 'completada', 'rechazada', 'fallida', 'procesada'),
         defaultValue: 'pendiente',
       },
-      // Información del usuario que solicita
       nombreUsuario: {
         type: DataTypes.STRING(255),
       },
@@ -43,7 +42,6 @@ const SolicitudRetiroManual = sequelize.define(
       cedulaUsuario: {
         type: DataTypes.STRING(50),
       },
-      // Información bancaria
       banco: {
         type: DataTypes.STRING(100),
       },
@@ -56,7 +54,6 @@ const SolicitudRetiroManual = sequelize.define(
       nombreBeneficiario: {
         type: DataTypes.STRING(255),
       },
-      // Información de procesamiento
       batchIdPayPal: {
         type: DataTypes.STRING(255),
       },
@@ -99,11 +96,9 @@ const SolicitudRetiroManual = sequelize.define(
         type: DataTypes.DECIMAL(24, 8),
         allowNull: true,
       },
-      // Notas del admin
       notasAdmin: {
         type: DataTypes.TEXT,
       },
-      // Auditoría
       procesadoPor: {
         type: DataTypes.INTEGER,
         references: {
@@ -131,5 +126,5 @@ const SolicitudRetiroManual = sequelize.define(
       timestamps: true,
     }
   );
-
-module.exports = SolicitudRetiroManual;
+  return SolicitudRetiroManual;
+};
