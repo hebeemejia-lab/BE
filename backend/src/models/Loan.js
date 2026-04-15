@@ -47,7 +47,6 @@ module.exports = (sequelize) => {
       type: DataTypes.JSON,
       defaultValue: [],
     },
-    // Información bancaria
     bancoDespositante: {
       type: DataTypes.STRING,
       defaultValue: 'Banco Barenvas',
@@ -59,23 +58,19 @@ module.exports = (sequelize) => {
     emailAprobacion: {
       type: DataTypes.STRING,
       allowNull: true,
+      defaultValue: 'Hebelmejia2@gmail.com',
+    },
+    fechaAprobacion: {
+      type: DataTypes.DATE,
+      defaultValue: null,
+    },
+    numeroReferencia: {
+      type: DataTypes.STRING,
+      defaultValue: null,
     },
     // ...otros campos...
+  }, {
+    timestamps: true,
   });
   return Loan;
 };
-    defaultValue: 'Hebelmejia2@gmail.com',
-  },
-  fechaAprobacion: {
-    type: DataTypes.DATE,
-    defaultValue: null,
-  },
-  numeroReferencia: {
-    type: DataTypes.STRING,
-    defaultValue: null,
-  },
-}, {
-  timestamps: true,
-});
-
-module.exports = Loan;
