@@ -1,3 +1,4 @@
+console.log('🟢 [Express] authRoutes.js cargado');
 const express = require('express');
 const router = express.Router();
 const {
