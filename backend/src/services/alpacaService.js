@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { obtenerCotizacionMarketStack } = require('./marketstackService');
 
 // Alpaca Trading API Service
 // ⚠️ LIVE TRADING - DINERO REAL
@@ -407,6 +408,20 @@ const formatBrokerTransfer = (transfer) => ({
   updatedAt: transfer?.updated_at,
 });
 
+const formatBrokerPosition = (position) => ({
+  assetId: position?.asset_id,
+  symbol: normalizeCryptoSymbol(position?.symbol),
+  qty: Number(position?.qty || 0),
+  side: position?.side,
+  avgEntryPrice: position?.avg_entry_price ? Number(position.avg_entry_price) : null,
+  currentPrice: position?.current_price ? Number(position.current_price) : null,
+  market_value: position?.market_value ? Number(position.market_value) : 0,
+  unrealized_pl: position?.unrealized_pl ? Number(position.unrealized_pl) : 0,
+  unrealized_plpc: position?.unrealized_plpc ? Number(position.unrealized_plpc) : 0,
+  exchange: position?.exchange,
+  source: 'alpaca',
+});
+
 const obtenerActivos = async (assetClass) => {
   const config = getConfig();
   const response = await axios.get(
@@ -486,54 +501,33 @@ const obtenerCotizacion = async (symbol) => {
   const normalizedSymbol = normalizeCryptoSymbol(symbol);
   const config = getConfig();
 
+  if (isCryptoSymbol(normalizedSymbol)) {
+    console.log(`📊 Obteniendo cotización crypto de ${normalizedSymbol}...`);
+    return obtenerCotizacionCrypto(normalizedSymbol);
+  }
+  
   try {
-    if (isCryptoSymbol(normalizedSymbol)) {
-      console.log(`📊 Obteniendo cotización crypto de ${normalizedSymbol}...`);
-      return await obtenerCotizacionCrypto(normalizedSymbol);
-    }
-
-    if (!hasTradingCredentials()) {
-      console.warn(`⚠️ Alpaca sin credenciales, usando Yahoo para ${normalizedSymbol}`);
-      try {
-        return await obtenerCotizacionYahoo(normalizedSymbol);
-      } catch (yahooError) {
-        console.error(`⚠️ Yahoo también falló para ${normalizedSymbol}, retornando default`);
-        return formatQuote(normalizedSymbol, { ap: 0, bp: 0, t: new Date().toISOString() }, 'us_equity');
-      }
-    }
+    console.log(`📊 Obteniendo cotización de ${normalizedSymbol}...`);
     
+    const response = await axios.get(
+      `${config.baseUrl}/v2/stocks/${normalizedSymbol}/quotes/latest`,
+      { headers: getHeaders() }
+    );
+
+    const quote = response.data.quote;
+    console.log(`✅ ${normalizedSymbol}: $${Number(quote.ap || quote.bp || 0).toFixed(2)}`);
+
+    return formatQuote(normalizedSymbol, quote, 'us_equity');
+  } catch (error) {
+    console.error(`❌ Error obteniendo cotización de ${normalizedSymbol}:`, error.message);
+    
+    // Fallback a última cotización de cierre
     try {
-      console.log(`📊 Obteniendo cotización Alpaca de ${normalizedSymbol}...`);
-      
-      const response = await axios.get(
-        `${config.baseUrl}/v2/stocks/${normalizedSymbol}/quotes/latest`,
-        { headers: getHeaders() }
-      );
-
-      const quote = response.data.quote;
-      console.log(`✅ ${normalizedSymbol}: $${Number(quote.ap || quote.bp || 0).toFixed(2)}`);
-
-      return formatQuote(normalizedSymbol, quote, 'us_equity');
-    } catch (error) {
-      console.error(`❌ Error Alpaca obteniendo ${normalizedSymbol}:`, error.message);
-      
-      // Fallback a última cotización de cierre
-      try {
-        const fallback = await obtenerUltimoCierre(normalizedSymbol);
-        return fallback;
-      } catch (fallbackError) {
-        try {
-          console.warn(`⚠️ Ultra-fallback Yahoo para ${normalizedSymbol}`);
-          return await obtenerCotizacionYahoo(normalizedSymbol);
-        } catch (yahooError) {
-          console.error(`⚠️ Todos los fallbacks fallaron para ${normalizedSymbol}, retornando default`);
-          return formatQuote(normalizedSymbol, { ap: 0, bp: 0, t: new Date().toISOString() }, 'us_equity');
-        }
-      }
+      const fallback = await obtenerUltimoCierre(normalizedSymbol);
+      return fallback;
+    } catch (fallbackError) {
+      throw new Error(`No se pudo obtener precio de ${normalizedSymbol}: ${error.message}`);
     }
-  } catch (allError) {
-    console.error(`🔴 Error CRÍTICO en obtenerCotizacion(${normalizedSymbol}):`, allError.message);
-    return formatQuote(normalizedSymbol, { ap: 0, bp: 0, t: new Date().toISOString() }, 'us_equity');
   }
 };
 
@@ -726,6 +720,30 @@ const obtenerTransferenciaAchBroker = async ({ accountId, transferId }) => {
     }
 
     return transfer;
+  }
+};
+
+const listarPosicionesCuentaBroker = async (accountId) => {
+  if (!accountId) {
+    return [];
+  }
+
+  const config = ensureBrokerConfig();
+
+  try {
+    const response = await axios.get(
+      `${config.baseUrl}/v1/trading/accounts/${encodeURIComponent(accountId)}/positions`,
+      { headers: getBrokerHeaders() },
+    );
+
+    const positions = Array.isArray(response.data) ? response.data : [];
+    return positions.map(formatBrokerPosition);
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return [];
+    }
+
+    throw error;
   }
 };
 
@@ -967,6 +985,7 @@ module.exports = {
   crearOrdenMercado,
   crearTransferenciaAchBroker,
   confirmarOrdenMercado,
+  listarPosicionesCuentaBroker,
   listarTransferenciasAchBroker,
   normalizeFundingStatus,
   obtenerTransferenciaAchBroker,

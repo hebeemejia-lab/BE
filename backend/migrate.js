@@ -1,6 +1,10 @@
-// Script de migración para agregar columna rol y crear usuario admin
+// Script de migración - sincroniza todos los modelos con la base de datos
 const { sequelize } = require('./src/config/database');
+// Cargar TODOS los modelos para que sequelize los registre antes de sync()
+require('./src/models');
 const User = require('./src/models/User');
+const Inversion = require('./src/models/Inversion');
+const { buildCantidadRecalculada } = require('./src/services/inversionRepairService');
 const bcrypt = require('bcryptjs');
 
 async function migrar() {
@@ -11,15 +15,73 @@ async function migrar() {
     await sequelize.authenticate();
     console.log('✅ Conectado a la base de datos');
 
-    // Sincronizar modelos (ALTER TABLE para agregar columna rol)
-    const allowAlter = process.env.DB_SYNC_ALTER === 'true';
-    if (process.env.NODE_ENV === 'production' && !allowAlter) {
-      await sequelize.sync();
-      console.log('✅ Tablas sincronizadas (sin alter)');
-    } else {
-      await sequelize.sync({ alter: true });
-      console.log('✅ Tablas sincronizadas (columna rol agregada si no existía)');
+    // Agregar valores ENUM faltantes en PostgreSQL (sync({ alter: true }) no los agrega)
+    const enumMigrations = [
+      { type: '"enum_Recargas_metodo"', value: 'googlepay' },
+      { type: '"enum_Loans_estado"',    value: 'aprobado' },
+      { type: '"enum_Loans_estado"',    value: 'rechazado' },
+      { type: '"enum_Loans_estado"',    value: 'completado' },
+    ];
+    for (const { type, value } of enumMigrations) {
+      try {
+        await sequelize.query(`
+          DO $$ BEGIN
+            ALTER TYPE ${type} ADD VALUE IF NOT EXISTS '${value}';
+          EXCEPTION WHEN others THEN NULL;
+          END $$;
+        `);
+      } catch (_) { /* SQLite or type doesn't exist yet — safe to ignore */ }
     }
+    console.log('✅ ENUM values verificados');
+
+    // Columnas nuevas que pueden no existir en producción — agregar explícitamente
+    const columnMigrations = [
+      `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "saldoEnTransitoAlpaca" DECIMAL(15,2) DEFAULT 0`,
+      `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "saldoChain" DECIMAL(15,2) DEFAULT 0`,
+      `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "alpacaAccountId" VARCHAR(255)`,
+      `ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "alpacaFunded" BOOLEAN DEFAULT false`,
+      `ALTER TABLE "Loans" ADD COLUMN IF NOT EXISTS "deudaSaldoNegativoInicial" DECIMAL(15,2) DEFAULT 0`,
+      `ALTER TABLE "Loans" ADD COLUMN IF NOT EXISTS "deudaPrestamosInicial" DECIMAL(15,2) DEFAULT 0`,
+    ];
+    for (const sql of columnMigrations) {
+      try {
+        await sequelize.query(sql);
+      } catch (_) { /* SQLite ignora IF NOT EXISTS — seguro */ }
+    }
+    console.log('✅ Columnas críticas verificadas');
+
+    // Sincronizar TODOS los modelos con alter: true para agregar columnas nuevas
+    await sequelize.sync({ alter: true });
+    console.log('✅ Tablas sincronizadas (alter: columnas y tablas nuevas agregadas)');
+
+    // Reparar posiciones crypto antiguas truncadas a 4 decimales.
+    const inversionesAbiertas = await Inversion.findAll({
+      where: { estado: 'abierta' },
+    });
+
+    let posicionesReparadas = 0;
+    for (const inversion of inversionesAbiertas) {
+      const symbol = String(inversion.symbol || '');
+      const costoTotal = Number(inversion.costoTotal || 0);
+      const precioCompra = Number(inversion.precioCompra || 0);
+      const cantidadActual = Number(inversion.cantidad || 0);
+      const esCrypto = symbol.includes('/');
+
+      if (!esCrypto || costoTotal <= 0 || precioCompra <= 0 || cantidadActual > 0) {
+        continue;
+      }
+
+      const cantidadRecalculada = buildCantidadRecalculada({ costoTotal, precioCompra });
+      if (!Number.isFinite(cantidadRecalculada) || cantidadRecalculada <= 0) {
+        continue;
+      }
+
+      inversion.cantidad = cantidadRecalculada;
+      await inversion.save();
+      posicionesReparadas += 1;
+    }
+
+    console.log(`✅ Posiciones crypto reparadas: ${posicionesReparadas}`);
 
     // Verificar si existe el usuario admin
     let admin = await User.findOne({ 

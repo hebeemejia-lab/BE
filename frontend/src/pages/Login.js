@@ -17,6 +17,7 @@ function LoginContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [aceptaPolitica, setAceptaPolitica] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,15 +25,6 @@ function LoginContent() {
   const { login, loginWithGoogle } = useContext(AuthContext);
   const navigate = useNavigate();
   const { executeRecaptcha } = useGoogleReCaptcha();
-
-  useEffect(() => {
-    // Log reCAPTCHA status
-    if (!executeRecaptcha) {
-      console.warn('⚠️ executeRecaptcha not available yet');
-    } else {
-      console.log('✅ executeRecaptcha disponible');
-    }
-  }, [executeRecaptcha]);
 
   useEffect(() => {
     let mounted = true;
@@ -87,11 +79,8 @@ function LoginContent() {
         try {
           recaptchaToken = await executeRecaptcha('login');
         } catch (recaptchaErr) {
-          console.warn('⚠️ reCAPTCHA execution failed:', recaptchaErr.message);
           // No fallar - continuar sin reCAPTCHA
         }
-      } else {
-        console.warn('⚠️ executeRecaptcha not available');
       }
       
       // Enviar login con token de reCAPTCHA (puede ser null)
@@ -204,7 +193,23 @@ function LoginContent() {
             <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer"> Términos de Servicio</a> de Google.
           </div>
 
-          <button type="submit" className="btn-submit" disabled={loading}>
+          <label className="policy-check">
+            <input
+              type="checkbox"
+              checked={aceptaPolitica}
+              onChange={(e) => setAceptaPolitica(e.target.checked)}
+              required
+            />
+            <span>
+              He leído y acepto la{' '}
+              <a href="/politica-privacidad" target="_blank" rel="noopener noreferrer">
+                Política de Privacidad y Términos de Uso
+              </a>{' '}
+              de Banco Exclusivo.
+            </span>
+          </label>
+
+          <button type="submit" className="btn-submit" disabled={loading || !aceptaPolitica}>
             {loading ? 'Cargando...' : 'Iniciar Sesión'}
           </button>
         </form>

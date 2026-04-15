@@ -19,6 +19,8 @@ router.get('/estado-mercantil', verificarAdminFull, adminController.obtenerEstad
 
 // Estado de cuenta de usuario
 router.get('/usuarios/:id/estado-cuenta', adminController.obtenerEstadoCuentaUsuario);
+router.get('/usuarios/:id/resumen-deuda', adminController.obtenerResumenDeudaUsuario);
+router.post('/usuarios/:id/depurar-sandbox', adminController.depurarPrestamosSandboxUsuario);
 
 // 👥 Usuarios
 router.get('/usuarios', adminController.listarUsuarios);
@@ -27,6 +29,7 @@ router.put('/usuarios/:id', adminController.actualizarUsuarioAdmin);
 router.delete('/usuarios/:id', adminController.eliminarUsuarioAdmin);
 
 // 💰 Préstamos
+router.get('/cuotas-vencidas', adminController.listarCuotasVencidas);
 router.get('/prestamos', adminController.listarPrestamos);
 router.get('/prestamos/:id', adminController.obtenerPrestamo);
 router.post('/prestamos', adminController.crearPrestamoAdmin);

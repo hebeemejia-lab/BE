@@ -33,7 +33,6 @@ import EconomiaEmergente from './pages/EconomiaEmergente';
 import BeneficiosAhorro from './pages/BeneficiosAhorro';
 import Certificado from './pages/Certificado';
 import CryptoDetail from './pages/CryptoDetail';
-import TradingDashboard from './pages/TradingDashboard';
 
 // Estilos
 import './styles/global.css';
@@ -52,11 +51,13 @@ const getTitleForPath = (pathname) => {
   if (pathname.startsWith('/crypto')) return 'BE - Crypto';
   if (pathname.startsWith('/trading')) return 'BE - Trading';
   if (pathname.startsWith('/mi-inversion')) return 'BE - Inversion';
+  if (pathname.startsWith('/trading')) return 'BE - Trading';
   if (pathname.startsWith('/gastos-personales')) return 'BE - Gastos Personales';
   if (pathname.startsWith('/recargas')) return 'BE - Recargas';
   if (pathname.startsWith('/retiros')) return 'BE - Retiros';
   if (pathname.startsWith('/vincular-cuenta')) return 'BE - Vincular Cuenta';
   if (pathname.startsWith('/prestamos')) return 'BE - Prestamos';
+  if (pathname.startsWith('/foro')) return 'BE - Foro';
   if (pathname.startsWith('/perfil')) return 'BE - Perfil';
   if (pathname.startsWith('/admin')) return 'BE - Admin';
   if (pathname.startsWith('/politica-privacidad')) return 'BE - Politica de Privacidad';
@@ -87,8 +88,11 @@ function App() {
       <TitleManager />
       <CurrencyProvider>
         <AuthProvider>
-          <Navbar onAbrirChatbot={() => setChatbotAbierto(true)} />
-          <Routes>
+          <div className="app-shell">
+            <Navbar onAbrirChatbot={() => setChatbotAbierto(true)} />
+            <div className="app-content">
+              <div className="app-routes">
+                <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -108,6 +112,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MiInversionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/trading"
+            element={
+              <ProtectedRoute>
+                <TradingPanel />
               </ProtectedRoute>
             }
           />
@@ -200,6 +212,14 @@ function App() {
             }
           />
           <Route
+            path="/foro"
+            element={
+              <ProtectedRoute>
+                <Foro />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/*"
             element={
               <ProtectedRoute>
@@ -233,25 +253,31 @@ function App() {
           />
           
           <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
+                </Routes>
+              </div>
 
-        {/* Chatbot FAQ */}
-        <ChatBotFAQ 
-          isOpen={chatbotAbierto} 
-          onClose={() => setChatbotAbierto(false)} 
-        />
+              <Footer />
+            </div>
 
-        {/* Botón flotante para abrir el chatbot */}
-        {!chatbotAbierto && (
-          <button
-            className="chatbot-fab"
-            onClick={() => setChatbotAbierto(true)}
-            title="¿Necesitas ayuda?"
-          >
-            💬
-          </button>
-        )}
-      </AuthProvider>
+            {/* Chatbot FAQ */}
+            <ChatBotFAQ 
+              isOpen={chatbotAbierto} 
+              onClose={() => setChatbotAbierto(false)} 
+            />
+
+            {/* Botón flotante para abrir el chatbot */}
+            {!chatbotAbierto && (
+              <button
+                className="chatbot-fab"
+                onClick={() => setChatbotAbierto(true)}
+                title="¿Necesitas ayuda?"
+              >
+                💬
+              </button>
+            )}
+          </div>
+
+        </AuthProvider>
       </CurrencyProvider>
     </Router>
   );

@@ -23,6 +23,7 @@ const AUTH_SAFE_USER_ATTRIBUTES = [
   'telefono',
   'direccion',
   'saldo',
+  'saldoChain',
   'rol',
 ];
 
@@ -65,6 +66,7 @@ const construirPayloadUsuario = (usuario) => ({
   apellido: usuario.apellido,
   email: usuario.email,
   saldo: parseFloat(usuario.saldo),
+  saldoChain: parseFloat(usuario.saldoChain || 0),
   rol: usuario.rol || 'cliente',
   emailVerificado: usuario.emailVerificado,
 });

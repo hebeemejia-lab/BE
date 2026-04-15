@@ -14,9 +14,11 @@ export const AuthProvider = ({ children }) => {
       return data;
     }
     const saldoNormalizado = Number(data.saldo);
+    const saldoChainNormalizado = Number(data.saldoChain);
     return {
       ...data,
       saldo: Number.isFinite(saldoNormalizado) ? saldoNormalizado : 0,
+      saldoChain: Number.isFinite(saldoChainNormalizado) ? saldoChainNormalizado : 0,
       moneda: data.moneda || 'USD',
     };
   };

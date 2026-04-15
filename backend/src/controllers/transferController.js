@@ -1,9 +1,12 @@
 const Transfer = require('../models/Transfer');
 const TransferenciaBancaria = require('../models/TransferenciaBancaria');
+const SolicitudRetiroManual = require('../models/SolicitudRetiroManual');
 const User = require('../models/User');
 const stripeService = require('../services/stripeService');
+const bybitService = require('../services/bybitService');
+const { getAvailableCryptoBalance } = require('../services/cryptoHoldingsService');
 
-const TRANSFER_SAFE_ATTRS = ['id', 'nombre', 'apellido', 'email', 'cedula', 'saldo', 'rol'];
+const TRANSFER_SAFE_ATTRS = ['id', 'nombre', 'apellido', 'email', 'cedula', 'saldo', 'saldoChain', 'rol'];
 const ADMIN_ID = 1; // Used as placeholder destinatario for crypto withdrawals
 
 // Realizar transferencia
@@ -93,12 +96,21 @@ const solicitarRetiroCrypto = async (req, res) => {
       return res.status(400).json({ mensaje: 'Dirección de wallet inválida.' });
     }
 
-    const montoNum = parseFloat(monto);
+    const montoActivo = parseFloat(monto);
     const usuario = await User.findByPk(usuarioId, { attributes: TRANSFER_SAFE_ATTRS });
     if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado.' });
 
-    if (parseFloat(usuario.saldo) < montoNum) {
-      return res.status(400).json({ mensaje: 'Saldo insuficiente para el retiro.' });
+    const coinUpper = String(coin).toUpperCase();
+    
+    // ✅ AHORA VALIDAR CONTRA saldoChain (USD) EN LUGAR DE HOLDINGS
+    const saldoChain = Number(usuario.saldoChain || 0);
+    if (saldoChain < montoActivo) {
+      return res.status(400).json({
+        mensaje: `Saldo CHAIN insuficiente para el retiro. Necesitas USD ${montoActivo.toFixed(2)}, tienes USD ${saldoChain.toFixed(2)}.`,
+        coin: coinUpper,
+        saldoChainDisponible: saldoChain,
+        montoSolicitado: montoActivo,
+      });
     }
 
     if (usuarioId === ADMIN_ID) {
@@ -106,24 +118,56 @@ const solicitarRetiroCrypto = async (req, res) => {
     }
 
     const maskedAddr = `${direccion.slice(0, 6)}...${direccion.slice(-4)}`;
+    const quote = await bybitService.getSpotPriceUsd(coinUpper);
+    const cantidadCrypto = parseFloat((montoActivo / quote.price).toFixed(8));
 
-    usuario.saldo = parseFloat(usuario.saldo) - montoNum;
-    await usuario.save();
+    const numeroReferencia = `CRYPTO-RET-${Date.now()}`;
+    const metadataRetiro = JSON.stringify({
+      tipo: 'crypto_wallet',
+      walletAddress: direccion,
+      walletAddressMasked: maskedAddr,
+      coin: coinUpper,
+      network: String(network),
+      montoUsd: montoActivo,
+      cantidadCrypto,
+      precioReferenciaUsd: quote.price,
+      adminNotes: [],
+    });
 
-    await Transfer.create({
-      remitenteId:    usuarioId,
-      destinatarioId: ADMIN_ID,
-      monto:          montoNum,
-      concepto:       `Retiro crypto: ${String(coin).toUpperCase()} (${network}) → ${maskedAddr}`,
-      estado:         'pendiente',
+    const solicitud = await SolicitudRetiroManual.create({
+      usuarioId,
+      monto: montoActivo,
+      moneda: 'CRYPTO',
+      metodo: 'crypto_bybit',
+      estado: 'pendiente',
+      nombreUsuario: `${usuario.nombre || ''} ${usuario.apellido || ''}`.trim(),
+      emailUsuario: usuario.email,
+      cedulaUsuario: usuario.cedula,
+      banco: 'CRYPTO_WALLET',
+      tipoCuenta: String(network).slice(0, 50),
+      numeroCuenta: maskedAddr,
+      nombreBeneficiario: coinUpper,
+      numeroReferencia,
+      proveedorRetiro: 'bybit',
+      monedaActiva: coinUpper,
+      redRetiro: String(network).slice(0, 50),
+      walletAddress: direccion,
+      montoActivo: cantidadCrypto,
+      precioReferenciaUsd: quote.price,
+      notasAdmin: metadataRetiro,
     });
 
     res.status(201).json({
-      mensaje: `Retiro de ${montoNum} USD en ${String(coin).toUpperCase()} solicitado. Será procesado en 24-48 h.`,
-      monto: montoNum,
-      coin,
+      mensaje: `Retiro de USD ${montoActivo.toFixed(2)} (≈ ${cantidadCrypto} ${coinUpper}) solicitado. En espera de aprobación admin.`,
+      solicitudId: solicitud.id,
+      numeroReferencia,
+      estado: solicitud.estado,
+      montoUsd: montoActivo,
+      cantidadCrypto,
+      coin: coinUpper,
       network,
       walletAddress: maskedAddr,
+      saldoChainRestante: saldoChain - montoActivo,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

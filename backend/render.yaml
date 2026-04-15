@@ -3,7 +3,7 @@ services:
     name: be-backend-hfib
     env: node
     buildCommand: "npm install"
-    startCommand: "npm start"
+    startCommand: "node migrate.js && node src/index.js"
     envVars:
       - key: RAPYD_ACCESS_KEY
         value: "rak_41EE71BF4EF85F075A6B"

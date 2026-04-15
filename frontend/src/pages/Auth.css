@@ -161,6 +161,39 @@ form {
   text-decoration: underline;
 }
 
+/* Checkbox de aceptación de políticas */
+.policy-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: rgba(241, 245, 249, 0.75);
+  line-height: 1.5;
+  background: rgba(167, 216, 255, 0.05);
+  border: 1px solid rgba(167, 216, 255, 0.15);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.policy-check input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  margin-top: 2px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+.policy-check span a {
+  color: #a7d8ff;
+  text-decoration: underline;
+}
+
+.policy-check span a:hover {
+  color: #fff;
+}
+
 .btn-submit {
   padding: 14px;
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
