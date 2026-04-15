@@ -60,54 +60,48 @@ module.exports = (sequelize) => {
       type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0,
     },
-    // ...otros campos...
+    saldoEnTransitoAlpaca: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    stripeCustomerId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    alpacaAccountId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
+    },
+    alpacaAccountStatus: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'not_linked',
+    },
+    alpacaAchEnabledAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    rol: {
+      type: DataTypes.ENUM('cliente', 'admin'),
+      defaultValue: 'cliente',
+      allowNull: false,
+    },
+  }, {
+    timestamps: true,
+    hooks: {
+      beforeCreate: async (user) => {
+        if (user.password) {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, salt);
+        }
+      },
+    },
   });
-  // Aquí puedes agregar hooks/metodos si es necesario
+
+  User.prototype.comparePassword = async function (passwordIngresada) {
+    return await bcrypt.compare(passwordIngresada, this.password);
+  };
+
   return User;
 };
-    defaultValue: 0,
-  },
-  saldoEnTransitoAlpaca: {
-    type: DataTypes.DECIMAL(15, 2),
-    defaultValue: 0,
-  },
-  stripeCustomerId: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  alpacaAccountId: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    unique: true,
-  },
-  alpacaAccountStatus: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: 'not_linked',
-  },
-  alpacaAchEnabledAt: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
-  rol: {
-    type: DataTypes.ENUM('cliente', 'admin'),
-    defaultValue: 'cliente',
-    allowNull: false,
-  },
-}, {
-  timestamps: true,
-  hooks: {
-    beforeCreate: async (user) => {
-      if (user.password) {
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(user.password, salt);
-      }
-    },
-  },
-});
-
-User.prototype.comparePassword = async function (passwordIngresada) {
-  return await bcrypt.compare(passwordIngresada, this.password);
-};
-
-module.exports = User;
