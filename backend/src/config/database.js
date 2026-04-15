@@ -5,53 +5,54 @@ const path = require('path');
 const isProduction = process.env.NODE_ENV === 'production';
 const databaseUrl = process.env.DATABASE_URL;
 
-let sequelize;
 
-console.log('🔍 Detectando base de datos...');
-console.log(`📌 NODE_ENV: ${process.env.NODE_ENV}`);
-console.log(`📌 DATABASE_URL presente: ${databaseUrl ? 'SÍ' : 'NO'}`);
-if (databaseUrl) {
-  console.log(`📌 DATABASE_URL inicia con: ${databaseUrl.substring(0, 20)}...`);
-}
-
-// Usar PostgreSQL en producción, SQLite en desarrollo
-if (databaseUrl && databaseUrl.toLowerCase().includes('postgres')) {
-  // PostgreSQL en producción
-  console.log('🔧 Conectando a PostgreSQL en producción...');
-  sequelize = new Sequelize(databaseUrl, {
-    dialect: 'postgres',
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
+let sequelizeInstance;
+function getSequelize() {
+  if (sequelizeInstance) return sequelizeInstance;
+  console.log('🔍 Detectando base de datos...');
+  console.log(`📌 NODE_ENV: ${process.env.NODE_ENV}`);
+  console.log(`📌 DATABASE_URL presente: ${databaseUrl ? 'SÍ' : 'NO'}`);
+  if (databaseUrl) {
+    console.log(`📌 DATABASE_URL inicia con: ${databaseUrl.substring(0, 20)}...`);
+  }
+  if (databaseUrl && databaseUrl.toLowerCase().includes('postgres')) {
+    // PostgreSQL en producción
+    console.log('🔧 Conectando a PostgreSQL en producción...');
+    sequelizeInstance = new Sequelize(databaseUrl, {
+      dialect: 'postgres',
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false
+        }
+      },
+      logging: false,
+      pool: {
+        max: 5,
+        min: 0,
+        idle: 10000,
+        acquire: 30000
       }
-    },
-    logging: false,
-    pool: {
-      max: 5,
-      min: 0,
-      idle: 10000,
-      acquire: 30000
-    }
-  });
-} else {
-  // SQLite (desarrollo o producción sin PostgreSQL)
-  const dbPath = isProduction 
-    ? '/opt/render/project/src/backend/banco.db'  // Render path
-    : path.join(__dirname, '../../banco.db');     // Local path
-  
-  const dbType = isProduction ? 'producción' : 'desarrollo';
-  console.log(`🔧 Conectando a SQLite (${dbType})...`);
-  console.log(`📁 Ruta DB: ${dbPath}`);
-  
-  sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: dbPath,
-    logging: false,
-  });
+    });
+  } else {
+    // SQLite (desarrollo o producción sin PostgreSQL)
+    const dbPath = isProduction 
+      ? '/opt/render/project/src/backend/banco.db'
+      : path.join(__dirname, '../../banco.db');
+    const dbType = isProduction ? 'producción' : 'desarrollo';
+    console.log(`🔧 Conectando a SQLite (${dbType})...`);
+    console.log(`📁 Ruta DB: ${dbPath}`);
+    sequelizeInstance = new Sequelize({
+      dialect: 'sqlite',
+      storage: dbPath,
+      logging: false,
+    });
+  }
+  return sequelizeInstance;
 }
 
 const connectDB = async () => {
+  const sequelize = getSequelize();
   try {
     await sequelize.authenticate();
     console.log(`✅ Base de datos conectada exitosamente`);
@@ -71,5 +72,5 @@ const connectDB = async () => {
   }
 };
 
-module.exports = { sequelize, connectDB };
+module.exports = { sequelize: getSequelize(), getSequelize, connectDB };
 
