@@ -32,7 +32,6 @@ module.exports = (sequelize) => {
   },
   fechaGanancia: {
     type: DataTypes.DATE,
-  return FondoRiesgo;
     allowNull: true,
     comment: 'Fecha de registro de ganancias',
   },
@@ -42,5 +41,5 @@ module.exports = (sequelize) => {
     comment: 'Crecimiento del fondo',
   }
 });
-
-module.exports = FondoRiesgo;
+  return FondoRiesgo;
+};
