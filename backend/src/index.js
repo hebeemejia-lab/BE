@@ -127,7 +127,9 @@ const fondoRiesgoRoutes = require('./routes/fondoRiesgoRoutes'); // Importar las
 console.log('🟢 [Express] fondoRiesgoRoutes cargado');
 app.use('/fondo-riesgo', fondoRiesgoRoutes); console.log('🟢 [Express] /fondo-riesgo montado');
 app.use('/', expensesRoutes); console.log('🟢 [Express] / (expenses) montado');
-
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // Ruta de prueba
 app.get('/health', (req, res) => {
