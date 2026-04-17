@@ -1,3 +1,13 @@
+// Opciones de intervalo para refresco automático
+const REFRESH_INTERVALS = [
+  { label: 'Cada segundo', value: 1000 },
+  { label: 'Cada minuto', value: 60000 },
+  { label: 'Cada hora', value: 3600000 },
+  { label: 'Cada día', value: 86400000 },
+  { label: 'Cada mes', value: 2592000000 },
+];
+  // Estado para el intervalo de refresco
+  const [refreshInterval, setRefreshInterval] = useState(15000); // default 15s
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -435,9 +445,9 @@ function Saldos() {
   useEffect(() => {
     const timer = setInterval(() => {
       loadWalletStats({ silent: true });
-    }, 15000); // Refresco cada 15s para ver P&L en tiempo real
+    }, refreshInterval);
     return () => clearInterval(timer);
-  }, [loadWalletStats]);
+  }, [loadWalletStats, refreshInterval]);
 
   useEffect(() => {
     if (activeFlow !== 'buy') return;
@@ -818,6 +828,24 @@ function Saldos() {
       }}
     >
       <Box sx={{ maxWidth: '1260px', mx: 'auto', px: { xs: 2, md: 3 } }}>
+        {/* Selector de intervalo de refresco */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', mb: 2 }}>
+          <FormControl size="small" sx={{ minWidth: 180, background: 'rgba(255,255,255,0.04)', borderRadius: 2 }}>
+            <InputLabel id="refresh-interval-label">Actualizar</InputLabel>
+            <Select
+              labelId="refresh-interval-label"
+              id="refresh-interval"
+              value={refreshInterval}
+              label="Actualizar"
+              onChange={e => setRefreshInterval(Number(e.target.value))}
+              sx={{ color: '#f8fafc', fontWeight: 700 }}
+            >
+              {REFRESH_INTERVALS.map(opt => (
+                <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
         <Paper sx={{ ...panelSx, p: { xs: 2.25, md: 3 } }}>
           <Stack spacing={2.5}>
             <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2}>

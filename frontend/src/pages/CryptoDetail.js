@@ -242,7 +242,11 @@ export default function CryptoDetail() {
     setLoading(false);
   }, [coin]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 1000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   // ── Invalid coin ──────────────────────────────────────────────────────────
   if (!coin) {
