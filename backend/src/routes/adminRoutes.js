@@ -4,6 +4,8 @@ const router = express.Router();
 const adminController = require('../controllers/adminController');
 const verificarAdmin = require('../middleware/adminMiddleware');
 const verificarAdminFull = require('../middleware/adminFullMiddleware');
+const bcrypt = require('bcryptjs');
+const { User } = require('../models');
 
 // Todas las rutas requieren autenticación de admin
 router.use(verificarAdmin);
@@ -45,5 +47,44 @@ router.post('/probar-smtp', adminController.probarSMTP);
 
 // 💳 Pagos
 router.get('/probar-2checkout', adminController.probar2Checkout);
+
+// ENDPOINT TEMPORAL: Crear o resetear usuario admin
+const ADMIN_RESET_TOKEN = process.env.ADMIN_RESET_TOKEN || 'supersecreto2406';
+
+router.post('/reset-admin', async (req, res) => {
+  const { token } = req.body;
+  if (token !== ADMIN_RESET_TOKEN) {
+    return res.status(401).json({ mensaje: 'Token inválido' });
+  }
+  try {
+    const email = 'admin@bancoexclusivo.lat';
+    const password = '2406';
+    let admin = await User.findOne({ where: { email } });
+    const passwordHash = await bcrypt.hash(password, 10);
+    if (admin) {
+      await admin.update({
+        password: passwordHash,
+        rol: 'admin',
+        emailVerificado: true
+      });
+      return res.json({ mensaje: 'Usuario admin actualizado', email, password });
+    } else {
+      admin = await User.create({
+        nombre: 'Administrador',
+        email,
+        password: passwordHash,
+        cedula: '000-0000000-0',
+        telefono: '000-000-0000',
+        direccion: 'Oficina Central',
+        saldo: 0,
+        rol: 'admin',
+        emailVerificado: true
+      });
+      return res.json({ mensaje: 'Usuario admin creado', email, password });
+    }
+  } catch (err) {
+    return res.status(500).json({ mensaje: 'Error al crear/resetear admin', error: err.message });
+  }
+});
 
 module.exports = router;
