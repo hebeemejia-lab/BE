@@ -35,7 +35,9 @@ const Inversion = require('../models/Inversion');
 const Comision = require('../models/Comision');
 const User = require('../models/User');
 const { sequelize } = require('../config/database');
+
 const alpacaService = require('../services/alpacaService');
+const { obtenerCotizacionResiliente } = require('../services/cotizacionesService');
 
 // Comprar activo
 const comprarAccion = async (req, res) => {
