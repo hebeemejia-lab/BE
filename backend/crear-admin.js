@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const User = require('./src/models/User');
+const { User } = require('./src/models');
 const { sequelize } = require('./src/config/database');
 
 async function crearUsuarioAdmin() {
