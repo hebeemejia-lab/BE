@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const axios = require('axios');
 const { Op } = require('sequelize');
-const User = require('../models/User');
+const { User } = require('../models');
 const emailService = require('../services/emailService');
 
 const GOOGLE_REGISTRATION_TOKEN_TTL = '30m';
