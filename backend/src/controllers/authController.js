@@ -486,7 +486,6 @@ const login = async (req, res) => {
     const emailNormalizado = normalizarEmail(email);
 
     console.log('🔐 Login - Email:', emailNormalizado);
-
     if (!emailNormalizado || !password) {
       console.warn('⚠️ Login - Faltan email o contraseña');
       return res.status(400).json({ mensaje: 'Email y contraseña requeridos' });
@@ -501,12 +500,16 @@ const login = async (req, res) => {
       return res.status(401).json({ mensaje: 'Credenciales inválidas' });
     }
 
+    console.log('🔍 Login - Usuario encontrado:', usuario.email, 'Rol:', usuario.rol, 'EmailVerificado:', usuario.emailVerificado);
+    console.log('🔍 Login - Password hash en BD:', usuario.password);
+
     if (!usuario.emailVerificado && usuario.rol !== 'admin') {
       console.warn('⚠️ Login - Email no verificado:', emailNormalizado);
       return res.status(403).json({ mensaje: 'Verifica tu correo antes de iniciar sesión' });
     }
 
     const esValida = await usuario.comparePassword(password);
+    console.log('🔍 Login - ¿Contraseña válida?:', esValida);
     if (!esValida) {
       console.warn('⚠️ Login - Contraseña incorrecta para:', emailNormalizado);
       return res.status(401).json({ mensaje: 'Credenciales inválidas' });
