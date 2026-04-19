@@ -1,6 +1,6 @@
 const Recarga = require('../models/Recarga');
 const BankAccount = require('../models/BankAccount');
-const User = require('../models/User');
+const { User } = require('../models');
 const SolicitudRetiroManual = require('../models/SolicitudRetiroManual');
 const cuentasBancariasConfig = require('../config/cuentasBancariasConfig');
 const bybitService = require('../services/bybitService');

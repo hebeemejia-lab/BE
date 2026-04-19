@@ -33,7 +33,7 @@ const listarPosicionesCriptoWallet = async (req, res) => {
 };
 const Inversion = require('../models/Inversion');
 const Comision = require('../models/Comision');
-const User = require('../models/User');
+const { User } = require('../models');
 const { sequelize } = require('../config/database');
 
 const alpacaService = require('../services/alpacaService');

@@ -1,5 +1,5 @@
 const Loan = require('../models/Loan');
-const User = require('../models/User');
+const { User } = require('../models');
 const CuotaPrestamo = require('../models/CuotaPrestamo');
 const emailService = require('../services/emailService');
 

@@ -1,7 +1,7 @@
 const Transfer = require('../models/Transfer');
 const TransferenciaBancaria = require('../models/TransferenciaBancaria');
 const SolicitudRetiroManual = require('../models/SolicitudRetiroManual');
-const User = require('../models/User');
+const { User } = require('../models');
 const stripeService = require('../services/stripeService');
 const bybitService = require('../services/bybitService');
 const { getAvailableCryptoBalance } = require('../services/cryptoHoldingsService');

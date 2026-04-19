@@ -1,4 +1,4 @@
-const User = require('../models/User');
+const { User } = require('../models');
 const TransferenciaInternacional = require('../models/TransferenciaInternacional');
 const rapydService = require('../services/rapydService');
 const { sequelize } = require('../config/database');
