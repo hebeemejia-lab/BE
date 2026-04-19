@@ -1,5 +1,5 @@
 const BankAccount = require('../models/BankAccount');
-const User = require('../models/User');
+const { User } = require('../models');
 const Recarga = require('../models/Recarga');
 const FundingTransfer = require('../models/FundingTransfer');
 const alpacaService = require('../services/alpacaService');

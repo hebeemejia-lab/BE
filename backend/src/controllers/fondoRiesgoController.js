@@ -1,5 +1,5 @@
 const FondoRiesgo = require('../models/FondoRiesgo');
-const User = require('../models/User');
+const { User } = require('../models');
 
 // Obtener análisis de inversión por cliente
 exports.getAnalysis = async (req, res) => {

@@ -67,7 +67,7 @@ const procesarRecargaGooglePay = async (req, res) => {
 };
 const Recarga = require('../models/Recarga');
 const CodigoRecarga = require('../models/CodigoRecarga');
-const User = require('../models/User');
+const { User } = require('../models');
 const stripeService = require('../services/stripeService');
 const rapydService = require('../services/rapydService');
 const paypalService = require('../services/paypalService');

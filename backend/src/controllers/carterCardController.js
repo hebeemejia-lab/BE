@@ -1,5 +1,5 @@
 const Transfer = require('../models/Transfer');
-const User = require('../models/User');
+const { User } = require('../models');
 const carterCardService = require('../services/carterCardService');
 
 // Transferencia con Carter Card
