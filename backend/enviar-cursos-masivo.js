@@ -31,12 +31,13 @@ const plantillaCursos = {
     </div>
   `
 };
-const { User } = require('./src/models/User');
+const { User } = require('./src/models');
 
+const smtpPort = Number(process.env.SMTP_PORT) || 587;
 const transporterCursos = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: false,
+  port: smtpPort,
+  secure: smtpPort === 465, // true para 465 (SSL), false para 587 (TLS)
   auth: {
     user: process.env.SMTP_CURSOS_USER,
     pass: process.env.SMTP_CURSOS_PASS,
