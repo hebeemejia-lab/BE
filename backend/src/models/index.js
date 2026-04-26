@@ -11,6 +11,7 @@ const Transaction = require('./Transaction')(sequelize);
 const Budget = require('./Budget')(sequelize);
 const ForumTopic = require('./ForumTopic')(sequelize);
 const ForumReply = require('./ForumReply')(sequelize);
+const FAQFeedback = require('./FAQFeedback')(sequelize);
 
 // Definir relaciones entre modelos
 User.hasMany(Loan, {
@@ -169,5 +170,6 @@ module.exports = {
   Transaction,
   Budget,
   ForumTopic,
-  ForumReply
+  ForumReply,
+  FAQFeedback
 };
