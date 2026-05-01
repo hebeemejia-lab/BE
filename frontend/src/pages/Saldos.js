@@ -6,8 +6,9 @@ const REFRESH_INTERVALS = [
   { label: 'Cada día', value: 86400000 },
   { label: 'Cada mes', value: 2592000000 },
 ];
-  // Estado para el intervalo de refresco
-  const [refreshInterval, setRefreshInterval] = useState(15000); // default 15s
+
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+// ...existing code...
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -174,6 +175,8 @@ const getFundingAmountFromError = (error) => {
 };
 
 function Saldos() {
+    // Estado para el intervalo de refresco
+    const [refreshInterval, setRefreshInterval] = useState(15000); // default 15s
   const { usuario, refrescarPerfil } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
