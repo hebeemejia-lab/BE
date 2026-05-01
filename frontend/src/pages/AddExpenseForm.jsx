@@ -30,23 +30,31 @@ const AddExpenseForm = ({ onSubmit }) => {
   const [category, setCategory] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState('');
+  const [error, setError] = useState('');
 
   const handleSubmit = e => {
     e.preventDefault();
+    setError('');
     if (!category || !amount || !date) {
-      alert('Por favor completa todos los campos');
+      setError('Por favor completa todos los campos');
       return;
     }
-    onSubmit({ type, category, amount: parseFloat(amount), date });
-    setCategory('');
-    setAmount('');
-    setDate('');
+    Promise.resolve(onSubmit({ type, category, amount: parseFloat(amount), date }))
+      .then(() => {
+        setCategory('');
+        setAmount('');
+        setDate('');
+      })
+      .catch(() => {
+        setError('No se pudo registrar el gasto. Intenta de nuevo.');
+      });
   };
 
   const categories = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
 
   return (
     <div className="gastos-form-container">
+      {error && <div style={{color: 'red', marginBottom: 12, textAlign: 'center'}}>{error}</div>}
       <form onSubmit={handleSubmit} className="gastos-form">
         <div className="form-group">
           <label>Tipo de transacción</label>

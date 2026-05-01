@@ -54,7 +54,7 @@
   font-size: 14px;
   transition: all 0.3s ease;
   background: #fff;
-  color: #333;
+  color: #111 !important;
 }
 
 .form-group select:focus,
