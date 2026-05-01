@@ -80,14 +80,11 @@ export const inversionesAPI = {
   obtenerPortfolio: () => API.get('/inversiones/portfolio'),
   buscarActivos: (query, options = {}) => API.get('/inversiones/buscar', { params: { q: query, ...options } }),
   obtenerCotizacion: (symbol) => API.get(`/inversiones/cotizacion/${encodeURIComponent(symbol)}`),
-<<<<<<< HEAD
   obtenerHistorial: (symbol, params = {}) => API.get(`/inversiones/historial/${encodeURIComponent(symbol)}`, { params }),
-=======
   obtenerPNLActualizado: () => API.get('/inversiones/pnl/actualizado'),
   obtenerComisiones: () => API.get('/inversiones/comisiones'),
   listarPosicionesCriptoWallet: () => API.get('/inversiones/wallet/posiciones-cripto'),
   venderCriptoWallet: (datos) => API.post('/inversiones/wallet/vender-cripto', datos),
->>>>>>> (key)
 };
 
 // Cuentas Bancarias
