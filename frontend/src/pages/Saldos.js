@@ -8,8 +8,6 @@ const REFRESH_INTERVALS = [
 ];
 
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from 'react';
-// ...existing code...
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Autocomplete,
