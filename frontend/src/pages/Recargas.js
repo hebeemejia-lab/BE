@@ -7,6 +7,8 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const PAYPAL_CLIENT_ID = process.env.REACT_APP_PAYPAL_CLIENT_ID;
 
 export default function Deposita() {
+    // Referencia para el ID de depósito
+    const depositoIdRef = useRef(null);
   const [activeTab, setActiveTab] = useState('tarjeta');
   const [monto, setMonto] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,7 +17,6 @@ export default function Deposita() {
   const [codigoDeposito, setCodigoDeposito] = useState('');
   const [backendStatus, setBackendStatus] = useState('checking');
   const paypalButtonRef = useRef(null);
-  const recargaIdRef = useRef(null);
 
   const iniciarCheckoutPayPal = useCallback(async () => {
     try {
@@ -206,9 +207,10 @@ export default function Deposita() {
           return;
         }
 
+        let depositoId = depositoIdRef.current;
         const response = await axios.post(
           `${API_URL}/depositos/paypal/capturar`,
-          { depositoId: depositoId },
+          { depositoId },
           {
             headers: {
               Authorization: `Bearer ${authToken}`,

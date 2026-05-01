@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { forumAPI } from '../services/api';
 import './Foro.css';
 
@@ -30,7 +30,7 @@ export default function Foro() {
 
   const temaActivoId = useMemo(() => temaSeleccionado?.id || null, [temaSeleccionado]);
 
-  const cargarTemas = async () => {
+  const cargarTemas = useCallback(async () => {
     try {
       setCargando(true);
       setError('');
@@ -46,7 +46,7 @@ export default function Foro() {
     } finally {
       setCargando(false);
     }
-  };
+  }, [temaActivoId]);
 
   const cargarTema = async (temaId) => {
     if (!temaId) {
@@ -66,7 +66,7 @@ export default function Foro() {
 
   useEffect(() => {
     cargarTemas();
-  }, []);
+  }, [cargarTemas]);
 
   useEffect(() => {
     if (temaActivoId) {

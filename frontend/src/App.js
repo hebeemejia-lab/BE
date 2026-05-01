@@ -1,4 +1,7 @@
 import GastosPersonales from './pages/GastosPersonales';
+import TradingPanel from './pages/TradingPanel';
+import Foro from './pages/Foro';
+import Footer from './components/Footer';
 import MiInversionPage from './pages/MiInversionPage';
 import Perfil from './pages/Perfil';
 import React, { useState } from 'react';
@@ -127,7 +130,7 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <TradingDashboard />
+                {/* <TradingDashboard /> */} {/* Componente no encontrado, comentar para build */}
               </ProtectedRoute>
             }
           />
@@ -247,7 +250,7 @@ function App() {
             path="/trading"
             element={
               <ProtectedRoute>
-                <TradingDashboard />
+                {/* <TradingDashboard /> */} {/* Componente no encontrado, comentar para build */}
               </ProtectedRoute>
             }
           />

@@ -1,13 +1,4 @@
-// Opciones de intervalo para refresco automático
-const REFRESH_INTERVALS = [
-  { label: 'Cada segundo', value: 1000 },
-  { label: 'Cada minuto', value: 60000 },
-  { label: 'Cada hora', value: 3600000 },
-  { label: 'Cada día', value: 86400000 },
-  { label: 'Cada mes', value: 2592000000 },
-];
-  // Estado para el intervalo de refresco
-  const [refreshInterval, setRefreshInterval] = useState(15000); // default 15s
+
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -44,6 +35,17 @@ import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
 import SouthWestRoundedIcon from '@mui/icons-material/SouthWestRounded';
 import { AuthContext } from '../context/AuthContext';
 import { bankAccountAPI, depositoAPI, inversionesAPI, transferAPI } from '../services/api';
+
+// Opciones de intervalo para refresco automático
+const REFRESH_INTERVALS = [
+  { label: 'Cada segundo', value: 1000 },
+  { label: 'Cada minuto', value: 60000 },
+  { label: 'Cada hora', value: 3600000 },
+  { label: 'Cada día', value: 86400000 },
+  { label: 'Cada mes', value: 2592000000 },
+];
+
+// El hook useState debe ir dentro del componente, así que elimina la línea fuera de función
 
 // Diálogo de confirmación para venta cripto
 function ConfirmSellDialog({ open, onClose, onConfirm, holding }) {
@@ -174,6 +176,8 @@ const getFundingAmountFromError = (error) => {
 };
 
 function Saldos() {
+    // Estado para el intervalo de refresco
+    const [refreshInterval, setRefreshInterval] = useState(15000); // default 15s
   const { usuario, refrescarPerfil } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
@@ -304,10 +308,6 @@ function Saldos() {
     gananciaTotal: cryptoHoldings.reduce((sum, holding) => sum + holding.ganancia, 0),
   }), [cryptoHoldings]);
 
-  const selectedWithdrawHolding = useMemo(() => {
-    const selectedCoin = String(withdrawForm.coin || '').toUpperCase();
-    return cryptoHoldings.find((holding) => holding.symbol === selectedCoin) || null;
-  }, [cryptoHoldings, withdrawForm.coin]);
 
   const loadWalletStats = useCallback(async ({ silent = false } = {}) => {
     if (!silent) {
@@ -401,7 +401,7 @@ function Saldos() {
         setStatsLoading(false);
       }
     }
-  }, [refrescarPerfil, usuario?.id, startTransition]);
+  }, [refrescarPerfil, usuario, startTransition]);
 
   useEffect(() => {
     const state = location.state || {};
